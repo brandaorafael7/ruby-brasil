@@ -1,0 +1,126 @@
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model Product {
+  id            String           @id @default(cuid())
+  name          String
+  slug          String           @unique
+  description   String?
+  league        String           // "Brasileirão", "Premier League", "La Liga", "Seleções", "Retrô"
+  club          String           // "Flamengo", "Real Madrid", "Brasil", etc.
+  season        String           // "24/25", "1998", etc.
+  type          String           @default("TORCEDOR") // "TORCEDOR", "JOGADOR", "RETRO", "FEMININA"
+  imageUrl      String
+  gallery       String?          // JSON array string
+  retailPrice   Float            // Preço no varejo (ex: 149.90)
+  isActive      Boolean          @default(true)
+  allowCustom   Boolean          @default(true)
+  customPrice   Float            @default(15.00)
+
+  variants      ProductVariant[]
+  priceTiers    WholesaleTier[]
+  orderItems    OrderItem[]
+
+  createdAt     DateTime         @default(now())
+  updatedAt     DateTime         @updatedAt
+}
+
+model ProductVariant {
+  id            String   @id @default(cuid())
+  productId     String
+  product       Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  size          String   // "P", "M", "G", "GG", "XG"
+  stockQuantity Int      @default(100)
+
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@unique([productId, size])
+}
+
+model WholesaleTier {
+  id             String   @id @default(cuid())
+  productId      String?
+  product        Product? @relation(fields: [productId], references: [id], onDelete: Cascade)
+  minQuantity    Int      // 10, 30, 60
+  maxQuantity    Int?     // 29, 59, null
+  unitPrice      Float    // 65.00, 55.00, 48.00
+
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+}
+
+model PromotionalBatch {
+  id                   String   @id @default(cuid())
+  name                 String
+  code                 String   @unique @default("LOTE-6000")
+  totalQuota           Int      @default(6000)
+  remainingQuota       Int      @default(6000)
+  minPiecesForFreeShip Int      @default(10)
+  isActive             Boolean  @default(true)
+  description          String?
+  orders               Order[]
+
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+}
+
+model Order {
+  id                 String            @id @default(cuid())
+  orderNumber        String            @unique
+  customerType       String            @default("PF") // "PF", "PJ"
+  document           String            // CPF ou CNPJ
+  customerName       String
+  email              String
+  phone              String
+  
+  zipCode            String
+  street             String
+  number             String
+  complement         String?
+  neighborhood       String
+  city               String
+  state              String
+
+  totalQuantity      Int
+  subtotal           Float
+  discountAmount     Float             @default(0.0)
+  shippingCost       Float             @default(0.0)
+  isFreeShipping     Boolean           @default(false)
+  finalTotal         Float
+
+  paymentMethod      String            @default("PIX") // "PIX", "CREDIT_CARD", "WHATSAPP_ASSISTED"
+  status             String            @default("PENDING")
+  isWholesale        Boolean           @default(false)
+
+  promotionalBatchId String?
+  promotionalBatch   PromotionalBatch? @relation(fields: [promotionalBatchId], references: [id])
+
+  items              OrderItem[]
+
+  createdAt          DateTime          @default(now())
+  updatedAt          DateTime          @updatedAt
+}
+
+model OrderItem {
+  id                 String   @id @default(cuid())
+  orderId            String
+  order              Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  productId          String
+  product            Product  @relation(fields: [productId], references: [id])
+  size               String
+  quantity           Int
+  unitPriceApplied   Float
+  customName         String?
+  customNumber       String?
+  customFee          Float    @default(0.0)
+  totalItemPrice     Float
+
+  createdAt          DateTime @default(now())
+}
