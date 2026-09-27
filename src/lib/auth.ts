@@ -1,10 +1,12 @@
-﻿import crypto from 'crypto';
+import crypto from 'crypto';
 
 const SECRET = process.env.ADMIN_JWT_SECRET || 'rubybr_neon_production_admin_secret_key_2026_xyz';
 
 export function isEmailAuthorized(email: string): boolean {
-  const allowedList = (process.env.ADMIN_EMAILS || '')
-    .split(',')
+  const allowedList = [
+    ...(process.env.ADMIN_EMAILS || '').split(','),
+    ...(process.env.GMAIL_USER || '').split(','),
+  ]
     .map((e) => e.trim().toLowerCase())
     .filter(Boolean);
 

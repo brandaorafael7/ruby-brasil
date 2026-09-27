@@ -1,7 +1,9 @@
-﻿import nodemailer from 'nodemailer';
+import nodemailer from 'nodemailer';
 
 export function getEmailTransporter() {
-  const user = process.env.GMAIL_USER;
+  const rawUser = process.env.GMAIL_USER || '';
+  // Se houver mais de um e-mail separado por vírgula, utiliza o primeiro como conta de envio SMTP
+  const user = rawUser.split(',')[0].trim();
   const pass = process.env.GMAIL_APP_PASSWORD?.replace(/\s+/g, '');
 
   if (!user || !pass) {
@@ -27,7 +29,7 @@ interface SendOtpParams {
 
 export async function sendOtpEmail({ to, otpCode, expiresInMinutes = 15 }: SendOtpParams) {
   const transporter = getEmailTransporter();
-  const senderEmail = process.env.GMAIL_USER || 'contato@rubybr.com.br';
+  const senderEmail = (process.env.GMAIL_USER || '').split(',')[0].trim() || 'contato@rubybr.com.br';
 
   const mailOptions = {
     from: `"RubyBR Segurança" <${senderEmail}>`,
