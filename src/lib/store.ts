@@ -3,20 +3,19 @@ import { persist, createJSONStorage } from 'zustand/middleware';
 import { CartItem, Product, PromotionalBatch, WholesaleTier } from './types';
 
 const DEFAULT_TIERS: WholesaleTier[] = [
-  { minQuantity: 10, maxQuantity: 29, unitPrice: 65.0 },
-  { minQuantity: 30, maxQuantity: 59, unitPrice: 55.0 },
-  { minQuantity: 60, maxQuantity: null, unitPrice: 48.0 },
+  { minQuantity: 1, maxQuantity: 49, unitPrice: 60.0 },
+  { minQuantity: 50, maxQuantity: null, unitPrice: 55.0 },
 ];
 
 const DEFAULT_BATCH: PromotionalBatch = {
   id: 'default',
-  name: 'Lote Fornecedor 2024 - Frete Grátis',
-  code: 'LOTE-6000',
+  name: 'Condição Especial RubyBR',
+  code: 'RUBY-FUT',
   totalQuota: 6000,
   remainingQuota: 5842,
   minPiecesForFreeShip: 10,
   isActive: true,
-  description: 'Frete Grátis automático a partir de 10 peças no atacado.',
+  description: 'Frete Fixo R$ 30 até 9 peças e Frete Grátis a partir de 10 peças.',
 };
 
 interface CartStore {
@@ -58,7 +57,7 @@ interface CartStore {
   getSavings: () => number;
   isFreeShippingEligible: () => boolean;
   getShippingFee: () => number;
-  getFinalTotal: (isPix?: boolean) => number;
+  getFinalTotal: () => number;
   getPiecesUntilWholesale: () => number;
 }
 
@@ -99,7 +98,7 @@ export const useCartStore = create<CartStore>()(
             club: product.club,
             league: product.league,
             imageUrl: product.imageUrl,
-            retailPrice: product.retailPrice,
+            retailPrice: product.retailPrice || 60.0,
             size,
             quantity,
             customName: normalizedCustomName,
@@ -133,7 +132,7 @@ export const useCartStore = create<CartStore>()(
                 club: product.club,
                 league: product.league,
                 imageUrl: product.imageUrl,
-                retailPrice: product.retailPrice,
+                retailPrice: product.retailPrice || 60.0,
                 size,
                 quantity: qty,
               });
@@ -170,31 +169,27 @@ export const useCartStore = create<CartStore>()(
       },
 
       isWholesale: () => {
-        return get().getTotalPieces() >= 10;
+        return get().getTotalPieces() >= 50;
       },
 
       getCurrentTier: () => {
         const total = get().getTotalPieces();
-        if (total < 10) return null;
         const tiers = get().tiers;
-        if (total >= 60) return tiers.find((t) => t.minQuantity === 60) || null;
-        if (total >= 30) return tiers.find((t) => t.minQuantity === 30) || null;
-        return tiers.find((t) => t.minQuantity === 10) || null;
+        if (total >= 50) return tiers.find((t) => t.minQuantity === 50) || { minQuantity: 50, maxQuantity: null, unitPrice: 55.0 };
+        return tiers.find((t) => t.minQuantity === 1) || { minQuantity: 1, maxQuantity: 49, unitPrice: 60.0 };
       },
 
       getItemUnitPrice: (item) => {
-        const tier = get().getCurrentTier();
-        if (tier) {
-          return tier.unitPrice;
-        }
-        return item.retailPrice;
+        const total = get().getTotalPieces();
+        if (total >= 50) return 55.0;
+        return item.retailPrice || 60.0;
       },
 
       getSubtotal: () => {
         const items = get().items;
-        const tier = get().getCurrentTier();
+        const total = get().getTotalPieces();
         return items.reduce((acc, item) => {
-          const unit = tier ? tier.unitPrice : item.retailPrice;
+          const unit = total >= 50 ? 55.0 : (item.retailPrice || 60.0);
           const customFee = item.customName ? 15.0 : 0.0;
           return acc + (unit + customFee) * item.quantity;
         }, 0);
@@ -203,46 +198,38 @@ export const useCartStore = create<CartStore>()(
       getRetailReferenceTotal: () => {
         return get().items.reduce((acc, item) => {
           const customFee = item.customName ? 15.0 : 0.0;
-          return acc + (item.retailPrice + customFee) * item.quantity;
+          const refPrice = Math.max(60.0, item.retailPrice || 60.0);
+          return acc + (refPrice + customFee) * item.quantity;
         }, 0);
       },
 
       getSavings: () => {
-        if (!get().isWholesale()) return 0;
-        const reference = get().getRetailReferenceTotal();
-        const current = get().getSubtotal();
-        return Math.max(0, reference - current);
+        const total = get().getTotalPieces();
+        if (total < 50) return 0;
+        return total * 5.0; // Desconto de R$ 5,00 por camisa ao comprar 50+ (R$ 60 - R$ 55)
       },
 
       isFreeShippingEligible: () => {
-        const total = get().getTotalPieces();
-        const batch = get().promotionalBatch;
-        return (
-          total >= batch.minPiecesForFreeShip &&
-          batch.isActive &&
-          batch.remainingQuota >= total
-        );
+        return get().getTotalPieces() >= 10;
       },
 
       getShippingFee: () => {
         const total = get().getTotalPieces();
         if (total === 0) return 0;
-        if (get().isFreeShippingEligible()) return 0;
-        return 22.9 + Math.max(0, total - 1) * 3.5;
+        // Menos de 10 camisas: Frete fixado em R$ 30,00!
+        // A partir de 10 camisas: Frete Grátis!
+        return total >= 10 ? 0.0 : 30.0;
       },
 
-      getFinalTotal: (isPix = false) => {
+      getFinalTotal: () => {
         const subtotal = get().getSubtotal();
         const shipping = get().getShippingFee();
-        if (isPix) {
-          return subtotal * 0.95 + shipping;
-        }
         return subtotal + shipping;
       },
 
       getPiecesUntilWholesale: () => {
         const total = get().getTotalPieces();
-        return Math.max(0, 10 - total);
+        return Math.max(0, 50 - total);
       },
     }),
     {

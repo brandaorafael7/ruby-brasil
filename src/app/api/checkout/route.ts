@@ -11,55 +11,42 @@ export async function POST(req: Request) {
     }
 
     const totalQuantity = items.reduce((acc: number, item: any) => acc + item.quantity, 0);
-    const isWholesale = totalQuantity >= 10;
+    const isWholesale = totalQuantity >= 50;
 
-    const tiers = await prisma.wholesaleTier.findMany({
-      orderBy: { minQuantity: 'asc' },
-    });
+    // Regras de Preço (João Felipe):
+    // 50 ou mais camisas: R$ 55,00 cada
+    // Menos de 50 camisas: Preço base R$ 60,00 cada (ou item.retailPrice)
+    const appliedTierPrice = totalQuantity >= 50 ? 55.0 : 60.0;
 
-    let appliedTierPrice: number | null = null;
-    if (isWholesale) {
-      if (totalQuantity >= 60) {
-        appliedTierPrice = tiers.find((t) => t.minQuantity === 60)?.unitPrice ?? 48.0;
-      } else if (totalQuantity >= 30) {
-        appliedTierPrice = tiers.find((t) => t.minQuantity === 30)?.unitPrice ?? 55.0;
-      } else {
-        appliedTierPrice = tiers.find((t) => t.minQuantity === 10)?.unitPrice ?? 65.0;
-      }
-    }
+    // Regra de Frete (João Felipe):
+    // Menos de 10 camisas: Frete fixado em R$ 30,00!
+    // A partir de 10 camisas: Frete 100% Grátis!
+    const isFreeShipping = totalQuantity >= 10;
+    const shippingCost = isFreeShipping ? 0.0 : (totalQuantity > 0 ? 30.0 : 0.0);
 
     const activeBatch = await prisma.promotionalBatch.findFirst({
       where: { isActive: true },
       orderBy: { createdAt: 'desc' },
     });
 
-    let isFreeShipping = false;
-    let shippingCost = isWholesale ? 0.0 : 22.9 + Math.max(0, totalQuantity - 1) * 3.5;
     let promoBatchId: string | null = null;
-
-    if (
-      isWholesale &&
-      activeBatch &&
-      activeBatch.isActive &&
-      activeBatch.remainingQuota >= totalQuantity
-    ) {
-      isFreeShipping = true;
-      shippingCost = 0.0;
+    if (activeBatch && activeBatch.isActive && isFreeShipping) {
       promoBatchId = activeBatch.id;
-
-      await prisma.promotionalBatch.update({
-        where: { id: activeBatch.id },
-        data: {
-          remainingQuota: {
-            decrement: totalQuantity,
+      if (activeBatch.remainingQuota >= totalQuantity) {
+        await prisma.promotionalBatch.update({
+          where: { id: activeBatch.id },
+          data: {
+            remainingQuota: {
+              decrement: totalQuantity,
+            },
           },
-        },
-      });
+        }).catch(() => {});
+      }
     }
 
     let subtotal = 0;
     const orderItemsData = items.map((item: any) => {
-      const unitPrice = isWholesale && appliedTierPrice ? appliedTierPrice : item.retailPrice;
+      const unitPrice = totalQuantity >= 50 ? 55.0 : (item.retailPrice || 60.0);
       const customFee = item.customName ? 15.0 : 0.0;
       const totalItem = (unitPrice + customFee) * item.quantity;
       subtotal += totalItem;
@@ -76,34 +63,34 @@ export async function POST(req: Request) {
       };
     });
 
-    const discountAmount = form.paymentMethod === 'PIX' ? subtotal * 0.05 : 0.0;
-    const finalTotal = subtotal - discountAmount + shippingCost;
+    const discountAmount = 0.0;
+    const finalTotal = subtotal + shippingCost;
 
-    const orderNumber = `FUT-${Date.now().toString().slice(-6)}-${Math.floor(100 + Math.random() * 900)}`;
+    const orderNumber = `RUBY-${Date.now().toString().slice(-6)}-${Math.floor(100 + Math.random() * 900)}`;
 
     const order = await prisma.order.create({
       data: {
         orderNumber,
         customerType: form.customerType || 'PF',
-        document: form.document,
-        customerName: form.customerName,
-        email: form.email,
-        phone: form.phone,
-        zipCode: form.zipCode,
-        street: form.street,
-        number: form.number,
+        document: form.document || '',
+        customerName: form.customerName || 'Cliente WhatsApp',
+        email: form.email || '',
+        phone: form.phone || '',
+        zipCode: form.zipCode || '',
+        street: form.street || '',
+        number: form.number || '',
         complement: form.complement || null,
-        neighborhood: form.neighborhood,
-        city: form.city,
-        state: form.state,
+        neighborhood: form.neighborhood || '',
+        city: form.city || '',
+        state: form.state || '',
         totalQuantity,
         subtotal,
         discountAmount,
         shippingCost,
         isFreeShipping,
         finalTotal,
-        paymentMethod: form.paymentMethod || 'PIX',
-        status: form.paymentMethod === 'WHATSAPP_ASSISTED' ? 'PENDING' : 'PAID',
+        paymentMethod: 'WHATSAPP_ASSISTED',
+        status: 'PENDING',
         isWholesale,
         promotionalBatchId: promoBatchId,
         items: {

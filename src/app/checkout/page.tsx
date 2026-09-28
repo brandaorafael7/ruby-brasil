@@ -7,10 +7,7 @@ import {
   ShieldCheck,
   CheckCircle2,
   Truck,
-  CreditCard,
-  QrCode,
   MessageCircle,
-  Copy,
   Sparkles,
   ShoppingBag,
 } from 'lucide-react';
@@ -30,13 +27,11 @@ export default function CheckoutPage() {
     getShippingFee,
     getFinalTotal,
     clearCart,
-    promotionalBatch,
   } = useCartStore();
 
   const [mounted, setMounted] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [completedOrder, setCompletedOrder] = useState<any>(null);
-  const [copiedPix, setCopiedPix] = useState(false);
 
   const [form, setForm] = useState<CheckoutForm>({
     customerType: 'PF',
@@ -44,14 +39,14 @@ export default function CheckoutPage() {
     customerName: '',
     email: '',
     phone: '',
-    zipCode: '01310-100',
-    street: 'Avenida Paulista',
-    number: '1000',
-    complement: 'Sala 402',
-    neighborhood: 'Bela Vista',
-    city: 'São Paulo',
-    state: 'SP',
-    paymentMethod: 'PIX',
+    zipCode: '',
+    street: '',
+    number: '',
+    complement: '',
+    neighborhood: '',
+    city: '',
+    state: '',
+    paymentMethod: 'WHATSAPP_ASSISTED',
   });
 
   useEffect(() => {
@@ -67,7 +62,10 @@ export default function CheckoutPage() {
   const savings = getSavings();
   const isFreeShip = isFreeShippingEligible();
   const shippingFee = getShippingFee();
-  const finalTotal = getFinalTotal(form.paymentMethod === 'PIX');
+  const finalTotal = getFinalTotal();
+
+  const whatsappNumber = process.env.NEXT_PUBLIC_WHATSAPP_NUMBER || '5579988542410';
+  const whatsappDisplay = '(79) 98854-2410';
 
   if (items.length === 0 && !completedOrder) {
     return (
@@ -79,19 +77,13 @@ export default function CheckoutPage() {
         </p>
         <Link
           href="/"
-          className="px-6 py-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-sm"
+          className="px-6 py-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-sm transition-colors"
         >
           Voltar para o Catálogo
         </Link>
       </div>
     );
   }
-
-  const handleCopyPix = () => {
-    navigator.clipboard.writeText('00020126580014br.gov.bcb.pix0136futatacado-chave-aleatoria-982135204000053039865802BR5920FUT ATACADO LTDA6009SAO PAULO62070503***6304E8A2');
-    setCopiedPix(true);
-    setTimeout(() => setCopiedPix(false), 2000);
-  };
 
   const handleSubmitOrder = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -102,7 +94,7 @@ export default function CheckoutPage() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          form,
+          form: { ...form, paymentMethod: 'WHATSAPP_ASSISTED' },
           items,
         }),
       });
@@ -113,23 +105,22 @@ export default function CheckoutPage() {
         setCompletedOrder(data);
         clearCart();
 
-        if (form.paymentMethod === 'WHATSAPP_ASSISTED') {
-          const message = buildWhatsAppOrderMessage({
-            items,
-            form,
-            totalPieces,
-            isWholesale: wholesaleActive,
-            currentTier,
-            subtotal,
-            savings,
-            shippingFee,
-            finalTotal,
-            isFreeShipping: isFreeShip,
-          });
-          const phone = process.env.NEXT_PUBLIC_WHATSAPP_NUMBER || '5511999999999';
-          const url = `https://wa.me/${phone}?text=${encodeURIComponent(message)}`;
-          window.open(url, '_blank');
-        }
+        // Enviar dados para o WhatsApp oficial (79) 98854-2410
+        const message = buildWhatsAppOrderMessage({
+          items,
+          form,
+          totalPieces,
+          isWholesale: wholesaleActive,
+          currentTier,
+          subtotal,
+          savings,
+          shippingFee,
+          finalTotal,
+          isFreeShipping: isFreeShip,
+        });
+
+        const url = `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(message)}`;
+        window.open(url, '_blank');
       } else {
         alert(data.error || 'Erro ao finalizar pedido.');
       }
@@ -148,44 +139,46 @@ export default function CheckoutPage() {
           <CheckCircle2 className="w-8 h-8" />
         </div>
 
-        <h1 className="text-2xl sm:text-3xl font-black text-white">Pedido Realizado com Sucesso!</h1>
+        <h1 className="text-2xl sm:text-3xl font-black text-white">Pedido Encaminhado com Sucesso!</h1>
         <p className="text-zinc-400 text-sm mt-2">
           Número do Pedido: <strong className="text-emerald-400 font-mono text-base">{completedOrder.orderNumber}</strong>
         </p>
 
-        {completedOrder.isFreeShipping && (
-          <div className="bg-emerald-950/60 border border-emerald-500/40 rounded-xl p-3 max-w-md mx-auto my-4 text-xs text-emerald-300 font-semibold flex items-center justify-center gap-2">
-            <Sparkles className="w-4 h-4 text-amber-300" />
-            Frete Grátis garantido pelo Lote Promocional de Fábrica!
-          </div>
-        )}
+        <div className="bg-emerald-950/60 border border-emerald-500/40 rounded-xl p-4 max-w-md mx-auto my-4 text-xs text-emerald-300 font-semibold flex items-center justify-center gap-2">
+          <MessageCircle className="w-5 h-5 text-emerald-400 shrink-0" />
+          <span>Seu pedido foi aberto no WhatsApp {whatsappDisplay} para validação e envio dos dados de pagamento.</span>
+        </div>
 
         <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-6 text-left max-w-md mx-auto my-6 space-y-3 text-xs">
           <div className="flex justify-between border-b border-zinc-800 pb-2">
-            <span className="text-zinc-400">Total Pago/Aprovado:</span>
+            <span className="text-zinc-400">Total do Pedido:</span>
             <span className="font-black text-emerald-400 text-sm">{formatCurrency(completedOrder.finalTotal)}</span>
           </div>
           <div className="flex justify-between border-b border-zinc-800 pb-2">
-            <span className="text-zinc-400">Modalidade:</span>
-            <span className="font-bold text-white">{completedOrder.isWholesale ? 'Atacado (10+ peças)' : 'Varejo'}</span>
+            <span className="text-zinc-400">Quantidade de Camisas:</span>
+            <span className="font-bold text-white">{completedOrder.totalQuantity || totalPieces} peças</span>
           </div>
           <div className="flex justify-between border-b border-zinc-800 pb-2">
-            <span className="text-zinc-400">Forma de Pagamento:</span>
+            <span className="text-zinc-400">Frete:</span>
             <span className="font-bold text-white">
-              {form.paymentMethod === 'PIX' ? 'Pix à Vista' : form.paymentMethod === 'CREDIT_CARD' ? 'Cartão de Crédito' : 'WhatsApp'}
+              {completedOrder.isFreeShipping ? '🎉 GRÁTIS' : 'R$ 30,00 (Fixo)'}
             </span>
           </div>
+          <div className="flex justify-between border-b border-zinc-800 pb-2">
+            <span className="text-zinc-400">Canal de Atendimento:</span>
+            <span className="font-bold text-emerald-400">WhatsApp {whatsappDisplay}</span>
+          </div>
           <p className="text-[11px] text-zinc-500 pt-1">
-            Enviamos o comprovante e os detalhes de separação para <strong>{form.email}</strong>.
+            Caso a conversa do WhatsApp não tenha aberto automaticamente, você pode chamar diretamente pelo número <strong>{whatsappDisplay}</strong>.
           </p>
         </div>
 
         <Link
           href="/"
-          className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-sm shadow-lg shadow-emerald-950/60"
+          className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-sm shadow-lg shadow-emerald-950/60 transition-colors"
         >
           <ArrowLeft className="w-4 h-4" />
-          Voltar para a Loja
+          Voltar para o Catálogo
         </Link>
       </div>
     );
@@ -205,7 +198,7 @@ export default function CheckoutPage() {
           </Link>
           <div className="flex items-center gap-2 text-xs font-semibold text-emerald-400">
             <ShieldCheck className="w-4 h-4" />
-            <span>Ambiente Seguro com Criptografia SSL</span>
+            <span>Ambiente Seguro • Atendimento WhatsApp Oficial</span>
           </div>
         </div>
 
@@ -213,10 +206,11 @@ export default function CheckoutPage() {
           
           <div className="lg:col-span-7 space-y-6">
             
+            {/* 1. DADOS DE IDENTIFICAÇÃO */}
             <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-5 shadow-lg">
               <h2 className="text-base font-black text-white flex items-center gap-2 mb-4">
                 <span className="w-6 h-6 rounded-full bg-emerald-500/20 text-emerald-400 text-xs flex items-center justify-center font-bold">1</span>
-                Dados de Identificação
+                Seus Dados de Contato
               </h2>
 
               <div className="grid grid-cols-2 gap-2 mb-4 p-1 bg-zinc-950 rounded-xl border border-zinc-800">
@@ -229,7 +223,7 @@ export default function CheckoutPage() {
                       : 'text-zinc-400 hover:text-white'
                   }`}
                 >
-                  Pessoa Física (Revendedor Autônomo)
+                  Pessoa Física (CPF)
                 </button>
                 <button
                   type="button"
@@ -240,21 +234,21 @@ export default function CheckoutPage() {
                       : 'text-zinc-400 hover:text-white'
                   }`}
                 >
-                  Pessoa Jurídica (Lojista / CNPJ)
+                  Pessoa Jurídica (CNPJ)
                 </button>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div className="sm:col-span-2">
                   <label className="block text-xs font-bold text-zinc-300 mb-1">
-                    {form.customerType === 'PJ' ? 'Razão Social ou Nome Fantasia' : 'Nome Completo'}
+                    {form.customerType === 'PJ' ? 'Razão Social / Nome da Empresa' : 'Nome Completo'}
                   </label>
                   <input
                     type="text"
                     required
                     value={form.customerName}
                     onChange={(e) => setForm({ ...form, customerName: e.target.value })}
-                    placeholder={form.customerType === 'PJ' ? 'Ex: Silva Artigos Esportivos LTDA' : 'Ex: João da Silva'}
+                    placeholder={form.customerType === 'PJ' ? 'Ex: Ruby Atacado LTDA' : 'Ex: João da Silva'}
                     className="w-full bg-zinc-950 border border-zinc-700/80 rounded-xl px-3.5 py-2.5 text-xs sm:text-sm text-white focus:outline-none focus:border-emerald-500"
                   />
                 </div>
@@ -275,34 +269,33 @@ export default function CheckoutPage() {
 
                 <div>
                   <label className="block text-xs font-bold text-zinc-300 mb-1">
-                    WhatsApp / Telefone de Contato
+                    WhatsApp de Contato
                   </label>
                   <input
                     type="tel"
                     required
                     value={form.phone}
                     onChange={(e) => setForm({ ...form, phone: e.target.value })}
-                    placeholder="(11) 98765-4321"
+                    placeholder="(00) 00000-0000"
                     className="w-full bg-zinc-950 border border-zinc-700/80 rounded-xl px-3.5 py-2.5 text-xs sm:text-sm text-white focus:outline-none focus:border-emerald-500"
                   />
                 </div>
 
                 <div className="sm:col-span-2">
-                  <label className="block text-xs font-bold text-zinc-300 mb-1">
-                    E-mail para confirmação e rastreamento
-                  </label>
+                  <label className="block text-xs font-bold text-zinc-300 mb-1">E-mail</label>
                   <input
                     type="email"
                     required
                     value={form.email}
                     onChange={(e) => setForm({ ...form, email: e.target.value })}
-                    placeholder="joao@email.com"
+                    placeholder="seuemail@exemplo.com"
                     className="w-full bg-zinc-950 border border-zinc-700/80 rounded-xl px-3.5 py-2.5 text-xs sm:text-sm text-white focus:outline-none focus:border-emerald-500"
                   />
                 </div>
               </div>
             </div>
 
+            {/* 2. ENDEREÇO DE ENTREGA */}
             <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-5 shadow-lg">
               <h2 className="text-base font-black text-white flex items-center gap-2 mb-4">
                 <span className="w-6 h-6 rounded-full bg-emerald-500/20 text-emerald-400 text-xs flex items-center justify-center font-bold">2</span>
@@ -329,7 +322,7 @@ export default function CheckoutPage() {
                     required
                     value={form.street}
                     onChange={(e) => setForm({ ...form, street: e.target.value })}
-                    placeholder="Ex: Av. Paulista"
+                    placeholder="Ex: Av. Principal"
                     className="w-full bg-zinc-950 border border-zinc-700/80 rounded-xl px-3.5 py-2.5 text-xs sm:text-sm text-white focus:outline-none focus:border-emerald-500"
                   />
                 </div>
@@ -347,12 +340,12 @@ export default function CheckoutPage() {
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold text-zinc-300 mb-1">Complemento</label>
+                  <label className="block text-xs font-bold text-zinc-300 mb-1">Complemento (opcional)</label>
                   <input
                     type="text"
                     value={form.complement || ''}
                     onChange={(e) => setForm({ ...form, complement: e.target.value })}
-                    placeholder="Apto, Sala..."
+                    placeholder="Apto, Sala, Casa 2..."
                     className="w-full bg-zinc-950 border border-zinc-700/80 rounded-xl px-3.5 py-2.5 text-xs sm:text-sm text-white focus:outline-none focus:border-emerald-500"
                   />
                 </div>
@@ -389,96 +382,43 @@ export default function CheckoutPage() {
                     maxLength={2}
                     value={form.state}
                     onChange={(e) => setForm({ ...form, state: e.target.value.toUpperCase() })}
-                    placeholder="SP"
+                    placeholder="SE"
                     className="w-full bg-zinc-950 border border-zinc-700/80 rounded-xl px-3.5 py-2.5 text-xs sm:text-sm text-white focus:outline-none focus:border-emerald-500 uppercase"
                   />
                 </div>
               </div>
             </div>
 
-            <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-5 shadow-lg">
-              <h2 className="text-base font-black text-white flex items-center gap-2 mb-4">
+            {/* 3. FINALIZAÇÃO VIA WHATSAPP (PIX E CARTÃO REMOVIDOS) */}
+            <div className="bg-zinc-900 border border-emerald-500/40 rounded-2xl p-5 shadow-lg bg-gradient-to-br from-emerald-950/20 via-zinc-900 to-zinc-900">
+              <h2 className="text-base font-black text-white flex items-center gap-2 mb-3">
                 <span className="w-6 h-6 rounded-full bg-emerald-500/20 text-emerald-400 text-xs flex items-center justify-center font-bold">3</span>
-                Método de Pagamento
+                Atendimento e Pagamento
               </h2>
 
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
-                <div
-                  onClick={() => setForm({ ...form, paymentMethod: 'PIX' })}
-                  className={`p-3.5 rounded-xl border-2 cursor-pointer transition-all ${
-                    form.paymentMethod === 'PIX'
-                      ? 'bg-emerald-950/40 border-emerald-500 text-white shadow-md'
-                      : 'bg-zinc-950 border-zinc-800 text-zinc-400 hover:border-zinc-700'
-                  }`}
-                >
-                  <div className="flex items-center gap-2 font-bold text-xs sm:text-sm text-white">
-                    <QrCode className="w-4 h-4 text-emerald-400" />
-                    PIX Instantâneo
-                  </div>
-                  <span className="inline-block mt-1 text-[11px] font-bold text-emerald-300 bg-emerald-500/20 px-1.5 py-0.5 rounded">
-                    5% de Desconto à Vista
-                  </span>
+              <div className="p-4 rounded-xl bg-zinc-950/90 border border-emerald-500/30 flex flex-col sm:flex-row items-start sm:items-center gap-4">
+                <div className="w-12 h-12 rounded-2xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center border border-emerald-500/40 shrink-0">
+                  <MessageCircle className="w-6 h-6 fill-current" />
                 </div>
-
-                <div
-                  onClick={() => setForm({ ...form, paymentMethod: 'CREDIT_CARD' })}
-                  className={`p-3.5 rounded-xl border-2 cursor-pointer transition-all ${
-                    form.paymentMethod === 'CREDIT_CARD'
-                      ? 'bg-emerald-950/40 border-emerald-500 text-white shadow-md'
-                      : 'bg-zinc-950 border-zinc-800 text-zinc-400 hover:border-zinc-700'
-                  }`}
-                >
-                  <div className="flex items-center gap-2 font-bold text-xs sm:text-sm text-white">
-                    <CreditCard className="w-4 h-4 text-amber-400" />
-                    Cartão de Crédito
+                <div className="flex-1">
+                  <div className="flex items-center gap-2">
+                    <span className="font-bold text-sm text-white">Finalização Direta no WhatsApp</span>
+                    <span className="bg-emerald-500/20 text-emerald-300 px-2 py-0.5 rounded text-[10px] font-bold">
+                      Oficial
+                    </span>
                   </div>
-                  <span className="inline-block mt-1 text-[11px] text-zinc-400">
-                    Até 12x no cartão
-                  </span>
-                </div>
-
-                <div
-                  onClick={() => setForm({ ...form, paymentMethod: 'WHATSAPP_ASSISTED' })}
-                  className={`p-3.5 rounded-xl border-2 cursor-pointer transition-all ${
-                    form.paymentMethod === 'WHATSAPP_ASSISTED'
-                      ? 'bg-emerald-950/40 border-emerald-500 text-white shadow-md'
-                      : 'bg-zinc-950 border-zinc-800 text-zinc-400 hover:border-zinc-700'
-                  }`}
-                >
-                  <div className="flex items-center gap-2 font-bold text-xs sm:text-sm text-white">
-                    <MessageCircle className="w-4 h-4 text-emerald-400" />
-                    WhatsApp Consultor
-                  </div>
-                  <span className="inline-block mt-1 text-[11px] text-zinc-400">
-                    Fechar direto com fábrica
-                  </span>
-                </div>
-              </div>
-
-              {form.paymentMethod === 'PIX' && (
-                <div className="mt-4 p-4 rounded-xl bg-zinc-950 border border-zinc-800 text-xs space-y-2">
-                  <div className="flex items-center justify-between text-zinc-300">
-                    <span>Chave Pix CNPJ (Copia e Cola):</span>
-                    <button
-                      type="button"
-                      onClick={handleCopyPix}
-                      className="text-emerald-400 font-bold flex items-center gap-1 hover:underline"
-                    >
-                      <Copy className="w-3.5 h-3.5" />
-                      {copiedPix ? 'Copiado!' : 'Copiar Chave'}
-                    </button>
-                  </div>
-                  <p className="font-mono text-[11px] bg-zinc-900 p-2 rounded border border-zinc-800 text-zinc-300 truncate">
-                    00020126580014br.gov.bcb.pix0136futatacado-chave-aleatoria-982135204000053039865802BR5920FUT ATACADO LTDA6009SAO PAULO62070503***6304E8A2
+                  <p className="text-xs text-zinc-300 mt-1">
+                    Número cadastrado: <strong className="text-emerald-400 font-bold">{whatsappDisplay}</strong>. Ao enviar o pedido, nosso consultor confirmará os modelos e fornecerá os dados para pagamento via Pix.
                   </p>
                 </div>
-              )}
+              </div>
             </div>
 
           </div>
 
           <div className="lg:col-span-5 space-y-4">
             
+            {/* STATUS DO FRETE */}
             <div className={`p-4 rounded-2xl border ${
               isFreeShip
                 ? 'bg-gradient-to-br from-emerald-950/60 to-zinc-900 border-emerald-500/50 shadow-lg shadow-emerald-950/30'
@@ -486,7 +426,7 @@ export default function CheckoutPage() {
             }`}>
               <div className="flex items-center gap-2 mb-2">
                 <Truck className="w-5 h-5 text-emerald-400" />
-                <h3 className="font-black text-sm text-white">Status do Frete & Fornecedor</h3>
+                <h3 className="font-black text-sm text-white">Regra de Frete</h3>
               </div>
 
               {isFreeShip ? (
@@ -496,75 +436,77 @@ export default function CheckoutPage() {
                     Frete 100% Grátis Garantido!
                   </div>
                   <p className="text-[11px] text-zinc-300 mt-1">
-                    Seu pedido atingiu {totalPieces} camisas e foi contemplado pelo lote promocional do fornecedor (Restam {promotionalBatch.remainingQuota} peças).
+                    Seu pedido possui <strong>{totalPieces} camisas</strong> (a partir de 10 peças o frete é por nossa conta).
                   </p>
                 </div>
               ) : (
                 <div>
                   <p className="text-xs text-zinc-300">
-                    Você está comprando <strong>{totalPieces} {totalPieces === 1 ? 'camisa' : 'camisas'}</strong> (Varejo).
+                    Pedido atual: <strong>{totalPieces} {totalPieces === 1 ? 'camisa' : 'camisas'}</strong>.
                   </p>
-                  <p className="text-[11px] text-amber-400 font-semibold mt-1">
-                    Adicione mais {10 - totalPieces} camisas para liberar preço de atacado e Frete Grátis Nacional!
+                  <p className="text-[11px] text-amber-300 font-semibold mt-1">
+                    Frete fixo de <strong>R$ 30,00</strong>. Adicione mais <strong>{10 - totalPieces}</strong> {10 - totalPieces === 1 ? 'camisa' : 'camisas'} para liberar <strong>Frete Grátis</strong>!
                   </p>
+                </div>
+              )}
+
+              {totalPieces >= 50 && (
+                <div className="mt-2 pt-2 border-t border-emerald-500/30 flex items-center gap-1.5 text-[11px] font-bold text-emerald-300">
+                  <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+                  Preço Atacado Especial: R$ 55,00 / unidade!
                 </div>
               )}
             </div>
 
+            {/* RESUMO DO PEDIDO */}
             <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-5 shadow-lg space-y-4">
-              <h3 className="text-base font-black text-white">Resumo do Pedido ({totalPieces} itens)</h3>
+              <h3 className="text-base font-black text-white">Resumo do Pedido ({totalPieces} peças)</h3>
 
               <div className="max-h-60 overflow-y-auto space-y-2 pr-1 text-xs divide-y divide-zinc-800/80">
-                {items.map((item) => (
-                  <div key={item.cartItemId} className="pt-2 flex justify-between gap-2">
-                    <div>
-                      <p className="font-bold text-white line-clamp-1">{item.name}</p>
-                      <p className="text-[11px] text-zinc-400">
-                        Tam: <strong className="text-zinc-200">{item.size}</strong> • Qtd: {item.quantity} un
-                        {item.customName && ` • [${item.customName} #${item.customNumber || '10'}]`}
-                      </p>
+                {items.map((item) => {
+                  const appliedPrice = totalPieces >= 50 ? 55.0 : (item.retailPrice || 60.0);
+                  const customExtra = item.customName ? 15.0 : 0.0;
+                  return (
+                    <div key={item.cartItemId} className="pt-2 flex justify-between gap-2">
+                      <div>
+                        <p className="font-bold text-white line-clamp-1">{item.name}</p>
+                        <p className="text-[11px] text-zinc-400">
+                          Tam: <strong className="text-zinc-200">{item.size}</strong> • Qtd: {item.quantity} un
+                          {item.customName && ` • [${item.customName} #${item.customNumber || '10'}]`}
+                        </p>
+                      </div>
+                      <span className="font-bold text-white shrink-0">
+                        {formatCurrency((appliedPrice + customExtra) * item.quantity)}
+                      </span>
                     </div>
-                    <span className="font-bold text-white shrink-0">
-                      {formatCurrency(
-                        (wholesaleActive ? (currentTier?.unitPrice || 65) : item.retailPrice) * item.quantity +
-                        (item.customName ? 15 * item.quantity : 0)
-                      )}
-                    </span>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
 
               <div className="space-y-2 pt-3 border-t border-zinc-800 text-xs">
                 <div className="flex justify-between text-zinc-300">
-                  <span>Subtotal</span>
+                  <span>Subtotal ({totalPieces} peças)</span>
                   <span className="font-bold text-white">{formatCurrency(subtotal)}</span>
                 </div>
 
                 {savings > 0 && (
                   <div className="flex justify-between text-emerald-400 font-bold bg-emerald-950/40 p-1.5 rounded-lg border border-emerald-500/20">
-                    <span>Economia de Atacado:</span>
+                    <span>Desconto Atacado 50+ peças:</span>
                     <span>- {formatCurrency(savings)}</span>
-                  </div>
-                )}
-
-                {form.paymentMethod === 'PIX' && (
-                  <div className="flex justify-between text-amber-300 font-bold">
-                    <span>Desconto Pix à Vista (5%):</span>
-                    <span>- {formatCurrency(subtotal * 0.05)}</span>
                   </div>
                 )}
 
                 <div className="flex justify-between text-zinc-300">
                   <span>Frete</span>
                   {isFreeShip ? (
-                    <span className="text-emerald-400 font-bold">GRÁTIS (Lote 6.000)</span>
+                    <span className="text-emerald-400 font-bold">GRÁTIS (10+ peças)</span>
                   ) : (
                     <span className="font-bold text-white">{formatCurrency(shippingFee)}</span>
                   )}
                 </div>
 
                 <div className="border-t border-zinc-800 pt-3 flex justify-between items-baseline">
-                  <span className="text-sm font-bold text-white">Total a Pagar</span>
+                  <span className="text-sm font-bold text-white">Total do Pedido</span>
                   <span className="text-2xl font-black text-emerald-400">
                     {formatCurrency(finalTotal)}
                   </span>
@@ -575,22 +517,20 @@ export default function CheckoutPage() {
                 type="submit"
                 id="submit-order-button"
                 disabled={isSubmitting}
-                className="w-full py-3.5 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-500 active:scale-95 text-white font-black text-sm flex items-center justify-center gap-2 shadow-xl shadow-emerald-950/70 transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                className="w-full py-4 px-4 rounded-xl bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-500 hover:to-green-500 active:scale-95 text-white font-black text-sm flex items-center justify-center gap-2.5 shadow-xl shadow-emerald-950/70 transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
               >
+                <MessageCircle className="w-5 h-5 fill-current" />
                 {isSubmitting ? (
-                  <span>Processando Pedido...</span>
-                ) : form.paymentMethod === 'WHATSAPP_ASSISTED' ? (
-                  <>
-                    <MessageCircle className="w-5 h-5" />
-                    Enviar Pedido para o WhatsApp
-                  </>
+                  <span>Gerando Pedido...</span>
                 ) : (
-                  <>
-                    <ShieldCheck className="w-5 h-5" />
-                    Confirmar e Finalizar Pedido
-                  </>
+                  <span>Enviar Pedido para o WhatsApp {whatsappDisplay}</span>
                 )}
               </button>
+
+              <div className="flex items-center justify-center gap-2 text-[10px] text-zinc-500 pt-1">
+                <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
+                <span>Atendimento humanizado direto no WhatsApp oficial</span>
+              </div>
             </div>
 
           </div>

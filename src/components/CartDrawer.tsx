@@ -35,7 +35,6 @@ export default function CartDrawer() {
     isFreeShippingEligible,
     getShippingFee,
     getFinalTotal,
-    getPiecesUntilWholesale,
   } = useCartStore();
 
   const [mounted, setMounted] = useState(false);
@@ -54,20 +53,12 @@ export default function CartDrawer() {
   const isFreeShip = isFreeShippingEligible();
   const shippingFee = getShippingFee();
   const finalTotal = getFinalTotal();
-  const piecesNeeded = getPiecesUntilWholesale();
 
-  const percentToWholesale = Math.min(100, (totalPieces / 10) * 100);
+  const percentToFreeShip = Math.min(100, (totalPieces / 10) * 100);
+  const percentToWholesale = Math.min(100, (totalPieces / 50) * 100);
 
-  let nextTierMessage = '';
-  if (wholesaleActive) {
-    if (totalPieces < 30) {
-      nextTierMessage = `Faltam ${30 - totalPieces} peças para a Faixa 2 (R$ 55,00/un)`;
-    } else if (totalPieces < 60) {
-      nextTierMessage = `Faltam ${60 - totalPieces} peças para a Faixa 3 (R$ 48,00/un)`;
-    } else {
-      nextTierMessage = `Você atingiu a cota máxima de desconto (R$ 48,00/un)!`;
-    }
-  }
+  const whatsappNumber = process.env.NEXT_PUBLIC_WHATSAPP_NUMBER || '5579988542410';
+  const whatsappDisplay = '(79) 98854-2410';
 
   const handleWhatsAppQuickQuote = () => {
     const message = buildWhatsAppOrderMessage({
@@ -87,8 +78,7 @@ export default function CartDrawer() {
       isFreeShipping: isFreeShip,
     });
 
-    const phone = process.env.NEXT_PUBLIC_WHATSAPP_NUMBER || '5511999999999';
-    const url = `https://wa.me/${phone}?text=${encodeURIComponent(message)}`;
+    const url = `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(message)}`;
     window.open(url, '_blank');
   };
 
@@ -102,6 +92,7 @@ export default function CartDrawer() {
       <div className="fixed inset-y-0 right-0 max-w-full flex pl-10">
         <div className="w-screen max-w-md bg-zinc-950 border-l border-zinc-800 text-white shadow-2xl flex flex-col">
           
+          {/* TOPO DO CARRINHO */}
           <div className="p-4 sm:p-5 border-b border-zinc-800/80 flex items-center justify-between bg-zinc-900/60">
             <div className="flex items-center gap-2.5">
               <div className="w-9 h-9 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center border border-emerald-500/30">
@@ -112,8 +103,12 @@ export default function CartDrawer() {
                   Carrinho de Compras
                   <span id="cart-pieces-count" className="text-xs font-bold text-zinc-400">({totalPieces} peças)</span>
                 </h2>
-                <span id="cart-mode-badge" className={`text-[11px] font-semibold ${wholesaleActive ? 'text-emerald-400' : 'text-amber-400'}`}>
-                  {wholesaleActive ? '🔥 Condição de Atacado Ativa' : '🛒 Modalidade Varejo'}
+                <span id="cart-mode-badge" className={`text-[11px] font-semibold ${totalPieces >= 50 ? 'text-emerald-400' : isFreeShip ? 'text-emerald-400' : 'text-amber-400'}`}>
+                  {totalPieces >= 50
+                    ? '🚀 Atacado Especial (R$ 55/un)'
+                    : isFreeShip
+                    ? '🎉 Frete 100% Grátis Ativo'
+                    : '📦 Frete Fixo R$ 30 (até 9 peças)'}
                 </span>
               </div>
             </div>
@@ -127,48 +122,71 @@ export default function CartDrawer() {
             </button>
           </div>
 
+          {/* BARRA DE METAS E FRETE */}
           <div className="p-3.5 bg-zinc-900 border-b border-zinc-800/80">
-            {!wholesaleActive ? (
+            {totalPieces < 10 ? (
               <div>
                 <div className="flex items-center justify-between text-xs mb-1.5">
                   <span className="text-zinc-300 font-medium">
-                    Faltam <strong className="text-amber-300 font-bold">{piecesNeeded} peças</strong> para Atacado
+                    Faltam <strong className="text-amber-300 font-bold">{10 - totalPieces} peças</strong> para Frete Grátis
                   </span>
                   <span className="text-emerald-400 font-bold text-[11px]">
-                    Preço de Fábrica + Frete Grátis
+                    10+ peças = Frete Grátis
                   </span>
                 </div>
                 <div className="w-full bg-zinc-800 h-2.5 rounded-full overflow-hidden">
                   <div
                     className="bg-gradient-to-r from-amber-500 to-emerald-400 h-full rounded-full transition-all duration-500"
-                    style={{ width: `${percentToWholesale}%` }}
+                    style={{ width: `${percentToFreeShip}%` }}
                   />
                 </div>
                 <p className="text-[11px] text-zinc-400 mt-1.5 flex items-center gap-1">
-                  <Truck className="w-3.5 h-3.5 text-emerald-400" />
-                  Liberará Frete Grátis pelo Lote de 6.000 camisas!
+                  <Truck className="w-3.5 h-3.5 text-amber-400" />
+                  Menos de 10 camisas: Frete fixado em R$ 30,00.
+                </p>
+              </div>
+            ) : totalPieces < 50 ? (
+              <div className="space-y-1.5">
+                <div className="flex items-center justify-between text-xs">
+                  <span className="text-emerald-400 font-bold flex items-center gap-1">
+                    <Sparkles className="w-3.5 h-3.5 text-amber-300" />
+                    Frete Grátis Garantido!
+                  </span>
+                  <span className="text-zinc-300 text-[11px]">
+                    Faltam <strong className="text-amber-300 font-bold">{50 - totalPieces}</strong> para R$ 55/un
+                  </span>
+                </div>
+                <div className="w-full bg-zinc-800 h-2 rounded-full overflow-hidden">
+                  <div
+                    className="bg-gradient-to-r from-emerald-500 to-teal-400 h-full rounded-full transition-all duration-500"
+                    style={{ width: `${percentToWholesale}%` }}
+                  />
+                </div>
+                <p className="text-[10px] text-zinc-400">
+                  Comprando 50 camisas ou mais o valor unitário cai para R$ 55,00.
                 </p>
               </div>
             ) : (
               <div className="bg-emerald-950/60 border border-emerald-500/40 rounded-xl p-2.5 text-xs">
                 <div className="flex items-center gap-1.5 text-emerald-300 font-black">
                   <Sparkles className="w-4 h-4 text-amber-300 animate-pulse" />
-                  PREÇO DE ATACADO & FRETE GRÁTIS ATIVADOS!
+                  ATACADO MÁXIMO & FRETE GRÁTIS ATIVADOS!
                 </div>
                 <p className="text-zinc-300 text-[11px] mt-0.5">
-                  {nextTierMessage}
+                  Seu pedido atingiu a faixa máxima de desconto: R$ 55,00 por camisa com frete 100% grátis.
                 </p>
               </div>
             )}
           </div>
 
+          {/* LISTA DE ITENS */}
           <div className="flex-1 overflow-y-auto p-4 space-y-3">
             {items.length === 0 ? (
               <div className="h-full flex flex-col items-center justify-center text-center p-6 text-zinc-500">
                 <ShoppingBag className="w-12 h-12 stroke-[1.5] mb-3 text-zinc-600" />
                 <p className="font-bold text-zinc-300">Seu carrinho está vazio</p>
                 <p className="text-xs text-zinc-500 mt-1">
-                  Selecione os tamanhos na grade de atacado ou adicione unidades no varejo.
+                  Adicione camisas do catálogo para montar seu pedido.
                 </p>
               </div>
             ) : (
@@ -179,9 +197,9 @@ export default function CartDrawer() {
                 return (
                   <div
                     key={item.cartItemId}
-                    className="bg-zinc-900/80 border border-zinc-800 rounded-xl p-3 flex gap-3 relative group hover:border-zinc-700 transition-all"
+                    className="flex gap-3 bg-zinc-900/80 border border-zinc-800/80 rounded-xl p-3 relative group"
                   >
-                    <div className="relative w-16 h-16 rounded-lg bg-zinc-950 overflow-hidden shrink-0">
+                    <div className="relative w-16 h-16 rounded-lg bg-zinc-950 overflow-hidden shrink-0 border border-zinc-800">
                       <Image
                         src={item.imageUrl}
                         alt={item.name}
@@ -192,7 +210,7 @@ export default function CartDrawer() {
 
                     <div className="flex-1 min-w-0">
                       <div className="flex items-start justify-between gap-1">
-                        <h4 className="text-xs font-bold text-white line-clamp-1">
+                        <h4 className="text-xs font-bold text-white truncate">
                           {item.name}
                         </h4>
                         <button
@@ -220,11 +238,6 @@ export default function CartDrawer() {
                           <span className="text-xs font-black text-emerald-400">
                             {formatCurrency(appliedUnit)}/un
                           </span>
-                          {wholesaleActive && (
-                            <span className="text-[10px] text-zinc-500 line-through">
-                              {formatCurrency(item.retailPrice)}
-                            </span>
-                          )}
                         </div>
 
                         <div className="flex items-center gap-1.5 bg-zinc-950 border border-zinc-800 rounded-lg p-0.5">
@@ -252,6 +265,7 @@ export default function CartDrawer() {
             )}
           </div>
 
+          {/* RODAPÉ DO CARRINHO */}
           {items.length > 0 && (
             <div className="p-4 sm:p-5 bg-zinc-900 border-t border-zinc-800/90 space-y-3">
               <div className="space-y-1.5 text-xs">
@@ -264,7 +278,7 @@ export default function CartDrawer() {
                   <div className="flex justify-between text-emerald-400 font-bold bg-emerald-950/40 p-1.5 rounded-lg border border-emerald-500/30">
                     <span className="flex items-center gap-1">
                       <Flame className="w-3.5 h-3.5 text-amber-300" />
-                      Economia Atacado:
+                      Economia Atacado 50+ peças:
                     </span>
                     <span>- {formatCurrency(savings)}</span>
                   </div>
@@ -277,21 +291,21 @@ export default function CartDrawer() {
                   </span>
                   {isFreeShip ? (
                     <span className="text-emerald-400 font-black flex items-center gap-1">
-                      GRÁTIS (Lote 6.000)
+                      GRÁTIS (10+ peças)
                     </span>
                   ) : (
-                    <span className="text-zinc-200 font-semibold">{formatCurrency(shippingFee)}</span>
+                    <span className="text-zinc-200 font-semibold">{formatCurrency(shippingFee)} (Fixo)</span>
                   )}
                 </div>
 
                 <div className="border-t border-zinc-800 pt-2 flex justify-between items-baseline">
-                  <span className="text-sm font-bold text-white">Total Estimado</span>
+                  <span className="text-sm font-bold text-white">Total do Pedido</span>
                   <div className="text-right">
                     <span className="text-lg font-black text-emerald-400">
                       {formatCurrency(finalTotal)}
                     </span>
                     <span className="text-[10px] text-zinc-400 block">
-                      ou {formatCurrency(finalTotal * 0.95)} no Pix (5% OFF)
+                      Finalização direta via WhatsApp
                     </span>
                   </div>
                 </div>
@@ -314,13 +328,13 @@ export default function CartDrawer() {
                   className="w-full py-2.5 px-4 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-200 hover:text-white font-bold text-xs flex items-center justify-center gap-2 border border-zinc-700 transition-colors"
                 >
                   <MessageCircle className="w-4 h-4 text-emerald-400" />
-                  Fechar Pedido via WhatsApp
+                  Enviar Pedido para WhatsApp {whatsappDisplay}
                 </button>
               </div>
 
               <div className="flex items-center justify-center gap-2 text-[10px] text-zinc-500">
                 <ShieldCheck className="w-3.5 h-3.5 text-zinc-400" />
-                <span>Garantia de Qualidade Fábrica • Envio com Rastreio</span>
+                <span>Garantia de Qualidade Fábrica • Atendimento Oficial</span>
               </div>
             </div>
           )}

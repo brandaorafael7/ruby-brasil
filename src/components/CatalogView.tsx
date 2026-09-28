@@ -1,142 +1,160 @@
 'use client';
 
-import React, { useState } from 'react';
-import { Search, Filter, Flame, Sparkles } from 'lucide-react';
+import React, { useState, useMemo } from 'react';
+import { Search, Flame, Truck, Sparkles } from 'lucide-react';
 import { Product } from '@/lib/types';
-import { useCartStore } from '@/lib/store';
-import ProductCardWholesale from './ProductCardWholesale';
-import ProductCardRetail from './ProductCardRetail';
-import ModeSelector from './ModeSelector';
+import ProductCard from './ProductCard';
 
 interface Props {
   initialProducts: Product[];
 }
 
-const LEAGUES = ['Todas as Ligas', 'Brasileirão', 'Premier League', 'La Liga', 'Seleções', 'Retrô'];
-const TYPES = ['Todos os Modelos', 'TORCEDOR', 'JOGADOR', 'RETRO', 'FEMININA'];
+const CATEGORIES = [
+  'Todas as Categorias',
+  'Brasileirão',
+  'Premier League',
+  'La Liga',
+  'Champions League',
+  'Seleções',
+  'Retrô',
+  'Feminina',
+];
 
 export default function CatalogView({ initialProducts }: Props) {
-  const { selectedMode } = useCartStore();
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedLeague, setSelectedLeague] = useState('Todas as Ligas');
-  const [selectedType, setSelectedType] = useState('Todos os Modelos');
+  const [selectedCategory, setSelectedCategory] = useState('Todas as Categorias');
 
-  const filteredProducts = initialProducts.filter((product) => {
-    const matchesSearch =
-      product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      product.club.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      product.league.toLowerCase().includes(searchTerm.toLowerCase());
+  const filteredProducts = useMemo(() => {
+    return initialProducts.filter((product) => {
+      const query = searchTerm.toLowerCase().trim();
+      const matchesSearch =
+        !query ||
+        product.name.toLowerCase().includes(query) ||
+        (product.club && product.club.toLowerCase().includes(query)) ||
+        (product.league && product.league.toLowerCase().includes(query)) ||
+        (product.description && product.description.toLowerCase().includes(query));
 
-    const matchesLeague =
-      selectedLeague === 'Todas as Ligas' || product.league === selectedLeague;
+      const matchesCategory =
+        selectedCategory === 'Todas as Categorias' ||
+        product.league.toLowerCase().includes(selectedCategory.toLowerCase()) ||
+        product.type.toLowerCase().includes(selectedCategory.toLowerCase()) ||
+        (selectedCategory === 'Feminina' && product.type === 'FEMININA') ||
+        (selectedCategory === 'Retrô' && (product.type === 'RETRO' || product.league.toLowerCase().includes('retrô')));
 
-    const matchesType =
-      selectedType === 'Todos os Modelos' || product.type === selectedType;
-
-    return matchesSearch && matchesLeague && matchesType;
-  });
+      return matchesSearch && matchesCategory;
+    });
+  }, [initialProducts, searchTerm, selectedCategory]);
 
   return (
     <div className="min-h-screen bg-zinc-950 pb-20">
       
-      <ModeSelector />
+      {/* SEÇÃO PRINCIPAL DE BUSCA E CATEGORIAS NO TOPO */}
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6">
+        
+        {/* BARRA DE CATEGORIAS ACIMA */}
+        <div className="mb-4">
+          <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-none">
+            {CATEGORIES.map((cat) => (
+              <button
+                key={cat}
+                type="button"
+                onClick={() => setSelectedCategory(cat)}
+                className={`px-4 py-2 rounded-xl text-xs sm:text-sm font-bold whitespace-nowrap transition-all duration-200 border ${
+                  selectedCategory === cat
+                    ? 'bg-rose-600 text-white border-rose-500 shadow-lg shadow-rose-950/60 scale-[1.02]'
+                    : 'bg-zinc-900/90 text-zinc-400 hover:text-white border-zinc-800 hover:border-zinc-700'
+                }`}
+              >
+                {cat}
+              </button>
+            ))}
+          </div>
+        </div>
 
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-6">
-        <div className="bg-zinc-900/60 border border-zinc-800 rounded-2xl p-4 shadow-sm flex flex-col md:flex-row items-center justify-between gap-4">
-          
-          <div className="relative w-full md:w-80">
-            <Search className="w-4 h-4 text-zinc-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+        {/* LUPA E BARRA DE BUSCA POR NOME */}
+        <div className="bg-zinc-900/90 border border-zinc-800 rounded-2xl p-3 sm:p-4 shadow-xl">
+          <div className="relative w-full">
+            <Search className="w-5 h-5 text-rose-500 absolute left-4 top-1/2 -translate-y-1/2 pointer-events-none" />
             <input
               type="text"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              placeholder="Buscar por clube, liga ou edição..."
-              className="w-full bg-zinc-950 border border-zinc-700/80 rounded-xl pl-9 pr-4 py-2 text-xs sm:text-sm text-white placeholder-zinc-500 focus:outline-none focus:border-emerald-500 transition-colors"
+              placeholder="Buscar camisa por nome, clube, seleção ou edição..."
+              className="w-full bg-zinc-950 border border-zinc-700/80 rounded-xl pl-12 pr-4 py-3 sm:py-3.5 text-xs sm:text-base text-white placeholder-zinc-500 focus:outline-none focus:border-rose-500 transition-colors shadow-inner"
             />
-          </div>
-
-          <div className="flex items-center gap-1.5 overflow-x-auto w-full md:w-auto pb-1 md:pb-0 scrollbar-none">
-            {LEAGUES.map((league) => (
+            {searchTerm && (
               <button
-                key={league}
-                onClick={() => setSelectedLeague(league)}
-                className={`px-3 py-1.5 rounded-lg text-xs font-bold whitespace-nowrap transition-all ${
-                  selectedLeague === league
-                    ? 'bg-zinc-200 text-black shadow'
-                    : 'bg-zinc-950 text-zinc-400 hover:text-white border border-zinc-800'
-                }`}
+                type="button"
+                onClick={() => setSearchTerm('')}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-zinc-400 hover:text-white bg-zinc-800 px-2 py-1 rounded-md"
               >
-                {league}
+                Limpar
               </button>
-            ))}
+            )}
           </div>
 
+          {/* FAIXA RESUMO DE CONDIÇÕES COMERCIAIS */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 mt-3 pt-3 border-t border-zinc-800/80 text-[11px] sm:text-xs">
+            <div className="flex items-center gap-2 bg-zinc-950/80 px-3 py-1.5 rounded-lg border border-zinc-800 text-zinc-300">
+              <Truck className="w-4 h-4 text-amber-400 shrink-0" />
+              <span>Menos de 10 camisas: <strong>Frete R$ 30 fixo</strong></span>
+            </div>
+            <div className="flex items-center gap-2 bg-zinc-950/80 px-3 py-1.5 rounded-lg border border-zinc-800 text-zinc-300">
+              <Sparkles className="w-4 h-4 text-emerald-400 shrink-0" />
+              <span>A partir de 10 camisas: <strong className="text-emerald-400">Frete 100% Grátis</strong></span>
+            </div>
+            <div className="flex items-center gap-2 bg-zinc-950/80 px-3 py-1.5 rounded-lg border border-zinc-800 text-zinc-300">
+              <Flame className="w-4 h-4 text-rose-400 shrink-0" />
+              <span>A partir de 50 camisas: <strong className="text-rose-300">R$ 55,00 / un</strong></span>
+            </div>
+          </div>
         </div>
 
-        <div className="flex items-center gap-2 mt-3 overflow-x-auto pb-1">
-          <span className="text-[11px] font-bold text-zinc-400 uppercase tracking-wider flex items-center gap-1">
-            <Filter className="w-3 h-3 text-emerald-400" /> Modelo:
-          </span>
-          {TYPES.map((t) => (
-            <button
-              key={t}
-              onClick={() => setSelectedType(t)}
-              className={`px-2.5 py-1 rounded-md text-[11px] font-semibold transition-colors ${
-                selectedType === t
-                  ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40'
-                  : 'text-zinc-500 hover:text-zinc-300'
-              }`}
-            >
-              {t === 'Todos os Modelos' ? 'Todos' : t}
-            </button>
-          ))}
-        </div>
       </section>
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-6">
-        <div className="flex items-center justify-between mb-4">
+      {/* LISTAGEM DE PRODUTOS */}
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-8">
+        
+        <div className="flex items-center justify-between mb-5">
           <div>
             <h2 className="text-lg sm:text-xl font-black text-white flex items-center gap-2">
-              {selectedMode === 'wholesale' ? (
-                <>
-                  <Flame className="w-5 h-5 text-emerald-400" />
-                  Catálogo de Atacado (Grade Rápida)
-                </>
-              ) : (
-                <>
-                  <Sparkles className="w-5 h-5 text-amber-400" />
-                  Catálogo de Varejo (Unidade com Valor Agregado)
-                </>
-              )}
+              <Flame className="w-5 h-5 text-rose-500" />
+              Catálogo de Peças Pronta Entrega
             </h2>
             <p className="text-xs text-zinc-400 mt-0.5">
-              Exibindo <strong>{filteredProducts.length}</strong> camisas prontas para despacho imediato
+              Exibindo <strong>{filteredProducts.length}</strong> camisas disponíveis para despacho imediato
             </p>
           </div>
 
           <div className="text-right hidden sm:block">
-            <span className="text-[11px] text-zinc-400">
-              {selectedMode === 'wholesale'
-                ? 'Selecione as quantidades na grade do card e envie ao carrinho'
-                : 'Selecione o tamanho e compre avulso com opção de estampa oficial'}
+            <span className="text-xs font-semibold text-zinc-400 bg-zinc-900 border border-zinc-800 px-3 py-1.5 rounded-xl">
+              Valor Base: <strong className="text-white">R$ 60,00</strong> • 50+ peças: <strong className="text-emerald-400">R$ 55,00</strong>
             </span>
           </div>
         </div>
 
         {filteredProducts.length === 0 ? (
           <div className="bg-zinc-900/40 border border-zinc-800 rounded-2xl p-12 text-center text-zinc-500">
-            <p className="font-bold text-lg text-zinc-300">Nenhum modelo encontrado</p>
-            <p className="text-xs text-zinc-500 mt-1">Tente remover alguns filtros ou buscar por outro termo.</p>
+            <p className="font-bold text-lg text-zinc-300">Nenhuma camisa encontrada</p>
+            <p className="text-xs text-zinc-500 mt-1">
+              Tente buscar por outro termo ou selecione &ldquo;Todas as Categorias&rdquo;.
+            </p>
+            <button
+              type="button"
+              onClick={() => {
+                setSearchTerm('');
+                setSelectedCategory('Todas as Categorias');
+              }}
+              className="mt-4 px-4 py-2 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-xs font-bold text-white transition-colors"
+            >
+              Limpar Filtros
+            </button>
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
-            {filteredProducts.map((product) =>
-              selectedMode === 'wholesale' ? (
-                <ProductCardWholesale key={product.id} product={product} />
-              ) : (
-                <ProductCardRetail key={product.id} product={product} />
-              )
-            )}
+            {filteredProducts.map((product) => (
+              <ProductCard key={product.id} product={product} />
+            ))}
           </div>
         )}
       </main>

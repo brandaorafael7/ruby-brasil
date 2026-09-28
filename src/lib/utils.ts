@@ -44,7 +44,7 @@ export function buildWhatsAppOrderMessage({
   text += `• Nome/Razão Social: ${form.customerName || 'Não informado'}\n`;
   text += `• Tipo: ${customerTypeLabel}\n`;
   text += `• ${docLabel}: ${form.document || 'Não informado'}\n`;
-  text += `• Telefone: ${form.phone || 'Não informado'}\n`;
+  text += `• WhatsApp: ${form.phone || 'Não informado'}\n`;
   text += `• E-mail: ${form.email || 'Não informado'}\n\n`;
 
   text += `📍 *ENDEREÇO DE ENTREGA:*\n`;
@@ -52,14 +52,13 @@ export function buildWhatsAppOrderMessage({
   text += `• Bairro: ${form.neighborhood || ''} - ${form.city || ''}/${form.state || ''}\n`;
   text += `• CEP: ${form.zipCode || ''}\n\n`;
 
-  text += `📊 *MODALIDADE & CONDIÇÃO COMERCIAL:*\n`;
-  text += `• Categoria: ${isWholesale ? '🚀 ATACADO / REVENDA (10+ Peças)' : '🛒 VAREJO / AMOSTRA (< 10 Peças)'}\n`;
+  text += `📊 *CONDIÇÃO COMERCIAL:*\n`;
   text += `• Total de Peças: ${totalPieces} camisa(s)\n`;
-  if (isWholesale && currentTier) {
-    text += `• Faixa de Preço Aplicada: ${formatCurrency(currentTier.unitPrice)} / unidade\n`;
-    text += `• Economia em relação ao Varejo: ${formatCurrency(savings)}\n`;
+  text += `• Preço Unitário: ${totalPieces >= 50 ? 'R$ 55,00 (Atacado 50+ peças)' : 'R$ 60,00 / unidade'}\n`;
+  if (totalPieces >= 50) {
+    text += `• Economia Atacado: ${formatCurrency(savings)}\n`;
   }
-  text += `• Frete: ${isFreeShipping ? '🎉 GRÁTIS (Lote Promocional de Fornecedor)' : formatCurrency(shippingFee)}\n\n`;
+  text += `• Frete: ${isFreeShipping ? '🎉 FRETE GRÁTIS (10+ peças)' : 'R$ 30,00 (Frete Fixo até 9 peças)'}\n\n`;
 
   text += `📋 *GRADE DETALHADA DE ITENS:*\n`;
   items.forEach((item, index) => {
@@ -72,17 +71,11 @@ export function buildWhatsAppOrderMessage({
 
   text += `\n💰 *VALOR TOTAL:*\n`;
   text += `• Subtotal Produtos: ${formatCurrency(subtotal)}\n`;
-  text += `• Frete: ${isFreeShipping ? 'GRÁTIS' : formatCurrency(shippingFee)}\n`;
-  text += `• *TOTAL FINAL DO PEDIDO: ${formatCurrency(finalTotal)}*\n`;
-  text += `• Método Escolhido: ${
-    form.paymentMethod === 'PIX'
-      ? 'PIX (com 5% de desconto à vista)'
-      : form.paymentMethod === 'CREDIT_CARD'
-      ? 'Cartão de Crédito'
-      : 'Atendimento Consultor WhatsApp'
-  }\n\n`;
+  text += `• Frete: ${isFreeShipping ? 'GRÁTIS' : 'R$ 30,00'}\n`;
+  text += `• *TOTAL DO PEDIDO: ${formatCurrency(finalTotal)}*\n`;
+  text += `• Finalização: *WhatsApp Consultor Oficial (79) 98854-2410*\n\n`;
 
-  text += `_Pedido gerado automaticamente pela plataforma Ruby Brasil._`;
+  text += `_Por favor, confirme a disponibilidade e envie a chave PIX para pagamento._`;
 
   return text;
 }
