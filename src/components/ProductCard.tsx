@@ -12,11 +12,31 @@ interface Props {
   product: Product;
 }
 
-const AVAILABLE_SIZES = ['P', 'M', 'G', 'GG', 'XG'];
-
 export default function ProductCard({ product }: Props) {
   const { addItem } = useCartStore();
-  const [selectedSize, setSelectedSize] = useState('M');
+
+  const isKids =
+    product.type === 'INFANTIL' ||
+    product.league?.toLowerCase().includes('infantil') ||
+    product.name?.toLowerCase().includes('infantil') ||
+    product.name?.toLowerCase().includes('kids');
+
+  const availableSizes =
+    product.variants && product.variants.length > 0
+      ? product.variants.map((v) => v.size)
+      : isKids
+      ? ['2', '4', '6', '8', '10', '12', '14']
+      : ['P', 'M', 'G', 'GG', 'XG'];
+
+  const [selectedSize, setSelectedSize] = useState(() =>
+    isKids
+      ? availableSizes.includes('8')
+        ? '8'
+        : availableSizes[0]
+      : availableSizes.includes('M')
+      ? 'M'
+      : availableSizes[0]
+  );
   const [isCustomOpen, setIsCustomOpen] = useState(false);
   const [justAdded, setJustAdded] = useState(false);
 
@@ -52,9 +72,15 @@ export default function ProductCard({ product }: Props) {
 
           {/* BADGES NO TOPO */}
           <div className="absolute top-2.5 left-2.5 flex flex-wrap gap-1.5 z-10">
-            <span className="bg-rose-600/90 text-white text-[10px] font-black uppercase px-2 py-0.5 rounded-md shadow backdrop-blur-sm">
-              {product.league || 'Tailandesa 1:1'}
-            </span>
+            {isKids ? (
+              <span className="bg-amber-500 text-black text-[10px] font-black uppercase px-2 py-0.5 rounded-md shadow backdrop-blur-sm">
+                👶 Kit Infantil (Camisa + Calção)
+              </span>
+            ) : (
+              <span className="bg-rose-600/90 text-white text-[10px] font-black uppercase px-2 py-0.5 rounded-md shadow backdrop-blur-sm">
+                {product.league || 'Tailandesa 1:1'}
+              </span>
+            )}
             {product.season && (
               <span className="bg-zinc-900/90 text-zinc-300 text-[10px] font-semibold px-2 py-0.5 rounded-md border border-zinc-700 backdrop-blur-sm">
                 {product.season}
@@ -94,17 +120,19 @@ export default function ProductCard({ product }: Props) {
               {product.name}
             </h3>
             <p className="text-xs text-zinc-400 mt-1 line-clamp-1">
-              {product.description || 'Padrão torcedor oficial com detalhes bordados e tecnologia de secagem rápida.'}
+              {product.description || (isKids ? 'Kit infantil com camisa oficial e calção com cordão elástico.' : 'Padrão torcedor oficial com detalhes bordados e tecnologia de secagem rápida.')}
             </p>
 
             {/* SELETOR DE TAMANHO */}
             <div className="mt-3">
               <div className="flex items-center justify-between text-xs mb-1.5">
-                <span className="font-semibold text-zinc-300">Escolha o Tamanho:</span>
+                <span className="font-semibold text-zinc-300">
+                  {isKids ? 'Idade / Tamanho Infantil:' : 'Escolha o Tamanho:'}
+                </span>
                 <span className="text-[11px] text-emerald-400 font-medium">Em Estoque</span>
               </div>
-              <div className="grid grid-cols-5 gap-1.5">
-                {AVAILABLE_SIZES.map((size) => (
+              <div className={`grid ${availableSizes.length > 5 ? 'grid-cols-7' : 'grid-cols-5'} gap-1`}>
+                {availableSizes.map((size) => (
                   <button
                     key={size}
                     type="button"

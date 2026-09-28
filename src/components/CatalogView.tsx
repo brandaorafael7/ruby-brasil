@@ -32,6 +32,7 @@ interface Props {
 
 const CATEGORIES = [
   'Todas as Categorias',
+  'Infantil',
   'Brasileirão',
   'Premier League',
   'La Liga',
@@ -106,6 +107,17 @@ export default function CatalogView({ initialProducts }: Props) {
   const [selectedCategory, setSelectedCategory] = useState('Todas as Categorias');
   const [openFaq, setOpenFaq] = useState<number | null>(0);
 
+  const kidsProducts = useMemo(() => {
+    return initialProducts.filter(
+      (p) =>
+        p.type === 'INFANTIL' ||
+        p.league?.toLowerCase().includes('infantil') ||
+        p.name?.toLowerCase().includes('infantil') ||
+        p.name?.toLowerCase().includes('kids') ||
+        p.description?.toLowerCase().includes('infantil')
+    );
+  }, [initialProducts]);
+
   const filteredProducts = useMemo(() => {
     return initialProducts.filter((product) => {
       const query = searchTerm.toLowerCase().trim();
@@ -118,6 +130,13 @@ export default function CatalogView({ initialProducts }: Props) {
 
       const matchesCategory =
         selectedCategory === 'Todas as Categorias' ||
+        (selectedCategory === 'Infantil' && (
+          product.type === 'INFANTIL' ||
+          product.league.toLowerCase().includes('infantil') ||
+          product.name.toLowerCase().includes('infantil') ||
+          product.name.toLowerCase().includes('kids') ||
+          product.description?.toLowerCase().includes('infantil')
+        )) ||
         product.league.toLowerCase().includes(selectedCategory.toLowerCase()) ||
         product.type.toLowerCase().includes(selectedCategory.toLowerCase()) ||
         (selectedCategory === 'Feminina' && product.type === 'FEMININA') ||
@@ -376,6 +395,120 @@ export default function CatalogView({ initialProducts }: Props) {
           </div>
         )}
 
+      </section>
+
+      {/* SEÇÃO EXCLUSIVA: CAMISAS & KITS INFANTIS */}
+      <section id="infantil" className="py-16 bg-gradient-to-b from-zinc-950 via-zinc-900/60 to-zinc-950 border-t border-b border-zinc-900 relative overflow-hidden">
+        <div className="absolute top-1/2 left-0 w-80 h-80 bg-amber-500/10 blur-[120px] pointer-events-none rounded-full" />
+        <div className="absolute bottom-0 right-0 w-80 h-80 bg-rose-600/10 blur-[120px] pointer-events-none rounded-full" />
+
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+          
+          <div className="flex flex-col md:flex-row items-start md:items-end justify-between gap-6 mb-10">
+            <div>
+              <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-400 text-xs font-black tracking-wider uppercase mb-3 shadow-sm">
+                <span>👶 Linha Infantil & Juvenil</span>
+                <span className="text-zinc-500">•</span>
+                <span className="text-white">Kits Completos (Camisa + Calção)</span>
+              </div>
+              <h2 className="text-2xl sm:text-4xl font-black text-white tracking-tight">
+                Camisas & Kits Infantis 1:1
+              </h2>
+              <p className="text-xs sm:text-sm text-zinc-400 mt-2 max-w-2xl leading-relaxed">
+                Vista os pequenos campeões com o mesmo padrão oficial Tailandês 1:1 dos adultos. Nossos kits infantis acompanham camisa e calção oficial, disponíveis do tamanho 2 ao 14 anos.
+              </p>
+            </div>
+
+            <div className="flex items-center gap-3">
+              <button
+                type="button"
+                onClick={() => {
+                  setSelectedCategory('Infantil');
+                  document.getElementById('catalogo')?.scrollIntoView({ behavior: 'smooth' });
+                }}
+                className="px-5 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-black font-extrabold text-xs sm:text-sm flex items-center gap-2 shadow-lg shadow-amber-950/40 transition-all hover:scale-[1.02]"
+              >
+                <span>Filtrar no Catálogo</span>
+                <ArrowRight className="w-4 h-4" />
+              </button>
+              <a
+                href="https://wa.me/5579988542410?text=Ol%C3%A1%20Jo%C3%A3o%20Felipe%2C%20gostaria%20de%20consultar%20modelos%20e%20tamanhos%20de%20camisas%20e%20kits%20infantis%21"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="px-4 py-2.5 rounded-xl bg-zinc-900 hover:bg-zinc-800 border border-zinc-700 text-white font-bold text-xs sm:text-sm flex items-center gap-2 transition-colors"
+              >
+                <MessageSquare className="w-4 h-4 text-emerald-400" />
+                <span>Pedir no Zap</span>
+              </a>
+            </div>
+          </div>
+
+          {/* CARDS DE DESTAQUE DA LINHA INFANTIL */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-10">
+            <div className="bg-zinc-950/80 border border-zinc-800/80 rounded-2xl p-4 flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-400 shrink-0">
+                <PackageCheck className="w-5 h-5" />
+              </div>
+              <div>
+                <strong className="text-xs font-black text-white block">Kit Completo Oficial</strong>
+                <span className="text-[11px] text-zinc-400">Camisa oficial + calção com elástico regulador</span>
+              </div>
+            </div>
+
+            <div className="bg-zinc-950/80 border border-zinc-800/80 rounded-2xl p-4 flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-rose-500/10 border border-rose-500/20 flex items-center justify-center text-rose-400 shrink-0">
+                <Sparkles className="w-5 h-5" />
+              </div>
+              <div>
+                <strong className="text-xs font-black text-white block">Tamanhos: 2 ao 14 anos</strong>
+                <span className="text-[11px] text-zinc-400">Grade infantil: 2, 4, 6, 8, 10, 12 e 14 anos</span>
+              </div>
+            </div>
+
+            <div className="bg-zinc-950/80 border border-zinc-800/80 rounded-2xl p-4 flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400 shrink-0">
+                <Truck className="w-5 h-5" />
+              </div>
+              <div>
+                <strong className="text-xs font-black text-white block">Frete Grátis acima de 10 un</strong>
+                <span className="text-[11px] text-zinc-400">Entra na contagem geral de frete e atacado R$ 55</span>
+              </div>
+            </div>
+          </div>
+
+          {/* VITRINE DE PRODUTOS INFANTIS */}
+          {kidsProducts.length > 0 ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
+              {kidsProducts.map((product) => (
+                <ProductCard key={product.id} product={product} />
+              ))}
+            </div>
+          ) : (
+            <div className="bg-zinc-900/60 border border-zinc-800 rounded-3xl p-8 text-center max-w-3xl mx-auto shadow-xl">
+              <div className="w-14 h-14 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-amber-400 flex items-center justify-center mx-auto mb-3 shadow-inner">
+                <PackageCheck className="w-7 h-7" />
+              </div>
+              <h3 className="text-lg font-black text-white">
+                Kits Infantis dos Maiores Clubes do Mundo
+              </h3>
+              <p className="text-xs text-zinc-300 mt-2 max-w-lg mx-auto leading-relaxed">
+                Temos kits infantis (camisa + short) de times como Flamengo, Real Madrid, Brasil, Barcelona, Corinthians, Palmeiras, PSG e muito mais. Consulte os modelos e tamanhos disponíveis para envio imediato!
+              </p>
+              <div className="mt-5 flex flex-col sm:flex-row items-center justify-center gap-3">
+                <a
+                  href="https://wa.me/5579988542410?text=Ol%C3%A1%20Jo%C3%A3o%20Felipe%2C%20quais%20modelos%20e%20tamanhos%20de%20kits%20infantis%20voc%C3%AA%20tem%20dispon%C3%ADveis%3F"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="px-6 py-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold text-xs sm:text-sm flex items-center gap-2 shadow-lg shadow-emerald-950/40 transition-all hover:scale-[1.02]"
+                >
+                  <MessageSquare className="w-4 h-4" />
+                  <span>Consultar Modelos Infantis no WhatsApp: (79) 98854-2410</span>
+                </a>
+              </div>
+            </div>
+          )}
+
+        </div>
       </section>
 
       {/* 4. COMO FUNCIONA O PEDIDO (MOBIRISE STEP-BY-STEP) */}

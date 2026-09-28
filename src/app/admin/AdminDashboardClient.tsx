@@ -629,7 +629,7 @@ export default function AdminDashboardClient({
               </div>
 
               <div className="flex items-center gap-1.5 overflow-x-auto w-full pb-2 sm:pb-0">
-                {['TODAS', 'Brasileirão', 'Premier League', 'La Liga', 'Seleções', 'Retrô'].map((league) => (
+                {['TODAS', 'Infantil', 'Brasileirão', 'Premier League', 'La Liga', 'Seleções', 'Retrô'].map((league) => (
                   <button
                     key={league}
                     onClick={() => setSelectedLeague(league)}
@@ -986,7 +986,9 @@ export default function AdminDashboardClient({
                     <option value="Brasileirão">Brasileirão</option>
                     <option value="Premier League">Premier League</option>
                     <option value="La Liga">La Liga</option>
+                    <option value="Champions League">Champions League</option>
                     <option value="Seleções">Seleções</option>
+                    <option value="Infantil">Infantil (Kids)</option>
                     <option value="Retrô">Retrô</option>
                     <option value="Outros">Outros</option>
                   </select>
@@ -1013,6 +1015,7 @@ export default function AdminDashboardClient({
                   >
                     <option value="TORCEDOR">Torcedor (Standard)</option>
                     <option value="JOGADOR">Jogador (Player Version)</option>
+                    <option value="INFANTIL">Infantil (Kids / Conjunto)</option>
                     <option value="RETRO">Retrô Clássica</option>
                     <option value="FEMININA">Feminina</option>
                   </select>
