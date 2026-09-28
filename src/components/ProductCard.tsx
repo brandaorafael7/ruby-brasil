@@ -25,13 +25,13 @@ export default function ProductCard({ product }: Props) {
     product.variants && product.variants.length > 0
       ? product.variants.map((v) => v.size)
       : isKids
-      ? ['2', '4', '6', '8', '10', '12', '14']
+      ? ['16', '18', '20', '22', '24', '26', '28']
       : ['P', 'M', 'G', 'GG', 'XG'];
 
   const [selectedSize, setSelectedSize] = useState(() =>
     isKids
-      ? availableSizes.includes('8')
-        ? '8'
+      ? availableSizes.includes('22')
+        ? '22'
         : availableSizes[0]
       : availableSizes.includes('M')
       ? 'M'

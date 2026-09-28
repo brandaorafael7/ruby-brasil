@@ -415,7 +415,7 @@ export default function CatalogView({ initialProducts }: Props) {
                 Camisas & Kits Infantis 1:1
               </h2>
               <p className="text-xs sm:text-sm text-zinc-400 mt-2 max-w-2xl leading-relaxed">
-                Vista os pequenos campeões com o mesmo padrão oficial Tailandês 1:1 dos adultos. Nossos kits infantis acompanham camisa e calção oficial, disponíveis do tamanho 2 ao 14 anos.
+                Vista os pequenos campeões com o mesmo padrão oficial Tailandês 1:1 dos adultos. Nossos kits infantis acompanham camisa e calção oficial, disponíveis nos tamanhos 16 ao 28 (16, 18, 20, 22, 24, 26, 28).
               </p>
             </div>
 
@@ -460,8 +460,8 @@ export default function CatalogView({ initialProducts }: Props) {
                 <Sparkles className="w-5 h-5" />
               </div>
               <div>
-                <strong className="text-xs font-black text-white block">Tamanhos: 2 ao 14 anos</strong>
-                <span className="text-[11px] text-zinc-400">Grade infantil: 2, 4, 6, 8, 10, 12 e 14 anos</span>
+                <strong className="text-xs font-black text-white block">Tamanhos Kids: 16 ao 28</strong>
+                <span className="text-[11px] text-zinc-400">Grade padrão: 16, 18, 20, 22, 24, 26 e 28</span>
               </div>
             </div>
 
