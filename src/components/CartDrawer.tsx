@@ -204,6 +204,7 @@ export default function CartDrawer() {
                         src={item.imageUrl}
                         alt={item.name}
                         fill
+                        unoptimized={item.imageUrl?.startsWith('data:')}
                         className="object-cover"
                       />
                     </div>
