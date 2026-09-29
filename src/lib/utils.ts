@@ -81,7 +81,7 @@ export function buildWhatsAppOrderMessage({
   text += `• Subtotal Produtos: ${formatCurrency(subtotal)}\n`;
   text += `• Frete: ${isFreeShipping ? 'GRÁTIS' : 'R$ 30,00'}\n`;
   text += `• *TOTAL DO PEDIDO: ${formatCurrency(finalTotal)}*\n`;
-  text += `• Finalização: *WhatsApp Consultor Oficial (79) 98854-2410*\n\n`;
+  text += `• Finalização: *Canal Oficial Ruby Brasil*\n\n`;
 
   text += `_Por favor, confirme a disponibilidade e envie a chave PIX para pagamento._`;
 

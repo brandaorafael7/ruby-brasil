@@ -334,7 +334,7 @@ export default function CartDrawer() {
                   className="w-full py-2.5 px-4 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-200 hover:text-white font-bold text-xs flex items-center justify-center gap-2 border border-zinc-700 transition-colors"
                 >
                   <MessageCircle className="w-4 h-4 text-emerald-400" />
-                  Enviar Pedido para WhatsApp {whatsappDisplay}
+                  Finalizar Pedido via WhatsApp
                 </button>
               </div>
 

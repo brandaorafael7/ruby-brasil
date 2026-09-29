@@ -71,7 +71,7 @@ const FAQS = [
   {
     question: 'Como finalizo meu pedido e recebo o rastreamento?',
     answer:
-      'Você escolhe as camisas aqui no site, e ao clicar em "Finalizar no WhatsApp", o sistema gera a lista completa e formatada direto no WhatsApp oficial de atendimento (79) 98854-2410 com o João Felipe. Enviamos foto do pedido embalado e o código de rastreamento dos Correios/transportadora.',
+      'Você escolhe as camisas aqui no site, e ao clicar em "Finalizar no WhatsApp" no carrinho, o sistema gera a lista completa e formatada direto no WhatsApp oficial da nossa equipe. Enviamos foto do pedido embalado e o código de rastreamento dos Correios/transportadora.',
   },
 ];
 
@@ -96,7 +96,7 @@ const TESTIMONIALS = [
     name: 'Matheus Fontes',
     role: 'Cliente em Aracaju - SE',
     comment:
-      'Atendimento no WhatsApp do João Felipe é nota 10. Tirou minhas dúvidas de tamanho, confirmou o pedido super rápido e me mandou o código de rastreio. Recomendo muito!',
+      'Atendimento no WhatsApp é nota 10. Tiraram minhas dúvidas de tamanho, confirmaram o pedido super rápido e me mandaram o código de rastreio. Recomendo muito!',
     rating: 5,
     tag: 'Cliente Satisfeito',
   },
@@ -218,13 +218,11 @@ export default function CatalogView({ initialProducts }: Props) {
                 Explorar Catálogo de Peças
               </a>
               <a
-                href="https://wa.me/5579988542410?text=Ol%C3%A1%20Jo%C3%A3o%20Felipe%2C%20vim%20pelo%20site%20da%20Ruby%20Brasil%20e%20gostaria%20de%20fazer%20um%20pedido%21"
-                target="_blank"
-                rel="noopener noreferrer"
+                href="#como-funciona"
                 className="w-full sm:w-auto px-7 py-3.5 rounded-xl bg-zinc-900 hover:bg-zinc-800 border border-zinc-700 text-white font-bold text-sm sm:text-base flex items-center justify-center gap-2 transition-all hover:border-zinc-500"
               >
-                <MessageSquare className="w-5 h-5 text-emerald-400" />
-                WhatsApp: (79) 98854-2410
+                <Sparkles className="w-5 h-5 text-emerald-400" />
+                Como Funciona a Compra
               </a>
             </div>
 
@@ -293,7 +291,7 @@ export default function CatalogView({ initialProducts }: Props) {
               </div>
               <h3 className="text-sm font-black text-white">Atendimento Direto</h3>
               <p className="text-xs text-zinc-400 mt-1 leading-relaxed">
-                Tire dúvidas, personalize peças e feche seu pedido direto no WhatsApp com o João Felipe.
+                Tire dúvidas, personalize peças e finalize seu pedido com nossa equipe de atendimento no carrinho.
               </p>
             </div>
 
@@ -431,15 +429,17 @@ export default function CatalogView({ initialProducts }: Props) {
                 <span>Filtrar no Catálogo</span>
                 <ArrowRight className="w-4 h-4" />
               </button>
-              <a
-                href="https://wa.me/5579988542410?text=Ol%C3%A1%20Jo%C3%A3o%20Felipe%2C%20gostaria%20de%20consultar%20modelos%20e%20tamanhos%20de%20camisas%20e%20kits%20infantis%21"
-                target="_blank"
-                rel="noopener noreferrer"
+              <button
+                type="button"
+                onClick={() => {
+                  setSelectedCategory('Infantil');
+                  document.getElementById('catalogo')?.scrollIntoView({ behavior: 'smooth' });
+                }}
                 className="px-4 py-2.5 rounded-xl bg-zinc-900 hover:bg-zinc-800 border border-zinc-700 text-white font-bold text-xs sm:text-sm flex items-center gap-2 transition-colors"
               >
-                <MessageSquare className="w-4 h-4 text-emerald-400" />
-                <span>Pedir no Zap</span>
-              </a>
+                <Sparkles className="w-4 h-4 text-emerald-400" />
+                <span>Ver Kits Infantis</span>
+              </button>
             </div>
           </div>
 
@@ -495,15 +495,17 @@ export default function CatalogView({ initialProducts }: Props) {
                 Temos kits infantis (camisa + short) de times como Flamengo, Real Madrid, Brasil, Barcelona, Corinthians, Palmeiras, PSG e muito mais. Consulte os modelos e tamanhos disponíveis para envio imediato!
               </p>
               <div className="mt-5 flex flex-col sm:flex-row items-center justify-center gap-3">
-                <a
-                  href="https://wa.me/5579988542410?text=Ol%C3%A1%20Jo%C3%A3o%20Felipe%2C%20quais%20modelos%20e%20tamanhos%20de%20kits%20infantis%20voc%C3%AA%20tem%20dispon%C3%ADveis%3F"
-                  target="_blank"
-                  rel="noopener noreferrer"
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSelectedCategory('Infantil');
+                    document.getElementById('catalogo')?.scrollIntoView({ behavior: 'smooth' });
+                  }}
                   className="px-6 py-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold text-xs sm:text-sm flex items-center gap-2 shadow-lg shadow-emerald-950/40 transition-all hover:scale-[1.02]"
                 >
-                  <MessageSquare className="w-4 h-4" />
-                  <span>Consultar Modelos Infantis no WhatsApp: (79) 98854-2410</span>
-                </a>
+                  <ShoppingCart className="w-4 h-4" />
+                  <span>Explorar Modelos Infantis no Catálogo</span>
+                </button>
               </div>
             </div>
           )}
@@ -512,7 +514,7 @@ export default function CatalogView({ initialProducts }: Props) {
       </section>
 
       {/* 4. COMO FUNCIONA O PEDIDO (MOBIRISE STEP-BY-STEP) */}
-      <section className="py-14 bg-zinc-900/40 border-t border-b border-zinc-900">
+      <section id="como-funciona" className="py-14 bg-zinc-900/40 border-t border-b border-zinc-900">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           
           <div className="text-center max-w-2xl mx-auto mb-12">
@@ -523,7 +525,7 @@ export default function CatalogView({ initialProducts }: Props) {
               Como Funciona a Sua Compra
             </h2>
             <p className="text-xs sm:text-sm text-zinc-400 mt-1">
-              Processo 100% transparente com confirmação e suporte humano no WhatsApp
+              Processo 100% transparente com confirmação e suporte humano no fechamento
             </p>
           </div>
 
@@ -561,7 +563,7 @@ export default function CatalogView({ initialProducts }: Props) {
                 3. Finalize no WhatsApp
               </h3>
               <p className="text-xs text-zinc-400 leading-relaxed">
-                Clique em &ldquo;Finalizar no WhatsApp&rdquo; para enviar seu pedido pronto para o João Felipe no (79) 98854-2410. Confirmamos tudo e despachamos com código de rastreio!
+                Clique em &ldquo;Finalizar no WhatsApp&rdquo; no seu carrinho para enviar seu pedido pronto diretamente para nossa equipe de atendimento. Confirmamos tudo e despachamos com código de rastreio!
               </p>
             </div>
 
@@ -750,13 +752,11 @@ export default function CatalogView({ initialProducts }: Props) {
               Escolher Peças no Catálogo
             </a>
             <a
-              href="https://wa.me/5579988542410?text=Ol%C3%A1%20Jo%C3%A3o%20Felipe%2C%20gostaria%20de%20tirar%20algumas%20d%C3%BAvidas%20antes%20de%20fechar%20meu%20pedido%21"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="w-full sm:w-auto px-7 py-3.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-sm sm:text-base flex items-center justify-center gap-2 shadow-lg shadow-emerald-950/50 transition-all hover:scale-[1.02]"
+              href="#como-funciona"
+              className="w-full sm:w-auto px-7 py-3.5 rounded-xl bg-zinc-900 hover:bg-zinc-800 border border-zinc-700 text-white font-bold text-sm sm:text-base flex items-center justify-center gap-2 transition-all hover:border-zinc-500"
             >
-              <MessageSquare className="w-5 h-5" />
-              Falar com João Felipe: (79) 98854-2410
+              <Sparkles className="w-5 h-5 text-amber-400" />
+              Ver Como Funciona a Compra
             </a>
           </div>
 

@@ -147,7 +147,7 @@ export default function CheckoutPage() {
 
         <div className="bg-emerald-950/60 border border-emerald-500/40 rounded-xl p-4 max-w-md mx-auto my-4 text-xs text-emerald-300 font-semibold flex items-center justify-center gap-2">
           <MessageCircle className="w-5 h-5 text-emerald-400 shrink-0" />
-          <span>Seu pedido foi aberto no WhatsApp {whatsappDisplay} para validação e envio dos dados de pagamento.</span>
+          <span>Seu pedido foi aberto no WhatsApp para validação imediata e envio dos dados de pagamento.</span>
         </div>
 
         <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-6 text-left max-w-md mx-auto my-6 space-y-3 text-xs">

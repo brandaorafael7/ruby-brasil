@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import Link from 'next/link';
 import {
   Flame,
@@ -25,9 +25,142 @@ import {
   UploadCloud,
   Link as LinkIcon,
   Loader2,
+  CheckCircle2,
+  Clock,
+  Truck,
+  FileText,
+  Copy,
+  ExternalLink,
+  MessageCircle,
+  Send,
+  Check,
+  Filter,
 } from 'lucide-react';
 import { formatCurrency } from '@/lib/utils';
 import { PromotionalBatch, WholesaleTier } from '@/lib/types';
+
+export const ORDER_STATUS_MAP: Record<
+  string,
+  { label: string; badge: string; border: string; color: string; emoji: string }
+> = {
+  PENDING: {
+    label: 'Pendente',
+    badge: 'bg-amber-500/20 text-amber-300 border-amber-500/30',
+    border: 'border-amber-500/40',
+    color: '#fbbf24',
+    emoji: '⏳',
+  },
+  PROCESSAMENTO: {
+    label: 'Em Processamento',
+    badge: 'bg-blue-500/20 text-blue-300 border-blue-500/40',
+    border: 'border-blue-500/40',
+    color: '#60a5fa',
+    emoji: '⚙️',
+  },
+  PAGAMENTO_CONFIRMADO: {
+    label: 'Pagamento Confirmado',
+    badge: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40',
+    border: 'border-emerald-500/40',
+    color: '#34d399',
+    emoji: '✅',
+  },
+  ENVIADO: {
+    label: 'Enviado',
+    badge: 'bg-purple-500/20 text-purple-300 border-purple-500/40',
+    border: 'border-purple-500/40',
+    color: '#c084fc',
+    emoji: '🚚',
+  },
+  ENTREGUE: {
+    label: 'Entregue',
+    badge: 'bg-teal-500/20 text-teal-300 border-teal-500/40',
+    border: 'border-teal-500/40',
+    color: '#2dd4bf',
+    emoji: '📦',
+  },
+  CANCELADO: {
+    label: 'Cancelado',
+    badge: 'bg-rose-500/20 text-rose-300 border-rose-500/40',
+    border: 'border-rose-500/40',
+    color: '#f87171',
+    emoji: '❌',
+  },
+};
+
+export function getStatusInfo(status: string) {
+  const normalized = status ? status.toUpperCase().trim() : 'PENDING';
+  return (
+    ORDER_STATUS_MAP[normalized] || {
+      label: normalized,
+      badge: 'bg-zinc-800 text-zinc-300 border-zinc-700',
+      border: 'border-zinc-700',
+      color: '#9ca3af',
+      emoji: '📄',
+    }
+  );
+}
+
+export function buildOrderWhatsAppReport(order: any): string {
+  const statusInfo = getStatusInfo(order.status);
+  const itemsText = (order.items || [])
+    .map((item: any, idx: number) => {
+      const custom = item.customName
+        ? ` (Personalizada: ${item.customName} #${item.customNumber || 'S/N'})`
+        : '';
+      return `  ${idx + 1}. *${item.product?.name || 'Camisa'}* [Tam: ${item.size}] x ${item.quantity}un - ${formatCurrency(item.totalItemPrice || 0)}${custom}`;
+    })
+    .join('\n');
+
+  let text = `📦 *ATUALIZAÇÃO DE PEDIDO - RUBY BRASIL*\n\n`;
+  text += `Olá, *${order.customerName}*!\n`;
+  text += `Aqui está o status atualizado do seu pedido:\n\n`;
+  text += `🔢 *Número do Pedido:* #${order.orderNumber}\n`;
+  text += `📌 *Status:* ${statusInfo.emoji} *${statusInfo.label.toUpperCase()}*\n`;
+  text += `👕 *Total de Peças:* ${order.totalQuantity} camisa(s)\n`;
+  text += `💰 *Valor Total:* ${formatCurrency(order.finalTotal)} (${order.isFreeShipping ? 'Frete Grátis' : 'Frete R$ 30'})\n\n`;
+  text += `📋 *Itens do Pedido:*\n${itemsText || '  Nenhum item registrado'}\n\n`;
+  text += `📍 *Endereço de Entrega:*\n`;
+  text += `• ${order.street}, ${order.number}${order.complement ? ` (${order.complement})` : ''}\n`;
+  text += `• ${order.neighborhood} - ${order.city}/${order.state} | CEP: ${order.zipCode}\n\n`;
+  text += `Qualquer dúvida estamos à disposição! 🚀`;
+
+  return text;
+}
+
+export function buildGeneralOrdersReport(ordersList: any[]): string {
+  const totalOrders = ordersList.length;
+  const totalRevenue = ordersList.reduce((sum, o) => sum + (o.finalTotal || 0), 0);
+  const totalPieces = ordersList.reduce((sum, o) => sum + (o.totalQuantity || 0), 0);
+
+  const pending = ordersList.filter((o) => (o.status || 'PENDING').toUpperCase() === 'PENDING').length;
+  const processing = ordersList.filter((o) => (o.status || '').toUpperCase() === 'PROCESSAMENTO').length;
+  const paid = ordersList.filter((o) => (o.status || '').toUpperCase() === 'PAGAMENTO_CONFIRMADO').length;
+  const shipped = ordersList.filter((o) => (o.status || '').toUpperCase() === 'ENVIADO').length;
+  const delivered = ordersList.filter((o) => (o.status || '').toUpperCase() === 'ENTREGUE').length;
+
+  const now = new Date();
+  const dateStr = now.toLocaleDateString('pt-BR');
+  const timeStr = now.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+
+  let text = `📊 *RELATÓRIO DE PEDIDOS - RUBY BRASIL*\n`;
+  text += `📅 *Gerado em:* ${dateStr} às ${timeStr}\n\n`;
+  text += `💰 *Faturamento Total:* ${formatCurrency(totalRevenue)}\n`;
+  text += `📦 *Total de Pedidos:* ${totalOrders}\n`;
+  text += `👕 *Total de Camisas:* ${totalPieces} peças\n\n`;
+  text += `📌 *DISTRIBUIÇÃO POR STATUS:*\n`;
+  text += `• ⏳ Pendentes: ${pending}\n`;
+  text += `• ⚙️ Em Processamento: ${processing}\n`;
+  text += `• ✅ Pagamento Confirmado: ${paid}\n`;
+  text += `• 🚚 Enviados: ${shipped}\n`;
+  text += `• 📦 Entregues: ${delivered}\n\n`;
+  text += `📋 *RELAÇÃO DOS PEDIDOS:*\n`;
+  ordersList.slice(0, 30).forEach((o, i) => {
+    const s = getStatusInfo(o.status);
+    text += `${i + 1}. #${o.orderNumber} - ${o.customerName} (${o.totalQuantity} un) -> ${formatCurrency(o.finalTotal)} [${s.emoji} ${s.label}]\n`;
+  });
+
+  return text;
+}
 
 // Otimiza e converte foto do computador/celular para WebP comprimido (Data URL)
 async function compressAndConvertImage(file: File): Promise<string> {
@@ -115,6 +248,16 @@ export default function AdminDashboardClient({
   const [isEditing, setIsEditing] = useState(false);
   const [isSavingProduct, setIsSavingProduct] = useState(false);
   const [productFeedback, setProductFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
+
+  // Estados de Pedidos
+  const [orders, setOrders] = useState<any[]>(initialOrders);
+  const [isRefreshingOrders, setIsRefreshingOrders] = useState(false);
+  const [selectedOrder, setSelectedOrder] = useState<any | null>(null);
+  const [orderSearch, setOrderSearch] = useState('');
+  const [orderStatusFilter, setOrderStatusFilter] = useState<string>('ALL');
+  const [isGeneralReportModalOpen, setIsGeneralReportModalOpen] = useState(false);
+  const [updatingOrderId, setUpdatingOrderId] = useState<string | null>(null);
+  const [copiedKey, setCopiedKey] = useState<string | null>(null);
 
   // Estados de Upload de Imagem
   const [imageUploadMode, setImageUploadMode] = useState<'file' | 'url'>('file');
@@ -220,6 +363,102 @@ export default function AdminDashboardClient({
       }
     }
   };
+
+  // Handlers e Métodos de Pedidos
+  const handleUpdateOrderStatus = async (orderId: string, newStatus: string) => {
+    setUpdatingOrderId(orderId);
+    try {
+      const res = await fetch('/api/admin/orders', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ orderId, status: newStatus }),
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        setOrders((prev) =>
+          prev.map((o) =>
+            o.id === orderId
+              ? { ...o, status: newStatus, updatedAt: new Date().toISOString() }
+              : o
+          )
+        );
+        if (selectedOrder && selectedOrder.id === orderId) {
+          setSelectedOrder((prev: any) => ({
+            ...prev,
+            status: newStatus,
+            updatedAt: new Date().toISOString(),
+          }));
+        }
+        const label = getStatusInfo(newStatus).label;
+        showToast(`Status atualizado para: ${label}`);
+      } else {
+        alert(data.error || 'Erro ao atualizar status do pedido.');
+      }
+    } catch (err) {
+      console.error(err);
+      alert('Erro de conexão ao atualizar status do pedido.');
+    } finally {
+      setUpdatingOrderId(null);
+    }
+  };
+
+  const handleRefreshOrders = async () => {
+    setIsRefreshingOrders(true);
+    try {
+      const res = await fetch('/api/admin/orders');
+      const data = await res.json();
+      if (res.ok && data.orders) {
+        setOrders(data.orders);
+        showToast('Lista de pedidos atualizada!');
+      }
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setIsRefreshingOrders(false);
+    }
+  };
+
+  const copyToClipboard = (text: string, key: string) => {
+    navigator.clipboard.writeText(text);
+    setCopiedKey(key);
+    showToast('Relatório copiado para a área de transferência!');
+    setTimeout(() => {
+      setCopiedKey(null);
+    }, 3000);
+  };
+
+  const filteredOrders = useMemo(() => {
+    return orders.filter((order) => {
+      const query = orderSearch.toLowerCase().trim();
+      const matchesSearch =
+        !query ||
+        order.orderNumber?.toLowerCase().includes(query) ||
+        order.customerName?.toLowerCase().includes(query) ||
+        order.phone?.toLowerCase().includes(query) ||
+        order.city?.toLowerCase().includes(query) ||
+        order.state?.toLowerCase().includes(query) ||
+        order.document?.toLowerCase().includes(query);
+
+      const normalizedStatus = (order.status || 'PENDING').toUpperCase();
+      const matchesStatus =
+        orderStatusFilter === 'ALL' || normalizedStatus === orderStatusFilter;
+
+      return matchesSearch && matchesStatus;
+    });
+  }, [orders, orderSearch, orderStatusFilter]);
+
+  const orderStats = useMemo(() => {
+    const total = orders.length;
+    const totalRevenue = orders.reduce((sum, o) => sum + (o.finalTotal || 0), 0);
+    const totalPieces = orders.reduce((sum, o) => sum + (o.totalQuantity || 0), 0);
+    const pending = orders.filter((o) => (o.status || 'PENDING').toUpperCase() === 'PENDING').length;
+    const processing = orders.filter((o) => (o.status || '').toUpperCase() === 'PROCESSAMENTO').length;
+    const confirmed = orders.filter((o) => (o.status || '').toUpperCase() === 'PAGAMENTO_CONFIRMADO').length;
+    const shipped = orders.filter((o) => (o.status || '').toUpperCase() === 'ENVIADO').length;
+    const delivered = orders.filter((o) => (o.status || '').toUpperCase() === 'ENTREGUE').length;
+
+    return { total, totalRevenue, totalPieces, pending, processing, confirmed, shipped, delivered };
+  }, [orders]);
 
   const handleOpenCreateModal = () => {
     setIsEditing(false);
@@ -554,7 +793,7 @@ export default function AdminDashboardClient({
           <div className="bg-zinc-900/90 border border-zinc-800/80 rounded-2xl p-5 shadow-lg">
             <span className="text-[11px] font-bold text-zinc-400 uppercase tracking-wider block">Total de Pedidos</span>
             <div className="flex items-baseline gap-2 mt-2">
-              <span className="text-2xl sm:text-3xl font-black text-white">{initialOrders.length}</span>
+              <span className="text-2xl sm:text-3xl font-black text-white">{orders.length}</span>
               <span className="text-xs text-emerald-400 font-bold">pedidos</span>
             </div>
             <span className="text-[11px] text-zinc-500 mt-1 block">Registrados no Neon</span>
@@ -596,7 +835,7 @@ export default function AdminDashboardClient({
             }`}
           >
             <Layers className="w-4 h-4" />
-            Pedidos Recentes ({initialOrders.length})
+            Gestão de Pedidos ({orders.length})
           </button>
         </div>
 
@@ -879,62 +1118,396 @@ export default function AdminDashboardClient({
 
         {/* ABA 3: PEDIDOS */}
         {activeTab === 'orders' && (
-          <div className="bg-zinc-900/90 border border-zinc-800/80 rounded-3xl p-6 shadow-2xl overflow-hidden">
-            <h2 className="text-xl font-black text-white flex items-center gap-2 mb-4 pb-4 border-b border-zinc-800">
-              <Layers className="w-6 h-6 text-emerald-400" />
-              Pedidos Registrados no Banco Neon
-            </h2>
+          <div className="space-y-6">
+            {/* CARDS DE RESUMO FINANCEIRO DOS PEDIDOS */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <div className="bg-zinc-900/90 border border-zinc-800 rounded-2xl p-5 shadow-lg">
+                <span className="text-[11px] font-bold text-zinc-400 uppercase tracking-wider block">
+                  Faturamento de Pedidos
+                </span>
+                <div className="flex items-baseline gap-2 mt-2">
+                  <span className="text-2xl sm:text-3xl font-black text-emerald-400">
+                    {formatCurrency(orderStats.totalRevenue)}
+                  </span>
+                </div>
+                <span className="text-[11px] text-zinc-500 mt-1 block">
+                  Total acumulado de pedidos
+                </span>
+              </div>
 
-            {initialOrders.length === 0 ? (
-              <div className="py-12 text-center text-zinc-500 text-sm">
-                Nenhum pedido registrado até o momento.
+              <div className="bg-zinc-900/90 border border-zinc-800 rounded-2xl p-5 shadow-lg">
+                <span className="text-[11px] font-bold text-zinc-400 uppercase tracking-wider block">
+                  Total de Camisas
+                </span>
+                <div className="flex items-baseline gap-2 mt-2">
+                  <span className="text-2xl sm:text-3xl font-black text-white">
+                    {orderStats.totalPieces.toLocaleString('pt-BR')}
+                  </span>
+                  <span className="text-xs text-rose-400 font-bold">peças</span>
+                </div>
+                <span className="text-[11px] text-zinc-500 mt-1 block">
+                  Somatório de todos os pedidos
+                </span>
               </div>
-            ) : (
-              <div className="overflow-x-auto rounded-2xl border border-zinc-800">
-                <table className="w-full text-left text-xs text-zinc-300">
-                  <thead className="bg-zinc-950 text-zinc-400 uppercase text-[10px] font-bold tracking-wider border-b border-zinc-800">
-                    <tr>
-                      <th className="py-3 px-4">Pedido #</th>
-                      <th className="py-3 px-4">Cliente</th>
-                      <th className="py-3 px-3">WhatsApp</th>
-                      <th className="py-3 px-3">Qtd Peças</th>
-                      <th className="py-3 px-3">Total</th>
-                      <th className="py-3 px-3">Status</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-zinc-800">
-                    {initialOrders.map((order) => (
-                      <tr key={order.id} className="hover:bg-zinc-800/40">
-                        <td className="py-3 px-4 font-mono font-bold text-white">
-                          {order.orderNumber}
-                        </td>
-                        <td className="py-3 px-4 font-bold text-white">
-                          {order.customerName}
-                          <span className="text-[10px] text-zinc-400 block font-normal">{order.city} - {order.state}</span>
-                        </td>
-                        <td className="py-3 px-3 font-mono text-zinc-300">
-                          {order.phone}
-                        </td>
-                        <td className="py-3 px-3 font-bold text-emerald-400">
-                          {order.totalQuantity} peças
-                        </td>
-                        <td className="py-3 px-3 font-mono font-black text-white">
-                          {formatCurrency(order.finalTotal)}
-                        </td>
-                        <td className="py-3 px-3">
-                          <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30">
-                            {order.status}
-                          </span>
-                        </td>
+
+              <div className="bg-zinc-900/90 border border-zinc-800 rounded-2xl p-5 shadow-lg">
+                <span className="text-[11px] font-bold text-zinc-400 uppercase tracking-wider block">
+                  Total de Pedidos
+                </span>
+                <div className="flex items-baseline gap-2 mt-2">
+                  <span className="text-2xl sm:text-3xl font-black text-white">
+                    {orderStats.total}
+                  </span>
+                  <span className="text-xs text-amber-400 font-bold">registrados</span>
+                </div>
+                <span className="text-[11px] text-zinc-500 mt-1 block">
+                  {orderStats.delivered} entregues • {orderStats.shipped} enviados
+                </span>
+              </div>
+            </div>
+
+            {/* TABELA PRINCIPAL DE GESTÃO DE PEDIDOS */}
+            <div className="bg-zinc-900/90 border border-zinc-800/80 rounded-3xl p-6 shadow-2xl overflow-hidden">
+              <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 mb-6 pb-5 border-b border-zinc-800">
+                <div>
+                  <h2 className="text-xl font-black text-white flex items-center gap-2">
+                    <Layers className="w-6 h-6 text-emerald-400" />
+                    Gestão & Controle de Pedidos
+                  </h2>
+                  <p className="text-xs text-zinc-400 mt-1">
+                    Acompanhe pedidos, altere status em tempo real e gere relatórios prontos para WhatsApp.
+                  </p>
+                </div>
+
+                <div className="flex flex-wrap items-center gap-2.5">
+                  <button
+                    type="button"
+                    onClick={() => setIsGeneralReportModalOpen(true)}
+                    className="px-4 py-2 rounded-xl bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-500 hover:to-emerald-400 text-white font-bold text-xs sm:text-sm flex items-center gap-2 shadow-lg shadow-emerald-950/60 transition-all hover:scale-[1.02]"
+                  >
+                    <MessageCircle className="w-4 h-4" />
+                    Relatório Geral (WhatsApp)
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={handleRefreshOrders}
+                    disabled={isRefreshingOrders}
+                    className="px-3.5 py-2 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-300 hover:text-white text-xs font-bold flex items-center gap-1.5 transition-colors border border-zinc-700"
+                    title="Atualizar lista de pedidos"
+                  >
+                    <RefreshCw className={`w-4 h-4 ${isRefreshingOrders ? 'animate-spin text-emerald-400' : ''}`} />
+                    <span>Atualizar</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* FILTROS POR STATUS (PILLS / TABS) */}
+              <div className="flex items-center gap-2 overflow-x-auto pb-3 mb-4 scrollbar-none">
+                <button
+                  type="button"
+                  onClick={() => setOrderStatusFilter('ALL')}
+                  className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all border whitespace-nowrap ${
+                    orderStatusFilter === 'ALL'
+                      ? 'bg-rose-600 text-white border-rose-500 shadow-md shadow-rose-950/50'
+                      : 'bg-zinc-950 text-zinc-400 border-zinc-800 hover:text-white hover:border-zinc-700'
+                  }`}
+                >
+                  Todos ({orders.length})
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setOrderStatusFilter('PENDING')}
+                  className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all border whitespace-nowrap ${
+                    orderStatusFilter === 'PENDING'
+                      ? 'bg-amber-500/30 text-amber-200 border-amber-500'
+                      : 'bg-zinc-950 text-zinc-400 border-zinc-800 hover:text-amber-300 hover:border-amber-500/40'
+                  }`}
+                >
+                  ⏳ Pendentes ({orderStats.pending})
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setOrderStatusFilter('PROCESSAMENTO')}
+                  className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all border whitespace-nowrap ${
+                    orderStatusFilter === 'PROCESSAMENTO'
+                      ? 'bg-blue-500/30 text-blue-200 border-blue-500'
+                      : 'bg-zinc-950 text-zinc-400 border-zinc-800 hover:text-blue-300 hover:border-blue-500/40'
+                  }`}
+                >
+                  ⚙️ Em Processamento ({orderStats.processing})
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setOrderStatusFilter('PAGAMENTO_CONFIRMADO')}
+                  className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all border whitespace-nowrap ${
+                    orderStatusFilter === 'PAGAMENTO_CONFIRMADO'
+                      ? 'bg-emerald-500/30 text-emerald-200 border-emerald-500'
+                      : 'bg-zinc-950 text-zinc-400 border-zinc-800 hover:text-emerald-300 hover:border-emerald-500/40'
+                  }`}
+                >
+                  ✅ Pagamento Confirmado ({orderStats.confirmed})
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setOrderStatusFilter('ENVIADO')}
+                  className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all border whitespace-nowrap ${
+                    orderStatusFilter === 'ENVIADO'
+                      ? 'bg-purple-500/30 text-purple-200 border-purple-500'
+                      : 'bg-zinc-950 text-zinc-400 border-zinc-800 hover:text-purple-300 hover:border-purple-500/40'
+                  }`}
+                >
+                  🚚 Enviados ({orderStats.shipped})
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setOrderStatusFilter('ENTREGUE')}
+                  className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all border whitespace-nowrap ${
+                    orderStatusFilter === 'ENTREGUE'
+                      ? 'bg-teal-500/30 text-teal-200 border-teal-500'
+                      : 'bg-zinc-950 text-zinc-400 border-zinc-800 hover:text-teal-300 hover:border-teal-500/40'
+                  }`}
+                >
+                  📦 Entregues ({orderStats.delivered})
+                </button>
+              </div>
+
+              {/* BUSCA DE PEDIDOS */}
+              <div className="bg-zinc-950/80 border border-zinc-800 rounded-2xl p-3 mb-6">
+                <div className="relative w-full">
+                  <Search className="w-4 h-4 text-emerald-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                  <input
+                    type="text"
+                    value={orderSearch}
+                    onChange={(e) => setOrderSearch(e.target.value)}
+                    placeholder="Buscar pedido por número (#RUBY...), nome do cliente, WhatsApp, CPF ou cidade..."
+                    className="w-full bg-zinc-900 border border-zinc-800 rounded-xl pl-10 pr-20 py-2.5 text-xs sm:text-sm text-white placeholder-zinc-500 focus:outline-none focus:border-emerald-500 transition-colors"
+                  />
+                  {orderSearch && (
+                    <button
+                      type="button"
+                      onClick={() => setOrderSearch('')}
+                      className="absolute right-2.5 top-1/2 -translate-y-1/2 text-xs text-zinc-400 hover:text-white bg-zinc-800 px-2 py-1 rounded-md"
+                    >
+                      Limpar
+                    </button>
+                  )}
+                </div>
+                <div className="flex items-center justify-between text-[11px] text-zinc-400 mt-2 px-1">
+                  <span>
+                    Exibindo <strong className="text-white">{filteredOrders.length}</strong> de <strong className="text-white">{orders.length}</strong> pedidos
+                  </span>
+                  {orderStatusFilter !== 'ALL' && (
+                    <button
+                      type="button"
+                      onClick={() => setOrderStatusFilter('ALL')}
+                      className="text-rose-400 hover:underline"
+                    >
+                      Remover filtro de status
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              {/* TABELA DE PEDIDOS */}
+              {filteredOrders.length === 0 ? (
+                <div className="py-16 text-center text-zinc-500 bg-zinc-950/40 rounded-2xl border border-zinc-800/60">
+                  <Package className="w-12 h-12 mx-auto text-zinc-600 mb-3" />
+                  <p className="font-bold text-base text-zinc-300">Nenhum pedido encontrado</p>
+                  <p className="text-xs text-zinc-500 mt-1 max-w-sm mx-auto">
+                    {orderSearch || orderStatusFilter !== 'ALL'
+                      ? 'Tente ajustar os filtros ou o termo de busca para visualizar os pedidos.'
+                      : 'Nenhum pedido foi registrado ainda no banco de dados.'}
+                  </p>
+                  {(orderSearch || orderStatusFilter !== 'ALL') && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setOrderSearch('');
+                        setOrderStatusFilter('ALL');
+                      }}
+                      className="mt-4 px-4 py-2 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-xs font-bold text-white transition-colors"
+                    >
+                      Limpar Filtros
+                    </button>
+                  )}
+                </div>
+              ) : (
+                <div className="overflow-x-auto rounded-2xl border border-zinc-800">
+                  <table className="w-full text-left text-xs text-zinc-300">
+                    <thead className="bg-zinc-950 text-zinc-400 uppercase text-[10px] font-bold tracking-wider border-b border-zinc-800">
+                      <tr>
+                        <th className="py-3.5 px-4">Pedido # & Data</th>
+                        <th className="py-3.5 px-4">Cliente & Local</th>
+                        <th className="py-3.5 px-3">WhatsApp</th>
+                        <th className="py-3.5 px-3 text-center">Peças</th>
+                        <th className="py-3.5 px-3">Total</th>
+                        <th className="py-3.5 px-3">Mudar Status</th>
+                        <th className="py-3.5 px-4 text-right">Ações</th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
+                    </thead>
+                    <tbody className="divide-y divide-zinc-800">
+                      {filteredOrders.map((order) => {
+                        const statusInfo = getStatusInfo(order.status);
+                        const cleanPhone = (order.phone || '').replace(/\D/g, '');
+                        const waUrl = cleanPhone
+                          ? `https://wa.me/55${cleanPhone}?text=${encodeURIComponent(
+                              `Olá ${order.customerName}, tudo bem? Sou da equipe Ruby Brasil sobre o seu pedido #${order.orderNumber}.`
+                            )}`
+                          : null;
+                        const dateFormatted = new Date(order.createdAt).toLocaleDateString('pt-BR', {
+                          day: '2-digit',
+                          month: '2-digit',
+                          year: '2-digit',
+                          hour: '2-digit',
+                          minute: '2-digit',
+                        });
+                        const isUpdating = updatingOrderId === order.id;
+
+                        return (
+                          <tr key={order.id} className="hover:bg-zinc-800/40 transition-colors">
+                            <td className="py-3.5 px-4">
+                              <span className="font-mono font-bold text-white block">
+                                #{order.orderNumber}
+                              </span>
+                              <span className="text-[10px] text-zinc-500 flex items-center gap-1 mt-0.5">
+                                <Clock className="w-3 h-3 text-zinc-600" />
+                                {dateFormatted}
+                              </span>
+                            </td>
+
+                            <td className="py-3.5 px-4">
+                              <strong className="text-white block font-bold">
+                                {order.customerName}
+                              </strong>
+                              <span className="text-[10px] text-zinc-400 block font-normal">
+                                {order.city ? `${order.city}/${order.state}` : 'Local não informado'}
+                              </span>
+                            </td>
+
+                            <td className="py-3.5 px-3">
+                              {waUrl ? (
+                                <a
+                                  href={waUrl}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 text-xs font-mono font-semibold border border-emerald-500/20 transition-colors"
+                                  title="Conversar com o cliente no WhatsApp"
+                                >
+                                  <MessageCircle className="w-3.5 h-3.5 text-emerald-400" />
+                                  <span>{order.phone}</span>
+                                </a>
+                              ) : (
+                                <span className="font-mono text-zinc-500 text-[11px]">
+                                  {order.phone || 'S/N'}
+                                </span>
+                              )}
+                            </td>
+
+                            <td className="py-3.5 px-3 text-center">
+                              <span className="font-black text-white text-xs block">
+                                {order.totalQuantity} un
+                              </span>
+                              <span
+                                className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full inline-block ${
+                                  order.isWholesale
+                                    ? 'bg-rose-500/20 text-rose-300'
+                                    : 'bg-zinc-800 text-zinc-400'
+                                }`}
+                              >
+                                {order.isWholesale ? 'Atacado' : 'Varejo'}
+                              </span>
+                            </td>
+
+                            <td className="py-3.5 px-3">
+                              <span className="font-mono font-black text-emerald-400 text-sm block">
+                                {formatCurrency(order.finalTotal)}
+                              </span>
+                              <span className="text-[10px] text-zinc-500 block">
+                                {order.isFreeShipping ? 'Frete Grátis' : 'Frete R$ 30'}
+                              </span>
+                            </td>
+
+                            <td className="py-3.5 px-3">
+                              <div className="relative inline-flex items-center gap-1.5">
+                                <select
+                                  value={order.status || 'PENDING'}
+                                  disabled={isUpdating}
+                                  onChange={(e) => handleUpdateOrderStatus(order.id, e.target.value)}
+                                  className={`text-xs font-bold rounded-xl px-2.5 py-1.5 border appearance-none pr-7 cursor-pointer focus:outline-none focus:ring-1 focus:ring-emerald-500 bg-zinc-950 transition-all ${
+                                    statusInfo.badge
+                                  } ${isUpdating ? 'opacity-50 cursor-wait' : ''}`}
+                                >
+                                  <option value="PROCESSAMENTO" className="bg-zinc-900 text-blue-300">
+                                    ⚙️ Em Processamento
+                                  </option>
+                                  <option value="PAGAMENTO_CONFIRMADO" className="bg-zinc-900 text-emerald-300">
+                                    ✅ Pagamento Confirmado
+                                  </option>
+                                  <option value="ENVIADO" className="bg-zinc-900 text-purple-300">
+                                    🚚 Enviado
+                                  </option>
+                                  <option value="ENTREGUE" className="bg-zinc-900 text-teal-300">
+                                    📦 Entregue
+                                  </option>
+                                  <option value="PENDING" className="bg-zinc-900 text-amber-300">
+                                    ⏳ Pendente
+                                  </option>
+                                  <option value="CANCELADO" className="bg-zinc-900 text-rose-300">
+                                    ❌ Cancelado
+                                  </option>
+                                </select>
+                                {isUpdating && (
+                                  <Loader2 className="w-3.5 h-3.5 animate-spin text-emerald-400" />
+                                )}
+                              </div>
+                            </td>
+
+                            <td className="py-3.5 px-4 text-right">
+                              <div className="flex items-center justify-end gap-1.5">
+                                <button
+                                  type="button"
+                                  onClick={() => setSelectedOrder(order)}
+                                  className="px-2.5 py-1.5 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-200 hover:text-white text-xs font-bold flex items-center gap-1 transition-colors border border-zinc-700"
+                                  title="Ver todos os detalhes deste pedido"
+                                >
+                                  <Eye className="w-3.5 h-3.5 text-zinc-400" />
+                                  <span>Detalhes</span>
+                                </button>
+
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    const report = buildOrderWhatsAppReport(order);
+                                    copyToClipboard(report, `order-${order.id}`);
+                                  }}
+                                  className="px-2 py-1.5 rounded-xl bg-emerald-950/60 hover:bg-emerald-900/80 border border-emerald-500/40 text-emerald-300 text-xs font-bold flex items-center gap-1 transition-colors"
+                                  title="Copiar relatório formatado para WhatsApp"
+                                >
+                                  {copiedKey === `order-${order.id}` ? (
+                                    <Check className="w-3.5 h-3.5 text-emerald-400" />
+                                  ) : (
+                                    <Copy className="w-3.5 h-3.5 text-emerald-400" />
+                                  )}
+                                  <span className="hidden sm:inline">Zap</span>
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
           </div>
         )}
-
       </main>
 
       {/* MODAL ADICIONAR / EDITAR PEÇA */}
@@ -1281,6 +1854,353 @@ export default function AdminDashboardClient({
           </div>
         </div>
       )}
+
+      {/* MODAL DETALHES DO PEDIDO (VISUALIZAÇÃO, STATUS & WHATSAPP) */}
+      {selectedOrder && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md overflow-y-auto">
+          <div className="bg-zinc-900 border border-zinc-800 rounded-3xl max-w-3xl w-full p-6 sm:p-8 shadow-2xl relative my-8 text-zinc-100 max-h-[90vh] overflow-y-auto">
+            <button
+              onClick={() => setSelectedOrder(null)}
+              className="absolute top-6 right-6 text-zinc-400 hover:text-white p-1 rounded-xl hover:bg-zinc-800 transition-colors"
+            >
+              <X className="w-5 h-5" />
+            </button>
+
+            {/* CABEÇALHO DO MODAL */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-zinc-800 pb-4 mb-6">
+              <div>
+                <div className="flex items-center gap-2">
+                  <h3 className="text-xl sm:text-2xl font-black text-white">
+                    Pedido #{selectedOrder.orderNumber}
+                  </h3>
+                  <span
+                    className={`px-2.5 py-0.5 rounded-full text-xs font-bold border ${
+                      getStatusInfo(selectedOrder.status).badge
+                    }`}
+                  >
+                    {getStatusInfo(selectedOrder.status).emoji}{' '}
+                    {getStatusInfo(selectedOrder.status).label}
+                  </span>
+                </div>
+                <p className="text-xs text-zinc-400 mt-1 flex items-center gap-1.5">
+                  <Clock className="w-3.5 h-3.5 text-zinc-500" />
+                  Realizado em:{' '}
+                  {new Date(selectedOrder.createdAt).toLocaleDateString('pt-BR', {
+                    day: '2-digit',
+                    month: '2-digit',
+                    year: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit',
+                  })}
+                </p>
+              </div>
+
+              <div className="text-right sm:pr-8">
+                <span className="text-xs text-zinc-400 block">Total do Pedido</span>
+                <span className="text-xl font-black text-emerald-400">
+                  {formatCurrency(selectedOrder.finalTotal)}
+                </span>
+              </div>
+            </div>
+
+            {/* SELETOR RÁPIDO DE STATUS */}
+            <div className="bg-zinc-950 p-4 rounded-2xl border border-zinc-800 mb-6">
+              <span className="text-xs font-bold text-zinc-300 uppercase tracking-wider block mb-3">
+                Alterar Status do Pedido:
+              </span>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                {[
+                  { key: 'PROCESSAMENTO', label: 'Em Processamento', emoji: '⚙️' },
+                  { key: 'PAGAMENTO_CONFIRMADO', label: 'Pagamento Confirmado', emoji: '✅' },
+                  { key: 'ENVIADO', label: 'Enviado', emoji: '🚚' },
+                  { key: 'ENTREGUE', label: 'Entregue', emoji: '📦' },
+                ].map((s) => {
+                  const isCurrent = (selectedOrder.status || '').toUpperCase() === s.key;
+                  const isUpdating = updatingOrderId === selectedOrder.id;
+
+                  return (
+                    <button
+                      key={s.key}
+                      type="button"
+                      disabled={isUpdating}
+                      onClick={() => handleUpdateOrderStatus(selectedOrder.id, s.key)}
+                      className={`px-3 py-2.5 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-all border ${
+                        isCurrent
+                          ? 'bg-emerald-600 text-white border-emerald-400 shadow-lg shadow-emerald-950/60 ring-2 ring-emerald-500/50 scale-[1.02]'
+                          : 'bg-zinc-900 text-zinc-300 border-zinc-800 hover:border-zinc-700 hover:text-white'
+                      } ${isUpdating ? 'opacity-50 cursor-wait' : ''}`}
+                    >
+                      <span>{s.emoji}</span>
+                      <span>{s.label}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* DADOS DO CLIENTE E ENTREGA */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+              {/* CLIENTE */}
+              <div className="bg-zinc-950/70 p-4 rounded-2xl border border-zinc-800/80">
+                <span className="text-[11px] font-black uppercase text-rose-400 tracking-wider block mb-2.5">
+                  Dados do Cliente
+                </span>
+                <div className="space-y-1.5 text-xs">
+                  <p>
+                    <span className="text-zinc-500">Nome:</span>{' '}
+                    <strong className="text-white font-bold">{selectedOrder.customerName}</strong>
+                  </p>
+                  <p>
+                    <span className="text-zinc-500">Documento:</span>{' '}
+                    <span className="text-zinc-300 font-mono">
+                      {selectedOrder.document || 'Não informado'} ({selectedOrder.customerType || 'PF'})
+                    </span>
+                  </p>
+                  <p>
+                    <span className="text-zinc-500">E-mail:</span>{' '}
+                    <span className="text-zinc-300">{selectedOrder.email || 'Não informado'}</span>
+                  </p>
+                  <div className="pt-1.5 flex items-center justify-between">
+                    <span className="text-zinc-500">WhatsApp:</span>
+                    <a
+                      href={`https://wa.me/55${(selectedOrder.phone || '').replace(/\D/g, '')}?text=${encodeURIComponent(
+                        `Olá ${selectedOrder.customerName}, sobre o seu pedido #${selectedOrder.orderNumber} na Ruby Brasil:`
+                      )}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-400 font-bold border border-emerald-500/30 transition-colors"
+                    >
+                      <MessageCircle className="w-3.5 h-3.5" />
+                      <span>{selectedOrder.phone}</span>
+                    </a>
+                  </div>
+                </div>
+              </div>
+
+              {/* ENTREGA */}
+              <div className="bg-zinc-950/70 p-4 rounded-2xl border border-zinc-800/80">
+                <span className="text-[11px] font-black uppercase text-amber-400 tracking-wider block mb-2.5">
+                  Endereço de Entrega
+                </span>
+                <div className="space-y-1.5 text-xs text-zinc-300">
+                  <p>
+                    {selectedOrder.street}, {selectedOrder.number}
+                    {selectedOrder.complement ? ` (${selectedOrder.complement})` : ''}
+                  </p>
+                  <p>Bairro: {selectedOrder.neighborhood || 'Não informado'}</p>
+                  <p>
+                    {selectedOrder.city} - {selectedOrder.state}
+                  </p>
+                  <p className="font-mono text-zinc-400">CEP: {selectedOrder.zipCode || 'Não informado'}</p>
+                </div>
+              </div>
+            </div>
+
+            {/* ITENS DO PEDIDO */}
+            <div className="mb-6">
+              <span className="text-xs font-bold text-zinc-300 uppercase tracking-wider block mb-3">
+                Grade de Camisas ({selectedOrder.totalQuantity} peças):
+              </span>
+              <div className="overflow-x-auto rounded-2xl border border-zinc-800 bg-zinc-950/60">
+                <table className="w-full text-left text-xs">
+                  <thead className="bg-zinc-950 text-zinc-400 uppercase text-[10px] font-bold border-b border-zinc-800">
+                    <tr>
+                      <th className="py-2.5 px-3">Camisa</th>
+                      <th className="py-2.5 px-2 text-center">Tam</th>
+                      <th className="py-2.5 px-2 text-center">Qtd</th>
+                      <th className="py-2.5 px-3 text-right">Unitário</th>
+                      <th className="py-2.5 px-3 text-right">Total</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-zinc-800 text-zinc-300">
+                    {(selectedOrder.items || []).map((item: any, idx: number) => (
+                      <tr key={idx} className="hover:bg-zinc-900/50">
+                        <td className="py-2.5 px-3">
+                          <strong className="text-white block font-bold">
+                            {item.product?.name || 'Camisa de Futebol'}
+                          </strong>
+                          {item.customName && (
+                            <span className="text-[10px] text-amber-300 font-mono block">
+                              Personalizada: {item.customName} #{item.customNumber || 'S/N'} (+R$ 15,00)
+                            </span>
+                          )}
+                        </td>
+                        <td className="py-2.5 px-2 text-center font-bold text-zinc-200">
+                          {item.size}
+                        </td>
+                        <td className="py-2.5 px-2 text-center font-bold text-white">
+                          {item.quantity}
+                        </td>
+                        <td className="py-2.5 px-3 text-right font-mono text-zinc-400">
+                          {formatCurrency(item.unitPriceApplied)}
+                        </td>
+                        <td className="py-2.5 px-3 text-right font-mono font-bold text-emerald-400">
+                          {formatCurrency(item.totalItemPrice)}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+
+              {/* RESUMO DE VALORES */}
+              <div className="bg-zinc-950 p-3 rounded-xl border border-zinc-800/80 mt-3 text-xs space-y-1">
+                <div className="flex justify-between text-zinc-400">
+                  <span>Subtotal de Camisas:</span>
+                  <span className="font-mono text-white">{formatCurrency(selectedOrder.subtotal)}</span>
+                </div>
+                <div className="flex justify-between text-zinc-400">
+                  <span>Frete:</span>
+                  <span className="font-mono text-emerald-400">
+                    {selectedOrder.isFreeShipping ? 'Grátis (10+ peças)' : 'R$ 30,00'}
+                  </span>
+                </div>
+                <div className="flex justify-between font-black text-sm text-white pt-2 border-t border-zinc-800">
+                  <span>Total Final:</span>
+                  <span className="font-mono text-emerald-400">
+                    {formatCurrency(selectedOrder.finalTotal)}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* SEÇÃO RELATÓRIO DO PEDIDO PARA WHATSAPP */}
+            <div className="bg-zinc-950 p-4 rounded-2xl border border-zinc-800">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-xs font-bold text-emerald-400 uppercase tracking-wider flex items-center gap-1.5">
+                  <MessageCircle className="w-4 h-4 text-emerald-400" />
+                  Relatório para Envio via WhatsApp
+                </span>
+                <span className="text-[10px] text-zinc-500">Mensagem pronta com status e dados</span>
+              </div>
+
+              <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-3 text-[11px] font-mono text-zinc-300 max-h-36 overflow-y-auto whitespace-pre-wrap leading-relaxed">
+                {buildOrderWhatsAppReport(selectedOrder)}
+              </div>
+
+              <div className="flex flex-col sm:flex-row items-center justify-end gap-2.5 mt-3 pt-3 border-t border-zinc-800/80">
+                <button
+                  type="button"
+                  onClick={() => {
+                    const report = buildOrderWhatsAppReport(selectedOrder);
+                    copyToClipboard(report, `modal-order-${selectedOrder.id}`);
+                  }}
+                  className="w-full sm:w-auto px-4 py-2.5 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-200 text-xs font-bold flex items-center justify-center gap-1.5 transition-colors border border-zinc-700"
+                >
+                  {copiedKey === `modal-order-${selectedOrder.id}` ? (
+                    <>
+                      <Check className="w-4 h-4 text-emerald-400" />
+                      <span>Copiado com Sucesso!</span>
+                    </>
+                  ) : (
+                    <>
+                      <Copy className="w-4 h-4 text-zinc-300" />
+                      <span>Copiar Relatório</span>
+                    </>
+                  )}
+                </button>
+
+                {selectedOrder.phone && (
+                  <a
+                    href={`https://wa.me/55${selectedOrder.phone.replace(/\D/g, '')}?text=${encodeURIComponent(
+                      buildOrderWhatsAppReport(selectedOrder)
+                    )}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold flex items-center justify-center gap-1.5 transition-all shadow-lg shadow-emerald-950/60"
+                  >
+                    <Send className="w-4 h-4" />
+                    <span>Enviar para WhatsApp do Cliente</span>
+                  </a>
+                )}
+              </div>
+            </div>
+
+            <div className="flex justify-end pt-5 mt-6 border-t border-zinc-800">
+              <button
+                type="button"
+                onClick={() => setSelectedOrder(null)}
+                className="px-5 py-2 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-xs font-bold text-zinc-300 transition-colors"
+              >
+                Fechar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL RELATÓRIO GERAL DE PEDIDOS (WHATSAPP) */}
+      {isGeneralReportModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md overflow-y-auto">
+          <div className="bg-zinc-900 border border-zinc-800 rounded-3xl max-w-2xl w-full p-6 sm:p-8 shadow-2xl relative my-8 text-zinc-100">
+            <button
+              onClick={() => setIsGeneralReportModalOpen(false)}
+              className="absolute top-6 right-6 text-zinc-400 hover:text-white p-1 rounded-xl hover:bg-zinc-800 transition-colors"
+            >
+              <X className="w-5 h-5" />
+            </button>
+
+            <div className="flex items-center gap-3 mb-2">
+              <div className="w-10 h-10 rounded-xl bg-emerald-500/20 border border-emerald-500/30 flex items-center justify-center text-emerald-400">
+                <FileText className="w-5 h-5" />
+              </div>
+              <div>
+                <h3 className="text-xl font-black text-white">Relatório Geral para WhatsApp</h3>
+                <p className="text-xs text-zinc-400">
+                  Resumo de faturamento, peças e contagem por status para compartilhar.
+                </p>
+              </div>
+            </div>
+
+            {/* PREVIEW DO TEXTO */}
+            <div className="bg-zinc-950 border border-zinc-800 rounded-2xl p-4 my-4 font-mono text-xs text-zinc-300 max-h-80 overflow-y-auto whitespace-pre-wrap leading-relaxed shadow-inner">
+              {buildGeneralOrdersReport(orders)}
+            </div>
+
+            <div className="flex flex-col sm:flex-row items-center justify-end gap-2.5 pt-4 border-t border-zinc-800">
+              <button
+                type="button"
+                onClick={() => setIsGeneralReportModalOpen(false)}
+                className="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-xs font-bold text-zinc-300 transition-colors"
+              >
+                Fechar
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  const report = buildGeneralOrdersReport(orders);
+                  copyToClipboard(report, 'general-report');
+                }}
+                className="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-200 text-xs font-bold flex items-center justify-center gap-1.5 transition-colors border border-zinc-700"
+              >
+                {copiedKey === 'general-report' ? (
+                  <>
+                    <Check className="w-4 h-4 text-emerald-400" />
+                    <span>Copiado com Sucesso!</span>
+                  </>
+                ) : (
+                  <>
+                    <Copy className="w-4 h-4 text-zinc-300" />
+                    <span>Copiar Relatório</span>
+                  </>
+                )}
+              </button>
+
+              <a
+                href={`https://wa.me/?text=${encodeURIComponent(buildGeneralOrdersReport(orders))}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold flex items-center justify-center gap-1.5 transition-all shadow-lg shadow-emerald-950/60"
+              >
+                <Send className="w-4 h-4" />
+                <span>Abrir no WhatsApp</span>
+              </a>
+            </div>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 }

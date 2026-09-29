@@ -64,18 +64,13 @@ export default function RootLayout({
                 Atendimento & Suporte
               </h4>
               <p className="text-xs text-zinc-400">
-                Fale diretamente com o João Felipe para dúvidas, encomendas e pedidos:
+                Finalize seu pedido diretamente pelo carrinho ou checkout para suporte exclusivo da nossa equipe:
               </p>
-              <a
-                href="https://wa.me/5579988542410"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-2 px-3 py-2 rounded-xl bg-zinc-900 border border-zinc-800 text-white font-bold text-xs hover:border-emerald-500/50 hover:text-emerald-400 transition-colors"
-              >
-                <span>📱 (79) 98854-2410</span>
-              </a>
+              <div className="inline-flex items-center gap-2 px-3 py-2 rounded-xl bg-zinc-900 border border-zinc-800 text-emerald-400 font-bold text-xs">
+                <span>💬 Atendimento Direto no Carrinho</span>
+              </div>
               <p className="text-[11px] text-zinc-500 pt-1">
-                Segunda a Sábado • Atendimento em tempo real
+                Segunda a Sábado • Confirmação de pedidos em tempo real
               </p>
             </div>
 

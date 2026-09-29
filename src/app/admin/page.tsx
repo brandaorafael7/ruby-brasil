@@ -30,7 +30,7 @@ export default async function AdminPage() {
       },
     },
     orderBy: { createdAt: 'desc' },
-    take: 20,
+    take: 100,
   });
 
   return (
