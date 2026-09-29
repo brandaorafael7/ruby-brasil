@@ -926,8 +926,17 @@ export default function AdminDashboardClient({
                           )}
                         </td>
                         <td className="py-3.5 px-4 font-bold text-white">
-                          <div className="text-sm font-extrabold">{p.name}</div>
-                          <span className="text-[11px] font-normal text-zinc-400">
+                          <a
+                            href={`/produto/${p.slug}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-sm font-extrabold hover:text-rose-400 transition-colors inline-flex items-center gap-1.5 group/link"
+                            title="Abrir página desta camisa em nova aba"
+                          >
+                            <span>{p.name}</span>
+                            <ExternalLink className="w-3 h-3 text-zinc-500 group-hover/link:text-rose-400 opacity-60 group-hover/link:opacity-100 transition-opacity" />
+                          </a>
+                          <span className="text-[11px] font-normal text-zinc-400 block mt-0.5">
                             {p.club} • {p.season}
                           </span>
                         </td>
@@ -989,6 +998,29 @@ export default function AdminDashboardClient({
                         </td>
                         <td className="py-3.5 px-4 text-right">
                           <div className="flex items-center justify-end gap-1.5">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                if (typeof window !== 'undefined') {
+                                  const url = `${window.location.origin}/produto/${p.slug}`;
+                                  navigator.clipboard.writeText(url);
+                                  alert(`✓ Link copiado com sucesso para a área de transferência:\n${url}`);
+                                }
+                              }}
+                              className="p-2 rounded-xl bg-zinc-800 hover:bg-emerald-950/70 border border-transparent hover:border-emerald-500/40 text-zinc-300 hover:text-emerald-400 transition-colors"
+                              title="Copiar link desta camisa para enviar ao cliente"
+                            >
+                              <Copy className="w-4 h-4" />
+                            </button>
+                            <a
+                              href={`/produto/${p.slug}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="p-2 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-300 hover:text-white transition-colors flex items-center justify-center"
+                              title="Abrir página desta camisa em uma nova aba"
+                            >
+                              <ExternalLink className="w-4 h-4" />
+                            </a>
                             <button
                               onClick={() => handleOpenEditModal(p)}
                               className="p-2 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-200 hover:text-white transition-colors"

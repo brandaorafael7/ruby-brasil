@@ -2,7 +2,8 @@
 
 import React, { useState } from 'react';
 import Image from 'next/image';
-import { ShoppingBag, Shirt, Check, Sparkles } from 'lucide-react';
+import Link from 'next/link';
+import { ShoppingBag, Shirt, Check, Sparkles, ExternalLink, Copy, CheckCircle2 } from 'lucide-react';
 import { Product } from '@/lib/types';
 import { useCartStore } from '@/lib/store';
 import { formatCurrency, getSizeSurcharge, getStandardSizesForProduct } from '@/lib/utils';
@@ -52,6 +53,7 @@ export default function ProductCard({ product }: Props) {
 
   const [isCustomOpen, setIsCustomOpen] = useState(false);
   const [justAdded, setJustAdded] = useState(false);
+  const [copiedLink, setCopiedLink] = useState(false);
 
   const selectedInfo = sizeInfoList.find((s) => s.size === selectedSize);
   const isSelectedInStock = selectedInfo ? selectedInfo.inStock : false;
@@ -74,21 +76,40 @@ export default function ProductCard({ product }: Props) {
     setTimeout(() => setJustAdded(false), 1800);
   };
 
+  const handleCopyLink = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (typeof window !== 'undefined') {
+      const url = `${window.location.origin}/produto/${product.slug}`;
+      navigator.clipboard.writeText(url);
+      setCopiedLink(true);
+      setTimeout(() => setCopiedLink(false), 2000);
+    }
+  };
+
   return (
     <>
       <div className="bg-zinc-900/90 border border-zinc-800 rounded-2xl overflow-hidden hover:border-rose-500/50 transition-all duration-300 flex flex-col group shadow-lg shadow-black/40 hover:shadow-rose-950/20">
         
         {/* IMAGEM E TAGS */}
         <div className="relative aspect-[4/3] bg-zinc-950 overflow-hidden">
-          <Image
-            src={product.imageUrl}
-            alt={product.name}
-            fill
-            unoptimized={product.imageUrl?.startsWith('data:')}
-            sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-            className="object-cover group-hover:scale-105 transition-transform duration-500"
-          />
-          <div className="absolute inset-0 bg-gradient-to-t from-zinc-950 via-transparent to-black/40" />
+          <Link
+            href={`/produto/${product.slug}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            title="Clique para abrir esta camisa em uma nova aba"
+            className="block w-full h-full cursor-pointer"
+          >
+            <Image
+              src={product.imageUrl}
+              alt={product.name}
+              fill
+              unoptimized={product.imageUrl?.startsWith('data:')}
+              sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+              className="object-cover group-hover:scale-105 transition-transform duration-500"
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-zinc-950 via-transparent to-black/40" />
+          </Link>
 
           {/* BADGES NO TOPO */}
           <div className="absolute top-2.5 left-2.5 flex flex-wrap gap-1.5 z-10">
@@ -108,10 +129,19 @@ export default function ProductCard({ product }: Props) {
             )}
           </div>
 
-          <div className="absolute top-2.5 right-2.5 z-10">
+          <div className="absolute top-2.5 right-2.5 z-10 flex items-center gap-1.5">
             <span className="bg-black/80 text-emerald-400 text-[10px] font-bold px-2 py-0.5 rounded-md border border-emerald-500/30">
               Pronta Entrega
             </span>
+            <Link
+              href={`/produto/${product.slug}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              title="Abrir em nova aba"
+              className="p-1 rounded-md bg-black/80 hover:bg-rose-600 text-zinc-300 hover:text-white border border-zinc-700/80 transition-all flex items-center justify-center shadow-md"
+            >
+              <ExternalLink className="w-3 h-3" />
+            </Link>
           </div>
 
           {/* FAIXA DE PREÇO */}
@@ -141,9 +171,29 @@ export default function ProductCard({ product }: Props) {
         {/* CORPO DO CARD */}
         <div className="p-4 flex-1 flex flex-col justify-between">
           <div>
-            <h3 className="text-sm font-bold text-white line-clamp-2 group-hover:text-rose-300 transition-colors">
-              {product.name}
-            </h3>
+            <div className="flex items-start justify-between gap-1.5">
+              <Link
+                href={`/produto/${product.slug}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                title="Abrir em nova aba"
+                className="text-sm font-bold text-white line-clamp-2 hover:text-rose-400 transition-colors flex-1"
+              >
+                {product.name}
+              </Link>
+              <button
+                type="button"
+                onClick={handleCopyLink}
+                title="Copiar link deste item para enviar ao cliente"
+                className="p-1 text-zinc-400 hover:text-white hover:bg-zinc-800 rounded-md transition-colors shrink-0"
+              >
+                {copiedLink ? (
+                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
+                ) : (
+                  <Copy className="w-3.5 h-3.5" />
+                )}
+              </button>
+            </div>
             <p className="text-xs text-zinc-400 mt-1 line-clamp-1">
               {product.description || (isKids ? 'Kit infantil com camisa oficial e calção com cordão elástico.' : 'Padrão torcedor oficial com detalhes bordados e tecnologia de secagem rápida.')}
             </p>
