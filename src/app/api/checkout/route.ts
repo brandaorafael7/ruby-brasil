@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { getSizeSurcharge } from '@/lib/utils';
 
 export async function POST(req: Request) {
   try {
@@ -46,7 +47,9 @@ export async function POST(req: Request) {
 
     let subtotal = 0;
     const orderItemsData = items.map((item: any) => {
-      const unitPrice = totalQuantity >= 50 ? 55.0 : (item.retailPrice || 60.0);
+      const basePrice = totalQuantity >= 50 ? 55.0 : (item.retailPrice || 60.0);
+      const surcharge = getSizeSurcharge(item.size);
+      const unitPrice = basePrice + surcharge;
       const customFee = item.customName ? 15.0 : 0.0;
       const totalItem = (unitPrice + customFee) * item.quantity;
       subtotal += totalItem;

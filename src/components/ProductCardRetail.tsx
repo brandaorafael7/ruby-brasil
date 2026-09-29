@@ -88,8 +88,8 @@ export default function ProductCardRetail({ product }: Props) {
                 <span className="font-semibold text-zinc-300">Escolha o Tamanho:</span>
                 <span className="text-[11px] text-emerald-400 font-medium">Em Estoque</span>
               </div>
-              <div className="grid grid-cols-4 gap-1.5">
-                {['P', 'M', 'G', 'GG'].map((size) => (
+              <div className="grid grid-cols-7 gap-1">
+                {['P', 'M', 'G', 'GG', 'XG', '3XL', '4XL'].map((size) => (
                   <button
                     key={size}
                     type="button"

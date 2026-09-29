@@ -12,7 +12,7 @@ import {
   ShoppingBag,
 } from 'lucide-react';
 import { useCartStore } from '@/lib/store';
-import { formatCurrency, buildWhatsAppOrderMessage } from '@/lib/utils';
+import { formatCurrency, buildWhatsAppOrderMessage, getSizeSurcharge } from '@/lib/utils';
 import { CheckoutForm } from '@/lib/types';
 
 export default function CheckoutPage() {
@@ -21,6 +21,7 @@ export default function CheckoutPage() {
     getTotalPieces,
     isWholesale,
     getCurrentTier,
+    getItemUnitPrice,
     getSubtotal,
     getSavings,
     isFreeShippingEligible,
@@ -464,19 +465,20 @@ export default function CheckoutPage() {
 
               <div className="max-h-60 overflow-y-auto space-y-2 pr-1 text-xs divide-y divide-zinc-800/80">
                 {items.map((item) => {
-                  const appliedPrice = totalPieces >= 50 ? 55.0 : (item.retailPrice || 60.0);
+                  const appliedUnit = getItemUnitPrice(item);
                   const customExtra = item.customName ? 15.0 : 0.0;
+                  const surcharge = getSizeSurcharge(item.size);
                   return (
                     <div key={item.cartItemId} className="pt-2 flex justify-between gap-2">
                       <div>
                         <p className="font-bold text-white line-clamp-1">{item.name}</p>
                         <p className="text-[11px] text-zinc-400">
-                          Tam: <strong className="text-zinc-200">{item.size}</strong> • Qtd: {item.quantity} un
+                          Tam: <strong className="text-zinc-200">{item.size}</strong>{surcharge > 0 && <span className="text-amber-400 font-bold ml-1">(+{formatCurrency(surcharge)} Especial)</span>} • Qtd: {item.quantity} un
                           {item.customName && ` • [${item.customName} #${item.customNumber || '10'}]`}
                         </p>
                       </div>
                       <span className="font-bold text-white shrink-0">
-                        {formatCurrency((appliedPrice + customExtra) * item.quantity)}
+                        {formatCurrency((appliedUnit + customExtra) * item.quantity)}
                       </span>
                     </div>
                   );

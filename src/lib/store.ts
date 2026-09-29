@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import { CartItem, Product, PromotionalBatch, WholesaleTier } from './types';
+import { getSizeSurcharge } from './utils';
 
 const DEFAULT_TIERS: WholesaleTier[] = [
   { minQuantity: 1, maxQuantity: 49, unitPrice: 60.0 },
@@ -181,17 +182,18 @@ export const useCartStore = create<CartStore>()(
 
       getItemUnitPrice: (item) => {
         const total = get().getTotalPieces();
-        if (total >= 50) return 55.0;
-        return item.retailPrice || 60.0;
+        const base = total >= 50 ? 55.0 : (item.retailPrice || 60.0);
+        return base + getSizeSurcharge(item.size);
       },
 
       getSubtotal: () => {
         const items = get().items;
         const total = get().getTotalPieces();
         return items.reduce((acc, item) => {
-          const unit = total >= 50 ? 55.0 : (item.retailPrice || 60.0);
+          const base = total >= 50 ? 55.0 : (item.retailPrice || 60.0);
+          const surcharge = getSizeSurcharge(item.size);
           const customFee = item.customName ? 15.0 : 0.0;
-          return acc + (unit + customFee) * item.quantity;
+          return acc + (base + surcharge + customFee) * item.quantity;
         }, 0);
       },
 
@@ -199,7 +201,8 @@ export const useCartStore = create<CartStore>()(
         return get().items.reduce((acc, item) => {
           const customFee = item.customName ? 15.0 : 0.0;
           const refPrice = Math.max(60.0, item.retailPrice || 60.0);
-          return acc + (refPrice + customFee) * item.quantity;
+          const surcharge = getSizeSurcharge(item.size);
+          return acc + (refPrice + surcharge + customFee) * item.quantity;
         }, 0);
       },
 

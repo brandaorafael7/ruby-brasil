@@ -55,6 +55,8 @@ export async function POST(request: Request) {
         { size: 'G', stockQuantity: 100 },
         { size: 'GG', stockQuantity: 100 },
         { size: 'XG', stockQuantity: 100 },
+        { size: '3XL', stockQuantity: 50 },
+        { size: '4XL', stockQuantity: 50 },
       ],
     } = body;
 

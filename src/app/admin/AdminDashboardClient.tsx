@@ -191,6 +191,8 @@ export default function AdminDashboardClient({
       { size: 'G', stockQuantity: 100 },
       { size: 'GG', stockQuantity: 50 },
       { size: 'XG', stockQuantity: 20 },
+      { size: '3XL', stockQuantity: 20 },
+      { size: '4XL', stockQuantity: 10 },
     ],
   });
 
@@ -257,7 +259,13 @@ export default function AdminDashboardClient({
       setImageUploadMode('file');
     }
     if (fileInputRef.current) fileInputRef.current.value = '';
-    const standardSizes = ['P', 'M', 'G', 'GG', 'XG'];
+    const isKids =
+      p.type === 'INFANTIL' ||
+      p.league?.toLowerCase().includes('infantil') ||
+      p.name?.toLowerCase().includes('infantil');
+    const standardSizes = isKids
+      ? ['16', '18', '20', '22', '24', '26', '28']
+      : ['P', 'M', 'G', 'GG', 'XG', '3XL', '4XL'];
     const currentVariants = standardSizes.map((size) => {
       const found = p.variants?.find((v: any) => v.size === size);
       return { size, stockQuantity: found ? found.stockQuantity : 0 };
@@ -654,7 +662,7 @@ export default function AdminDashboardClient({
                     <th className="py-3.5 px-4">Camisa / Clube</th>
                     <th className="py-3.5 px-3">Liga / Tipo</th>
                     <th className="py-3.5 px-3">Preço Varejo</th>
-                    <th className="py-3.5 px-3">Grade P/M/G/GG/XG</th>
+                    <th className="py-3.5 px-3">Grade de Tamanhos</th>
                     <th className="py-3.5 px-3 text-center">Status</th>
                     <th className="py-3.5 px-4 text-right">Ações</th>
                   </tr>
@@ -1196,10 +1204,14 @@ export default function AdminDashboardClient({
                 <label className="block text-xs font-bold text-zinc-300 mb-2">
                   Grade de Estoque por Tamanho (Unidades):
                 </label>
-                <div className="grid grid-cols-5 gap-2">
+                <div className={`grid ${formData.variants.length > 5 ? 'grid-cols-4 sm:grid-cols-7' : 'grid-cols-5'} gap-2`}>
                   {formData.variants.map((v, idx) => (
-                    <div key={v.size} className="bg-zinc-950 p-2.5 rounded-xl border border-zinc-800 text-center">
-                      <span className="font-black text-xs text-rose-400 block mb-1">{v.size}</span>
+                    <div key={v.size} className="bg-zinc-950 p-2 rounded-xl border border-zinc-800 text-center">
+                      <span className="font-black text-xs text-rose-400 block mb-1">
+                        {v.size}
+                        {v.size === '3XL' && <span className="text-[9px] text-amber-300 block font-normal leading-tight">+R$6</span>}
+                        {v.size === '4XL' && <span className="text-[9px] text-amber-300 block font-normal leading-tight">+R$12</span>}
+                      </span>
                       <input
                         type="number"
                         min="0"
@@ -1210,7 +1222,7 @@ export default function AdminDashboardClient({
                           next[idx].stockQuantity = val;
                           setFormData({ ...formData, variants: next });
                         }}
-                        className="w-full bg-zinc-900 border border-zinc-700 rounded-lg py-1 px-1.5 text-center text-xs text-white font-mono focus:outline-none focus:border-rose-500"
+                        className="w-full bg-zinc-900 border border-zinc-700 rounded-lg py-1 px-1 text-center text-xs text-white font-mono focus:outline-none focus:border-rose-500"
                       />
                     </div>
                   ))}

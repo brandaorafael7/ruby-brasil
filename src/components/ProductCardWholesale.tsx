@@ -18,6 +18,9 @@ export default function ProductCardWholesale({ product }: Props) {
     M: 0,
     G: 0,
     GG: 0,
+    XG: 0,
+    '3XL': 0,
+    '4XL': 0,
   });
   const [justAdded, setJustAdded] = useState(false);
 
@@ -35,7 +38,7 @@ export default function ProductCardWholesale({ product }: Props) {
     if (totalSelected === 0) return;
     addGrid(product, grid);
     setJustAdded(true);
-    setGrid({ P: 0, M: 0, G: 0, GG: 0 });
+    setGrid({ P: 0, M: 0, G: 0, GG: 0, XG: 0, '3XL': 0, '4XL': 0 });
     setTimeout(() => setJustAdded(false), 2000);
   };
 
@@ -118,8 +121,8 @@ export default function ProductCardWholesale({ product }: Props) {
             </span>
           </div>
 
-          <div className="grid grid-cols-4 gap-1.5">
-            {['P', 'M', 'G', 'GG'].map((size) => {
+          <div className="grid grid-cols-4 sm:grid-cols-7 gap-1.5">
+            {['P', 'M', 'G', 'GG', 'XG', '3XL', '4XL'].map((size) => {
               const count = grid[size] || 0;
               return (
                 <div

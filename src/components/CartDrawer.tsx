@@ -17,7 +17,7 @@ import {
   MessageCircle,
 } from 'lucide-react';
 import { useCartStore } from '@/lib/store';
-import { formatCurrency, buildWhatsAppOrderMessage } from '@/lib/utils';
+import { formatCurrency, buildWhatsAppOrderMessage, getSizeSurcharge } from '@/lib/utils';
 
 export default function CartDrawer() {
   const {
@@ -227,6 +227,11 @@ export default function CartDrawer() {
                         <span className="bg-zinc-800 px-1.5 py-0.5 rounded text-zinc-200 font-bold">
                           Tam: {item.size}
                         </span>
+                        {getSizeSurcharge(item.size) > 0 && (
+                          <span className="bg-amber-500/20 text-amber-300 border border-amber-500/30 px-1.5 py-0.5 rounded font-bold text-[10px]">
+                            +{formatCurrency(getSizeSurcharge(item.size))} Especial
+                          </span>
+                        )}
                         {hasCustom && (
                           <span className="bg-amber-500/20 text-amber-300 px-1.5 py-0.5 rounded font-mono text-[10px]">
                             {item.customName} #{item.customNumber || '10'}

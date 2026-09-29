@@ -13,6 +13,14 @@ export function formatCurrency(value: number): string {
   }).format(value);
 }
 
+export function getSizeSurcharge(size: string): number {
+  if (!size) return 0.0;
+  const s = size.toUpperCase().trim();
+  if (s === '3XL' || s === 'G3' || s === 'XXXL' || s === '2XG') return 6.0;
+  if (s === '4XL' || s === 'G4' || s === 'XXXXL' || s === '3XG') return 12.0;
+  return 0.0;
+}
+
 export function buildWhatsAppOrderMessage({
   items,
   form,

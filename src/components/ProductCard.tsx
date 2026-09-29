@@ -5,7 +5,7 @@ import Image from 'next/image';
 import { ShoppingBag, Shirt, Check, Sparkles } from 'lucide-react';
 import { Product } from '@/lib/types';
 import { useCartStore } from '@/lib/store';
-import { formatCurrency } from '@/lib/utils';
+import { formatCurrency, getSizeSurcharge } from '@/lib/utils';
 import CustomizationModal from './CustomizationModal';
 
 interface Props {
@@ -21,12 +21,10 @@ export default function ProductCard({ product }: Props) {
     product.name?.toLowerCase().includes('infantil') ||
     product.name?.toLowerCase().includes('kids');
 
-  const availableSizes =
-    product.variants && product.variants.length > 0
-      ? product.variants.map((v) => v.size)
-      : isKids
-      ? ['16', '18', '20', '22', '24', '26', '28']
-      : ['P', 'M', 'G', 'GG', 'XG'];
+  const ADULT_SIZES = ['P', 'M', 'G', 'GG', 'XG', '3XL', '4XL'];
+  const KIDS_SIZES = ['16', '18', '20', '22', '24', '26', '28'];
+
+  const availableSizes = isKids ? KIDS_SIZES : ADULT_SIZES;
 
   const [selectedSize, setSelectedSize] = useState(() =>
     isKids
@@ -41,6 +39,8 @@ export default function ProductCard({ product }: Props) {
   const [justAdded, setJustAdded] = useState(false);
 
   const basePrice = product.retailPrice || 60.0;
+  const surcharge = getSizeSurcharge(selectedSize);
+  const currentPrice = basePrice + surcharge;
 
   const handleBuy = () => {
     addItem(product, selectedSize, 1);
@@ -100,14 +100,19 @@ export default function ProductCard({ product }: Props) {
               <span className="text-[10px] text-zinc-400 uppercase font-semibold block">Valor Unitário</span>
               <div className="flex items-baseline gap-2">
                 <span className="text-xl font-black text-white">
-                  {formatCurrency(basePrice)}
+                  {formatCurrency(currentPrice)}
                 </span>
+                {surcharge > 0 && (
+                  <span className="text-[10px] font-bold text-amber-300 bg-amber-500/20 border border-amber-500/30 px-1.5 py-0.5 rounded">
+                    +{formatCurrency(surcharge)} ({selectedSize})
+                  </span>
+                )}
               </div>
             </div>
             <div className="text-right">
               <span className="bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 text-[10px] font-bold px-2 py-0.5 rounded-full inline-flex items-center gap-1">
                 <Sparkles className="w-3 h-3 text-amber-300" />
-                R$ 55 (50+ un)
+                {surcharge > 0 ? `${formatCurrency(55 + surcharge)} (50+ un)` : 'R$ 55 (50+ un)'}
               </span>
             </div>
           </div>
@@ -132,20 +137,28 @@ export default function ProductCard({ product }: Props) {
                 <span className="text-[11px] text-emerald-400 font-medium">Em Estoque</span>
               </div>
               <div className={`grid ${availableSizes.length > 5 ? 'grid-cols-7' : 'grid-cols-5'} gap-1`}>
-                {availableSizes.map((size) => (
-                  <button
-                    key={size}
-                    type="button"
-                    onClick={() => setSelectedSize(size)}
-                    className={`py-1.5 rounded-lg text-xs font-bold border transition-all ${
-                      selectedSize === size
-                        ? 'bg-rose-600 border-rose-500 text-white shadow-md shadow-rose-950/50'
-                        : 'bg-zinc-950 border-zinc-800 text-zinc-300 hover:border-zinc-700'
-                    }`}
-                  >
-                    {size}
-                  </button>
-                ))}
+                {availableSizes.map((size) => {
+                  const sizeExtra = getSizeSurcharge(size);
+                  return (
+                    <button
+                      key={size}
+                      type="button"
+                      onClick={() => setSelectedSize(size)}
+                      className={`py-1.5 px-0.5 rounded-lg text-xs font-bold border transition-all flex flex-col items-center justify-center ${
+                        selectedSize === size
+                          ? 'bg-rose-600 border-rose-500 text-white shadow-md shadow-rose-950/50'
+                          : 'bg-zinc-950 border-zinc-800 text-zinc-300 hover:border-zinc-700'
+                      }`}
+                    >
+                      <span className="leading-tight">{size}</span>
+                      {sizeExtra > 0 && (
+                        <span className={`text-[8px] font-semibold leading-none mt-0.5 ${selectedSize === size ? 'text-rose-200' : 'text-amber-400'}`}>
+                          +{sizeExtra}
+                        </span>
+                      )}
+                    </button>
+                  );
+                })}
               </div>
             </div>
           </div>

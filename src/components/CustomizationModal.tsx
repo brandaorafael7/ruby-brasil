@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import { X, Shirt, Check } from 'lucide-react';
 import { Product } from '@/lib/types';
-import { formatCurrency } from '@/lib/utils';
+import { formatCurrency, getSizeSurcharge } from '@/lib/utils';
 
 interface Props {
   isOpen: boolean;
@@ -24,6 +24,10 @@ export default function CustomizationModal({
   const [number, setNumber] = useState('');
 
   if (!isOpen) return null;
+
+  const basePrice = product.retailPrice || 60.0;
+  const surcharge = getSizeSurcharge(selectedSize);
+  const totalItemPrice = basePrice + surcharge + 15.0;
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -54,9 +58,17 @@ export default function CustomizationModal({
         <div className="bg-zinc-950 p-3 rounded-xl border border-zinc-800 my-4 flex items-center justify-between text-xs">
           <div>
             <p className="font-bold text-white line-clamp-1">{product.name}</p>
-            <p className="text-zinc-400">Tamanho: <strong className="text-amber-400">{selectedSize}</strong></p>
+            <p className="text-zinc-400">
+              Tamanho: <strong className="text-amber-400">{selectedSize}</strong>
+              {surcharge > 0 && (
+                <span className="text-rose-400 font-bold ml-1.5">(+{formatCurrency(surcharge)})</span>
+              )}
+            </p>
           </div>
-          <span className="font-black text-emerald-400">{formatCurrency(product.retailPrice + 15.0)}</span>
+          <div className="text-right">
+            <span className="font-black text-emerald-400 block">{formatCurrency(totalItemPrice)}</span>
+            <span className="text-[10px] text-zinc-500">Camisa + Nome/Nº</span>
+          </div>
         </div>
 
         <div className="bg-gradient-to-b from-zinc-950 to-zinc-900 border border-zinc-800 rounded-xl p-4 text-center my-4 relative overflow-hidden">

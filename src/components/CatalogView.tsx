@@ -56,7 +56,7 @@ const FAQS = [
   {
     question: 'Posso mesclar times, modelos e tamanhos diferentes no mesmo pedido?',
     answer:
-      'Sim, com certeza! Você pode misturar qualquer clube do Brasileirão, times europeus, seleções e edições retrô em qualquer tamanho (P, M, G, GG, XG) para atingir as metas de frete grátis (10 un) ou atacado (50 un).',
+      'Sim, com certeza! Você pode misturar qualquer clube do Brasileirão, times europeus, seleções e edições retrô em qualquer tamanho adulto (do P ao 4XL) ou infantil (16 ao 28) para atingir as metas de frete grátis (10 un) ou atacado (50 un).',
   },
   {
     question: 'Qual é o padrão de qualidade das camisas?',
