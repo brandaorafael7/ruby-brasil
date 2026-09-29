@@ -141,6 +141,16 @@ export async function PUT(request: Request) {
 
     // Se foram enviados tamanhos e estoque, atualiza cada variante
     if (variants && Array.isArray(variants)) {
+      const validSizes = variants.map((v: any) => v.size).filter(Boolean);
+      if (validSizes.length > 0) {
+        await prisma.productVariant.deleteMany({
+          where: {
+            productId: id,
+            size: { notIn: validSizes },
+          },
+        });
+      }
+
       for (const variant of variants) {
         if (variant.size) {
           await prisma.productVariant.upsert({

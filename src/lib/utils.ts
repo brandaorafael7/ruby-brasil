@@ -13,6 +13,30 @@ export function formatCurrency(value: number): string {
   }).format(value);
 }
 
+export const ADULT_SIZES = ['P', 'M', 'G', 'GG', 'XG', '3XL', '4XL'];
+export const FEMALE_SIZES = ['P', 'M', 'G', 'GG', 'XG'];
+export const KIDS_SIZES = ['16', '18', '20', '22', '24', '26', '28'];
+
+export function getStandardSizesForProduct(
+  productOrType?: { type?: string; league?: string; name?: string } | string | null
+): string[] {
+  if (!productOrType) return ADULT_SIZES;
+  const typeStr = typeof productOrType === 'string' ? productOrType : productOrType.type || '';
+  const leagueStr = typeof productOrType === 'string' ? '' : productOrType.league || '';
+  const nameStr = typeof productOrType === 'string' ? '' : productOrType.name || '';
+
+  const upperType = typeStr.toUpperCase().trim();
+  const lowerAll = `${typeStr} ${leagueStr} ${nameStr}`.toLowerCase();
+
+  if (upperType === 'INFANTIL' || lowerAll.includes('infantil') || lowerAll.includes('kids')) {
+    return KIDS_SIZES;
+  }
+  if (upperType === 'FEMININA' || lowerAll.includes('feminin')) {
+    return FEMALE_SIZES;
+  }
+  return ADULT_SIZES;
+}
+
 export function getSizeSurcharge(size: string): number {
   if (!size) return 0.0;
   const s = size.toUpperCase().trim();
@@ -20,6 +44,7 @@ export function getSizeSurcharge(size: string): number {
   if (s === '4XL' || s === 'G4' || s === 'XXXXL' || s === '3XG') return 12.0;
   return 0.0;
 }
+
 
 export function buildWhatsAppOrderMessage({
   items,

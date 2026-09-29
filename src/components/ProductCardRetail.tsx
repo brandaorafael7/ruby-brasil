@@ -5,7 +5,7 @@ import Image from 'next/image';
 import { ShoppingBag, Shirt, Check, ArrowRight } from 'lucide-react';
 import { Product } from '@/lib/types';
 import { useCartStore } from '@/lib/store';
-import { formatCurrency } from '@/lib/utils';
+import { formatCurrency, getStandardSizesForProduct } from '@/lib/utils';
 import CustomizationModal from './CustomizationModal';
 
 interface Props {
@@ -14,7 +14,8 @@ interface Props {
 
 export default function ProductCardRetail({ product }: Props) {
   const { addItem, setSelectedMode } = useCartStore();
-  const [selectedSize, setSelectedSize] = useState('M');
+  const availableSizes = getStandardSizesForProduct(product);
+  const [selectedSize, setSelectedSize] = useState(() => availableSizes.includes('M') ? 'M' : availableSizes[0]);
   const [isCustomOpen, setIsCustomOpen] = useState(false);
   const [justAdded, setJustAdded] = useState(false);
 
@@ -88,8 +89,8 @@ export default function ProductCardRetail({ product }: Props) {
                 <span className="font-semibold text-zinc-300">Escolha o Tamanho:</span>
                 <span className="text-[11px] text-emerald-400 font-medium">Em Estoque</span>
               </div>
-              <div className="grid grid-cols-7 gap-1">
-                {['P', 'M', 'G', 'GG', 'XG', '3XL', '4XL'].map((size) => (
+              <div className={`grid ${availableSizes.length > 5 ? 'grid-cols-7' : 'grid-cols-5'} gap-1`}>
+                {availableSizes.map((size) => (
                   <button
                     key={size}
                     type="button"

@@ -36,7 +36,7 @@ import {
   Check,
   Filter,
 } from 'lucide-react';
-import { formatCurrency } from '@/lib/utils';
+import { formatCurrency, getStandardSizesForProduct } from '@/lib/utils';
 import { PromotionalBatch, WholesaleTier } from '@/lib/types';
 
 export const ORDER_STATUS_MAP: Record<
@@ -483,6 +483,8 @@ export default function AdminDashboardClient({
         { size: 'G', stockQuantity: 100 },
         { size: 'GG', stockQuantity: 50 },
         { size: 'XG', stockQuantity: 20 },
+        { size: '3XL', stockQuantity: 20 },
+        { size: '4XL', stockQuantity: 10 },
       ],
     });
     setIsModalOpen(true);
@@ -498,13 +500,7 @@ export default function AdminDashboardClient({
       setImageUploadMode('file');
     }
     if (fileInputRef.current) fileInputRef.current.value = '';
-    const isKids =
-      p.type === 'INFANTIL' ||
-      p.league?.toLowerCase().includes('infantil') ||
-      p.name?.toLowerCase().includes('infantil');
-    const standardSizes = isKids
-      ? ['16', '18', '20', '22', '24', '26', '28']
-      : ['P', 'M', 'G', 'GG', 'XG', '3XL', '4XL'];
+    const standardSizes = getStandardSizesForProduct(p);
     const currentVariants = standardSizes.map((size) => {
       const found = p.variants?.find((v: any) => v.size === size);
       return { size, stockQuantity: found ? found.stockQuantity : 0 };
@@ -948,18 +944,33 @@ export default function AdminDashboardClient({
                         </td>
                         <td className="py-3.5 px-3">
                           <div className="flex flex-wrap items-center gap-1 font-mono text-[10px]">
-                            {p.variants?.map((v: any) => (
-                              <span
-                                key={v.id || v.size}
-                                className={`px-2 py-0.5 rounded border ${
-                                  v.stockQuantity > 0
-                                    ? 'bg-zinc-900 border-zinc-800 text-zinc-300'
-                                    : 'bg-rose-950/40 border-rose-900/50 text-rose-400'
-                                }`}
-                              >
-                                {v.size}: <strong className="text-white">{v.stockQuantity}</strong>
-                              </span>
-                            ))}
+                            {(() => {
+                              const standardSizes = getStandardSizesForProduct(p);
+                              const relevantVariants = (p.variants || []).filter((v: any) => {
+                                if (standardSizes.includes(v.size)) return true;
+                                return v.stockQuantity > 0;
+                              });
+                              const sortedVariants = [...relevantVariants].sort((a: any, b: any) => {
+                                const idxA = standardSizes.indexOf(a.size);
+                                const idxB = standardSizes.indexOf(b.size);
+                                if (idxA !== -1 && idxB !== -1) return idxA - idxB;
+                                if (idxA !== -1) return -1;
+                                if (idxB !== -1) return 1;
+                                return a.size.localeCompare(b.size);
+                              });
+                              return sortedVariants.map((v: any) => (
+                                <span
+                                  key={v.id || v.size}
+                                  className={`px-2 py-0.5 rounded border ${
+                                    v.stockQuantity > 0
+                                      ? 'bg-zinc-900 border-zinc-800 text-zinc-300'
+                                      : 'bg-rose-950/40 border-rose-900/50 text-rose-400'
+                                  }`}
+                                >
+                                  {v.size}: <strong className="text-white">{v.stockQuantity}</strong>
+                                </span>
+                              ));
+                            })()}
                           </div>
                         </td>
                         <td className="py-3.5 px-3 text-center">
@@ -1591,7 +1602,22 @@ export default function AdminDashboardClient({
                   <label className="block text-xs font-bold text-zinc-300 mb-1">Tipo de Modelo</label>
                   <select
                     value={formData.type}
-                    onChange={(e) => setFormData({ ...formData, type: e.target.value })}
+                    onChange={(e) => {
+                      const newType = e.target.value;
+                      const standardSizes = getStandardSizesForProduct(newType);
+                      const currentMap = new Map(formData.variants.map((v) => [v.size, v.stockQuantity]));
+                      const updatedVariants = standardSizes.map((size) => ({
+                        size,
+                        stockQuantity: currentMap.has(size)
+                          ? currentMap.get(size)!
+                          : newType === 'INFANTIL'
+                          ? 20
+                          : size === '3XL' || size === '4XL'
+                          ? 10
+                          : 50,
+                      }));
+                      setFormData({ ...formData, type: newType, variants: updatedVariants });
+                    }}
                     className="w-full bg-zinc-950 border border-zinc-700/80 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-rose-500"
                   >
                     <option value="TORCEDOR">Torcedor (Standard)</option>

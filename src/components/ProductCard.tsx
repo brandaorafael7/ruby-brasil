@@ -5,7 +5,7 @@ import Image from 'next/image';
 import { ShoppingBag, Shirt, Check, Sparkles } from 'lucide-react';
 import { Product } from '@/lib/types';
 import { useCartStore } from '@/lib/store';
-import { formatCurrency, getSizeSurcharge } from '@/lib/utils';
+import { formatCurrency, getSizeSurcharge, getStandardSizesForProduct } from '@/lib/utils';
 import CustomizationModal from './CustomizationModal';
 
 interface Props {
@@ -21,34 +21,54 @@ export default function ProductCard({ product }: Props) {
     product.name?.toLowerCase().includes('infantil') ||
     product.name?.toLowerCase().includes('kids');
 
-  const ADULT_SIZES = ['P', 'M', 'G', 'GG', 'XG', '3XL', '4XL'];
-  const KIDS_SIZES = ['16', '18', '20', '22', '24', '26', '28'];
+  const standardSizes = getStandardSizesForProduct(product);
 
-  const availableSizes = isKids ? KIDS_SIZES : ADULT_SIZES;
+  const sizeInfoList = standardSizes.map((size) => {
+    const variant = product.variants?.find((v) => v.size === size);
+    // Respect stockQuantity from product.variants if loaded; fallback to available if product has no variants defined
+    const stock = variant !== undefined ? variant.stockQuantity : (product.variants?.length ? 0 : 50);
+    const inStock = stock > 0;
+    const surcharge = getSizeSurcharge(size);
+    return {
+      size,
+      stock,
+      inStock,
+      surcharge,
+    };
+  });
 
-  const [selectedSize, setSelectedSize] = useState(() =>
-    isKids
-      ? availableSizes.includes('22')
-        ? '22'
-        : availableSizes[0]
-      : availableSizes.includes('M')
-      ? 'M'
-      : availableSizes[0]
-  );
+  const [selectedSize, setSelectedSize] = useState(() => {
+    const preferred = isKids ? '22' : 'M';
+    const preferredInfo = sizeInfoList.find((s) => s.size === preferred);
+    if (preferredInfo && preferredInfo.inStock) {
+      return preferred;
+    }
+    const firstInStock = sizeInfoList.find((s) => s.inStock);
+    if (firstInStock) {
+      return firstInStock.size;
+    }
+    return standardSizes[0] || 'M';
+  });
+
   const [isCustomOpen, setIsCustomOpen] = useState(false);
   const [justAdded, setJustAdded] = useState(false);
+
+  const selectedInfo = sizeInfoList.find((s) => s.size === selectedSize);
+  const isSelectedInStock = selectedInfo ? selectedInfo.inStock : false;
 
   const basePrice = product.retailPrice || 60.0;
   const surcharge = getSizeSurcharge(selectedSize);
   const currentPrice = basePrice + surcharge;
 
   const handleBuy = () => {
+    if (!isSelectedInStock) return;
     addItem(product, selectedSize, 1);
     setJustAdded(true);
     setTimeout(() => setJustAdded(false), 1800);
   };
 
   const handleCustomConfirm = (name: string, number: string) => {
+    if (!isSelectedInStock) return;
     addItem(product, selectedSize, 1, name, number);
     setJustAdded(true);
     setTimeout(() => setJustAdded(false), 1800);
@@ -134,26 +154,51 @@ export default function ProductCard({ product }: Props) {
                 <span className="font-semibold text-zinc-300">
                   {isKids ? 'Idade / Tamanho Infantil:' : 'Escolha o Tamanho:'}
                 </span>
-                <span className="text-[11px] text-emerald-400 font-medium">Em Estoque</span>
+                {isSelectedInStock ? (
+                  <span className="text-[11px] text-emerald-400 font-semibold flex items-center gap-1">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                    Em Estoque
+                  </span>
+                ) : (
+                  <span className="text-[11px] text-rose-400 font-bold flex items-center gap-1">
+                    <span className="w-1.5 h-1.5 rounded-full bg-rose-400" />
+                    Esgotado
+                  </span>
+                )}
               </div>
-              <div className={`grid ${availableSizes.length > 5 ? 'grid-cols-7' : 'grid-cols-5'} gap-1`}>
-                {availableSizes.map((size) => {
-                  const sizeExtra = getSizeSurcharge(size);
+              <div className={`grid ${standardSizes.length > 5 ? 'grid-cols-7' : 'grid-cols-5'} gap-1`}>
+                {sizeInfoList.map((info) => {
+                  const isSelected = selectedSize === info.size;
                   return (
                     <button
-                      key={size}
+                      key={info.size}
                       type="button"
-                      onClick={() => setSelectedSize(size)}
-                      className={`py-1.5 px-0.5 rounded-lg text-xs font-bold border transition-all flex flex-col items-center justify-center ${
-                        selectedSize === size
-                          ? 'bg-rose-600 border-rose-500 text-white shadow-md shadow-rose-950/50'
+                      onClick={() => setSelectedSize(info.size)}
+                      className={`py-1.5 px-0.5 rounded-lg text-xs font-bold border transition-all flex flex-col items-center justify-center relative ${
+                        isSelected
+                          ? info.inStock
+                            ? 'bg-rose-600 border-rose-500 text-white shadow-md shadow-rose-950/50'
+                            : 'bg-zinc-800 border-rose-500/80 text-rose-300'
+                          : !info.inStock
+                          ? 'bg-zinc-950/40 border-zinc-800/60 text-zinc-600 hover:border-zinc-700'
                           : 'bg-zinc-950 border-zinc-800 text-zinc-300 hover:border-zinc-700'
                       }`}
                     >
-                      <span className="leading-tight">{size}</span>
-                      {sizeExtra > 0 && (
-                        <span className={`text-[8px] font-semibold leading-none mt-0.5 ${selectedSize === size ? 'text-rose-200' : 'text-amber-400'}`}>
-                          +{sizeExtra}
+                      <span className={`leading-tight ${!info.inStock ? 'line-through opacity-60 text-zinc-500' : ''}`}>
+                        {info.size}
+                      </span>
+                      {info.surcharge > 0 && info.inStock && (
+                        <span
+                          className={`text-[8px] font-semibold leading-none mt-0.5 ${
+                            isSelected ? 'text-rose-200' : 'text-amber-400'
+                          }`}
+                        >
+                          +{info.surcharge}
+                        </span>
+                      )}
+                      {!info.inStock && (
+                        <span className="text-[7px] text-rose-400/90 font-semibold leading-none mt-0.5">
+                          Esgotado
                         </span>
                       )}
                     </button>
@@ -167,10 +212,13 @@ export default function ProductCard({ product }: Props) {
           <div className="mt-4 space-y-2">
             <button
               type="button"
+              disabled={!isSelectedInStock}
               onClick={handleBuy}
               className={`w-full py-2.5 px-4 rounded-xl text-xs sm:text-sm font-black flex items-center justify-center gap-2 transition-all ${
                 justAdded
                   ? 'bg-emerald-600 text-white'
+                  : !isSelectedInStock
+                  ? 'bg-zinc-800/80 text-zinc-500 border border-zinc-700/50 cursor-not-allowed'
                   : 'bg-gradient-to-r from-rose-600 to-rose-500 hover:from-rose-500 hover:to-rose-400 text-white shadow-lg shadow-rose-950/60 active:scale-95'
               }`}
             >
@@ -179,6 +227,8 @@ export default function ProductCard({ product }: Props) {
                   <Check className="w-4 h-4 text-white" />
                   Adicionado ao Carrinho!
                 </>
+              ) : !isSelectedInStock ? (
+                <>Tamanho {selectedSize} Esgotado</>
               ) : (
                 <>
                   <ShoppingBag className="w-4 h-4" />
@@ -190,8 +240,13 @@ export default function ProductCard({ product }: Props) {
             {product.allowCustom && (
               <button
                 type="button"
-                onClick={() => setIsCustomOpen(true)}
-                className="w-full py-1.5 px-3 rounded-lg text-xs font-semibold text-zinc-400 hover:text-white bg-zinc-950 hover:bg-zinc-800/80 border border-zinc-800 flex items-center justify-center gap-1.5 transition-colors"
+                disabled={!isSelectedInStock}
+                onClick={() => isSelectedInStock && setIsCustomOpen(true)}
+                className={`w-full py-1.5 px-3 rounded-lg text-xs font-semibold border flex items-center justify-center gap-1.5 transition-colors ${
+                  !isSelectedInStock
+                    ? 'opacity-40 cursor-not-allowed border-zinc-800 bg-zinc-950 text-zinc-600'
+                    : 'text-zinc-400 hover:text-white bg-zinc-950 hover:bg-zinc-800/80 border-zinc-800'
+                }`}
               >
                 <Shirt className="w-3.5 h-3.5 text-amber-400" />
                 Personalizar Nome e Número (+ R$ 15)
