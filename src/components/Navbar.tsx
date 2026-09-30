@@ -7,7 +7,7 @@ import { useCartStore } from '@/lib/store';
 import { formatCurrency } from '@/lib/utils';
 
 export default function Navbar() {
-  const { getTotalPieces, getSubtotal, isWholesale, openCart } = useCartStore();
+  const { getTotalPieces, getSubtotal, isWholesale, openCart, promotionalBatch } = useCartStore();
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
@@ -17,6 +17,7 @@ export default function Navbar() {
   const totalPieces = mounted ? getTotalPieces() : 0;
   const subtotal = mounted ? getSubtotal() : 0;
   const wholesaleActive = mounted ? isWholesale() : false;
+  const minPieces = promotionalBatch?.minPiecesForFreeShip ?? 10;
 
   return (
     <header className="sticky top-0 z-40 bg-zinc-950/95 backdrop-blur-md border-b border-zinc-800/80 shadow-lg">
@@ -46,7 +47,7 @@ export default function Navbar() {
         <div className="hidden lg:flex items-center gap-2.5 text-xs font-semibold text-zinc-300">
           <div className="flex items-center gap-1.5 bg-zinc-900 border border-zinc-800 px-3 py-1.5 rounded-full text-[11px]">
             <Truck className="w-3.5 h-3.5 text-emerald-400" />
-            <span>Frete Fixo R$ 30 (&lt; 10 un) • <strong className="text-emerald-400">Frete Grátis</strong> (10+ un)</span>
+            <span><strong className="text-emerald-400">Frete Grátis</strong> a partir de {minPieces} camisas</span>
           </div>
           <div className="flex items-center gap-1.5 bg-zinc-900 border border-zinc-800 px-3 py-1.5 rounded-full text-[11px]">
             <Flame className="w-3.5 h-3.5 text-amber-400" />

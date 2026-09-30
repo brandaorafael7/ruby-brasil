@@ -29,7 +29,6 @@ export default function PromotionalTopBar() {
   }, [setPromotionalBatch]);
 
   const minPieces = promotionalBatch?.minPiecesForFreeShip ?? 10;
-  const fixedShippingFee = promotionalBatch?.fixedShippingFee ?? 30.0;
   const remaining = promotionalBatch?.remainingQuota ?? 5842;
 
   return (
@@ -63,7 +62,7 @@ export default function PromotionalTopBar() {
             <div className="flex items-center gap-1.5 text-zinc-300">
               <Truck className="w-4 h-4 text-emerald-400" />
               <span>
-                <strong>FRETE GRÁTIS</strong> a partir de <strong>{minPieces} camisas</strong> (Menos de {minPieces}: R$ {fixedShippingFee.toFixed(0)} fixo)
+                <strong>FRETE GRÁTIS</strong> a partir de <strong>{minPieces} camisas</strong>
               </span>
               {totalPieces > 0 && totalPieces < minPieces && (
                 <span className="text-amber-400 text-xs font-semibold ml-1">
