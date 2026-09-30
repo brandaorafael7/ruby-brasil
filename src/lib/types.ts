@@ -39,6 +39,7 @@ export interface PromotionalBatch {
   totalQuota: number;
   remainingQuota: number;
   minPiecesForFreeShip: number;
+  fixedShippingFee?: number;
   isActive: boolean;
   description?: string | null;
 }

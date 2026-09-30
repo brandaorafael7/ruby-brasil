@@ -28,6 +28,7 @@ export default function CheckoutPage() {
     getShippingFee,
     getFinalTotal,
     clearCart,
+    promotionalBatch,
   } = useCartStore();
 
   const [mounted, setMounted] = useState(false);
@@ -64,6 +65,9 @@ export default function CheckoutPage() {
   const isFreeShip = isFreeShippingEligible();
   const shippingFee = getShippingFee();
   const finalTotal = getFinalTotal();
+
+  const minPiecesForFreeShip = promotionalBatch?.minPiecesForFreeShip || 10;
+  const fixedShippingFee = promotionalBatch?.fixedShippingFee || 30.0;
 
   const whatsappNumber = process.env.NEXT_PUBLIC_WHATSAPP_NUMBER || '5579988542410';
   const whatsappDisplay = '(79) 98854-2410';
@@ -437,7 +441,7 @@ export default function CheckoutPage() {
                     Frete 100% Grátis Garantido!
                   </div>
                   <p className="text-[11px] text-zinc-300 mt-1">
-                    Seu pedido possui <strong>{totalPieces} camisas</strong> (a partir de 10 peças o frete é por nossa conta).
+                    Seu pedido possui <strong>{totalPieces} camisas</strong> (a partir de {minPiecesForFreeShip} peças o frete é por nossa conta).
                   </p>
                 </div>
               ) : (
@@ -446,7 +450,7 @@ export default function CheckoutPage() {
                     Pedido atual: <strong>{totalPieces} {totalPieces === 1 ? 'camisa' : 'camisas'}</strong>.
                   </p>
                   <p className="text-[11px] text-amber-300 font-semibold mt-1">
-                    Frete fixo de <strong>R$ 30,00</strong>. Adicione mais <strong>{10 - totalPieces}</strong> {10 - totalPieces === 1 ? 'camisa' : 'camisas'} para liberar <strong>Frete Grátis</strong>!
+                    Frete fixo de <strong>{formatCurrency(fixedShippingFee)}</strong>. Adicione mais <strong>{minPiecesForFreeShip - totalPieces}</strong> {minPiecesForFreeShip - totalPieces === 1 ? 'camisa' : 'camisas'} para liberar <strong>Frete Grátis</strong>!
                   </p>
                 </div>
               )}
@@ -501,7 +505,7 @@ export default function CheckoutPage() {
                 <div className="flex justify-between text-zinc-300">
                   <span>Frete</span>
                   {isFreeShip ? (
-                    <span className="text-emerald-400 font-bold">GRÁTIS (10+ peças)</span>
+                    <span className="text-emerald-400 font-bold">GRÁTIS ({minPiecesForFreeShip}+ peças)</span>
                   ) : (
                     <span className="font-bold text-white">{formatCurrency(shippingFee)}</span>
                   )}

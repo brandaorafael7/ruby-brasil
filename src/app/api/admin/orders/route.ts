@@ -58,6 +58,79 @@ export async function PUT(req: Request) {
       );
     }
 
+    const existingOrder = await prisma.order.findUnique({
+      where: { id: orderId },
+      include: { items: true },
+    });
+
+    if (!existingOrder) {
+      return NextResponse.json({ error: 'Pedido não encontrado.' }, { status: 404 });
+    }
+
+    const previousStatus = existingOrder.status;
+
+    // Se o pedido era ativo e foi cancelado: devolve o estoque!
+    if (previousStatus !== 'CANCELADO' && cleanStatus === 'CANCELADO') {
+      for (const item of existingOrder.items) {
+        if (item.productId && item.size) {
+          await prisma.productVariant.updateMany({
+            where: {
+              productId: item.productId,
+              size: item.size,
+            },
+            data: {
+              stockQuantity: {
+                increment: item.quantity,
+              },
+            },
+          }).catch(() => {});
+        }
+      }
+
+      const activeBatch = await prisma.promotionalBatch.findFirst({ where: { isActive: true } });
+      if (activeBatch) {
+        await prisma.promotionalBatch.update({
+          where: { id: activeBatch.id },
+          data: {
+            remainingQuota: {
+              increment: existingOrder.totalQuantity,
+            },
+          },
+        }).catch(() => {});
+      }
+    }
+
+    // Se o pedido era CANCELADO e foi reativado: deduz novamente do estoque!
+    if (previousStatus === 'CANCELADO' && cleanStatus !== 'CANCELADO') {
+      for (const item of existingOrder.items) {
+        if (item.productId && item.size) {
+          await prisma.productVariant.updateMany({
+            where: {
+              productId: item.productId,
+              size: item.size,
+            },
+            data: {
+              stockQuantity: {
+                decrement: item.quantity,
+              },
+            },
+          }).catch(() => {});
+        }
+      }
+
+      const activeBatch = await prisma.promotionalBatch.findFirst({ where: { isActive: true } });
+      if (activeBatch) {
+        await prisma.promotionalBatch.update({
+          where: { id: activeBatch.id },
+          data: {
+            remainingQuota: {
+              decrement: existingOrder.totalQuantity,
+            },
+          },
+        }).catch(() => {});
+      }
+    }
+
     const updatedOrder = await prisma.order.update({
       where: { id: orderId },
       data: {

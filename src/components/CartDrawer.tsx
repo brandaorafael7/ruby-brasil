@@ -35,6 +35,7 @@ export default function CartDrawer() {
     isFreeShippingEligible,
     getShippingFee,
     getFinalTotal,
+    promotionalBatch,
   } = useCartStore();
 
   const [mounted, setMounted] = useState(false);
@@ -54,7 +55,10 @@ export default function CartDrawer() {
   const shippingFee = getShippingFee();
   const finalTotal = getFinalTotal();
 
-  const percentToFreeShip = Math.min(100, (totalPieces / 10) * 100);
+  const minPiecesForFreeShip = promotionalBatch?.minPiecesForFreeShip || 10;
+  const fixedShippingFee = promotionalBatch?.fixedShippingFee || 30.0;
+
+  const percentToFreeShip = Math.min(100, (totalPieces / minPiecesForFreeShip) * 100);
   const percentToWholesale = Math.min(100, (totalPieces / 50) * 100);
 
   const whatsappNumber = process.env.NEXT_PUBLIC_WHATSAPP_NUMBER || '5579988542410';
@@ -108,7 +112,7 @@ export default function CartDrawer() {
                     ? '🚀 Atacado Especial (R$ 55/un)'
                     : isFreeShip
                     ? '🎉 Frete 100% Grátis Ativo'
-                    : '📦 Frete Fixo R$ 30 (até 9 peças)'}
+                    : `📦 Frete Fixo R$ ${fixedShippingFee.toFixed(0)} (até ${minPiecesForFreeShip - 1} peças)`}
                 </span>
               </div>
             </div>
@@ -124,14 +128,14 @@ export default function CartDrawer() {
 
           {/* BARRA DE METAS E FRETE */}
           <div className="p-3.5 bg-zinc-900 border-b border-zinc-800/80">
-            {totalPieces < 10 ? (
+            {totalPieces < minPiecesForFreeShip ? (
               <div>
                 <div className="flex items-center justify-between text-xs mb-1.5">
                   <span className="text-zinc-300 font-medium">
-                    Faltam <strong className="text-amber-300 font-bold">{10 - totalPieces} peças</strong> para Frete Grátis
+                    Faltam <strong className="text-amber-300 font-bold">{minPiecesForFreeShip - totalPieces} peças</strong> para Frete Grátis
                   </span>
                   <span className="text-emerald-400 font-bold text-[11px]">
-                    10+ peças = Frete Grátis
+                    {minPiecesForFreeShip}+ peças = Frete Grátis
                   </span>
                 </div>
                 <div className="w-full bg-zinc-800 h-2.5 rounded-full overflow-hidden">
@@ -142,7 +146,7 @@ export default function CartDrawer() {
                 </div>
                 <p className="text-[11px] text-zinc-400 mt-1.5 flex items-center gap-1">
                   <Truck className="w-3.5 h-3.5 text-amber-400" />
-                  Menos de 10 camisas: Frete fixado em R$ 30,00.
+                  Menos de {minPiecesForFreeShip} camisas: Frete fixado em R$ {fixedShippingFee.toFixed(2)}.
                 </p>
               </div>
             ) : totalPieces < 50 ? (
@@ -297,7 +301,7 @@ export default function CartDrawer() {
                   </span>
                   {isFreeShip ? (
                     <span className="text-emerald-400 font-black flex items-center gap-1">
-                      GRÁTIS (10+ peças)
+                      GRÁTIS ({minPiecesForFreeShip}+ peças)
                     </span>
                   ) : (
                     <span className="text-zinc-200 font-semibold">{formatCurrency(shippingFee)} (Fixo)</span>

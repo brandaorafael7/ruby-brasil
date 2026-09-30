@@ -15,8 +15,9 @@ const DEFAULT_BATCH: PromotionalBatch = {
   totalQuota: 6000,
   remainingQuota: 5842,
   minPiecesForFreeShip: 10,
+  fixedShippingFee: 30.0,
   isActive: true,
-  description: 'Frete Fixo R$ 30 até 9 peças e Frete Grátis a partir de 10 peças.',
+  description: 'Frete Fixo e Frete Grátis a partir da cota mínima.',
 };
 
 interface CartStore {
@@ -213,15 +214,16 @@ export const useCartStore = create<CartStore>()(
       },
 
       isFreeShippingEligible: () => {
-        return get().getTotalPieces() >= 10;
+        const minPieces = get().promotionalBatch?.minPiecesForFreeShip ?? 10;
+        return get().getTotalPieces() >= minPieces;
       },
 
       getShippingFee: () => {
         const total = get().getTotalPieces();
         if (total === 0) return 0;
-        // Menos de 10 camisas: Frete fixado em R$ 30,00!
-        // A partir de 10 camisas: Frete Grátis!
-        return total >= 10 ? 0.0 : 30.0;
+        const minPieces = get().promotionalBatch?.minPiecesForFreeShip ?? 10;
+        const fixedFee = get().promotionalBatch?.fixedShippingFee ?? 30.0;
+        return total >= minPieces ? 0.0 : fixedFee;
       },
 
       getFinalTotal: () => {

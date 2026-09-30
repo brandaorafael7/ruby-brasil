@@ -63,6 +63,7 @@ model PromotionalBatch {
   totalQuota           Int      @default(6000)
   remainingQuota       Int      @default(6000)
   minPiecesForFreeShip Int      @default(10)
+  fixedShippingFee     Float    @default(30.00)
   isActive             Boolean  @default(true)
   description          String?
   orders               Order[]

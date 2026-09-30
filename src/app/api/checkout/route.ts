@@ -19,29 +19,46 @@ export async function POST(req: Request) {
     // Menos de 50 camisas: Preço base R$ 60,00 cada (ou item.retailPrice)
     const appliedTierPrice = totalQuantity >= 50 ? 55.0 : 60.0;
 
-    // Regra de Frete (João Felipe):
-    // Menos de 10 camisas: Frete fixado em R$ 30,00!
-    // A partir de 10 camisas: Frete 100% Grátis!
-    const isFreeShipping = totalQuantity >= 10;
-    const shippingCost = isFreeShipping ? 0.0 : (totalQuantity > 0 ? 30.0 : 0.0);
-
     const activeBatch = await prisma.promotionalBatch.findFirst({
       where: { isActive: true },
       orderBy: { createdAt: 'desc' },
     });
 
+    const minPiecesForFreeShip = activeBatch?.minPiecesForFreeShip ?? 10;
+    const fixedShippingFee = activeBatch?.fixedShippingFee ?? 30.0;
+
+    const isFreeShipping = totalQuantity >= minPiecesForFreeShip;
+    const shippingCost = isFreeShipping ? 0.0 : (totalQuantity > 0 ? fixedShippingFee : 0.0);
+
     let promoBatchId: string | null = null;
-    if (activeBatch && activeBatch.isActive && isFreeShipping) {
+    if (activeBatch && activeBatch.isActive) {
       promoBatchId = activeBatch.id;
-      if (activeBatch.remainingQuota >= totalQuantity) {
-        await prisma.promotionalBatch.update({
-          where: { id: activeBatch.id },
+      await prisma.promotionalBatch.update({
+        where: { id: activeBatch.id },
+        data: {
+          remainingQuota: {
+            decrement: totalQuantity,
+          },
+        },
+      }).catch(() => {});
+    }
+
+    // Decrementa o estoque real de cada variante comprada
+    for (const item of items) {
+      if (item.productId && item.size) {
+        await prisma.productVariant.updateMany({
+          where: {
+            productId: item.productId,
+            size: item.size,
+          },
           data: {
-            remainingQuota: {
-              decrement: totalQuantity,
+            stockQuantity: {
+              decrement: Number(item.quantity) || 1,
             },
           },
-        }).catch(() => {});
+        }).catch((err) => {
+          console.warn(`Aviso ao atualizar estoque variante (${item.productId} - ${item.size}):`, err);
+        });
       }
     }
 

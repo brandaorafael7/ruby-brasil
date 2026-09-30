@@ -117,7 +117,10 @@ export function buildOrderWhatsAppReport(order: any): string {
   text += `🔢 *Número do Pedido:* #${order.orderNumber}\n`;
   text += `📌 *Status:* ${statusInfo.emoji} *${statusInfo.label.toUpperCase()}*\n`;
   text += `👕 *Total de Peças:* ${order.totalQuantity} camisa(s)\n`;
-  text += `💰 *Valor Total:* ${formatCurrency(order.finalTotal)} (${order.isFreeShipping ? 'Frete Grátis' : 'Frete R$ 30'})\n\n`;
+  const shippingText = order.isFreeShipping
+    ? 'Frete Grátis'
+    : `Frete ${formatCurrency(order.shippingFee || 30)}`;
+  text += `💰 *Valor Total:* ${formatCurrency(order.finalTotal)} (${shippingText})\n\n`;
   text += `📋 *Itens do Pedido:*\n${itemsText || '  Nenhum item registrado'}\n\n`;
   text += `📍 *Endereço de Entrega:*\n`;
   text += `• ${order.street}, ${order.number}${order.complement ? ` (${order.complement})` : ''}\n`;
@@ -236,6 +239,9 @@ export default function AdminDashboardClient({
   );
   const [minPiecesInput, setMinPiecesInput] = useState(
     initialBatch ? String(initialBatch.minPiecesForFreeShip) : '10'
+  );
+  const [fixedShippingFeeInput, setFixedShippingFeeInput] = useState(
+    initialBatch ? String(initialBatch.fixedShippingFee ?? '30.00') : '30.00'
   );
   const [isUpdatingBatch, setIsUpdatingBatch] = useState(false);
   const [batchSuccessMsg, setBatchSuccessMsg] = useState('');
@@ -614,6 +620,7 @@ export default function AdminDashboardClient({
           remainingQuota: newRemaining !== undefined ? newRemaining : Number(remainingQuotaInput),
           totalQuota: newTotal !== undefined ? newTotal : Number(totalQuotaInput),
           minPiecesForFreeShip: Number(minPiecesInput),
+          fixedShippingFee: Number(fixedShippingFeeInput),
           isActive: batch.isActive,
         }),
       });
@@ -623,6 +630,8 @@ export default function AdminDashboardClient({
         setBatch(data);
         setRemainingQuotaInput(String(data.remainingQuota));
         setTotalQuotaInput(String(data.totalQuota));
+        setMinPiecesInput(String(data.minPiecesForFreeShip));
+        setFixedShippingFeeInput(String(data.fixedShippingFee ?? '30.00'));
         setBatchSuccessMsg('Lote promocional atualizado com sucesso!');
         setTimeout(() => setBatchSuccessMsg(''), 3000);
       } else {
@@ -1077,7 +1086,7 @@ export default function AdminDashboardClient({
                 </div>
               )}
 
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                 <div>
                   <label className="block text-xs font-bold text-zinc-300 mb-1.5">
                     Cota Restante no Contador (Peças)
@@ -1104,12 +1113,26 @@ export default function AdminDashboardClient({
 
                 <div>
                   <label className="block text-xs font-bold text-zinc-300 mb-1.5">
-                    Mínimo de Peças p/ Frete Grátis
+                    Mínimo Peças p/ Frete Grátis
                   </label>
                   <input
                     type="number"
                     value={minPiecesInput}
                     onChange={(e) => setMinPiecesInput(e.target.value)}
+                    className="w-full bg-zinc-950 border border-zinc-700/80 rounded-xl px-4 py-3 text-sm text-white font-mono focus:outline-none focus:border-rose-500 font-bold"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-zinc-300 mb-1.5">
+                    Valor Frete Fixo (R$)
+                  </label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    value={fixedShippingFeeInput}
+                    onChange={(e) => setFixedShippingFeeInput(e.target.value)}
+                    placeholder="30.00"
                     className="w-full bg-zinc-950 border border-zinc-700/80 rounded-xl px-4 py-3 text-sm text-white font-mono focus:outline-none focus:border-rose-500 font-bold"
                   />
                 </div>

@@ -91,7 +91,7 @@ export function buildWhatsAppOrderMessage({
   if (totalPieces >= 50) {
     text += `• Economia Atacado: ${formatCurrency(savings)}\n`;
   }
-  text += `• Frete: ${isFreeShipping ? '🎉 FRETE GRÁTIS (10+ peças)' : 'R$ 30,00 (Frete Fixo até 9 peças)'}\n\n`;
+  text += `• Frete: ${isFreeShipping ? '🎉 FRETE GRÁTIS' : `${formatCurrency(shippingFee)} (Frete Fixo)`}\n\n`;
 
   text += `📋 *GRADE DETALHADA DE ITENS:*\n`;
   items.forEach((item, index) => {
@@ -104,7 +104,7 @@ export function buildWhatsAppOrderMessage({
 
   text += `\n💰 *VALOR TOTAL:*\n`;
   text += `• Subtotal Produtos: ${formatCurrency(subtotal)}\n`;
-  text += `• Frete: ${isFreeShipping ? 'GRÁTIS' : 'R$ 30,00'}\n`;
+  text += `• Frete: ${isFreeShipping ? 'GRÁTIS' : formatCurrency(shippingFee)}\n`;
   text += `• *TOTAL DO PEDIDO: ${formatCurrency(finalTotal)}*\n`;
   text += `• Finalização: *Canal Oficial Ruby Brasil*\n\n`;
 
