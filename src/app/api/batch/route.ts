@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { getAdminSessionFromRequest } from '@/lib/auth';
 
 export const dynamic = 'force-dynamic';
 
@@ -34,6 +35,14 @@ export async function GET() {
 
 export async function PUT(req: Request) {
   try {
+    const session = getAdminSessionFromRequest(req);
+    if (!session) {
+      return NextResponse.json(
+        { error: 'Não autorizado. Faça login como administrador.' },
+        { status: 401 }
+      );
+    }
+
     const body = await req.json();
     const { batchId, remainingQuota, totalQuota, isActive, minPiecesForFreeShip, fixedShippingFee } = body;
 

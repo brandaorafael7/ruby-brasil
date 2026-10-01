@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { getAdminSessionFromRequest } from '@/lib/auth';
 
 export const dynamic = 'force-dynamic';
 
@@ -13,8 +14,16 @@ const VALID_ORDER_STATUSES = [
 ] as const;
 
 // 1. LISTAR PEDIDOS COMPLETOS (Admin)
-export async function GET() {
+export async function GET(req: Request) {
   try {
+    const session = getAdminSessionFromRequest(req);
+    if (!session) {
+      return NextResponse.json(
+        { error: 'Não autorizado. Faça login como administrador.' },
+        { status: 401 }
+      );
+    }
+
     const orders = await prisma.order.findMany({
       include: {
         items: {
@@ -37,6 +46,14 @@ export async function GET() {
 // 2. ATUALIZAR STATUS DO PEDIDO (Admin)
 export async function PUT(req: Request) {
   try {
+    const session = getAdminSessionFromRequest(req);
+    if (!session) {
+      return NextResponse.json(
+        { error: 'Não autorizado. Faça login como administrador.' },
+        { status: 401 }
+      );
+    }
+
     const body = await req.json();
     const { orderId, status } = body;
 

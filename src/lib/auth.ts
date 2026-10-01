@@ -111,3 +111,17 @@ export function verifySessionToken(token: string): { email: string } | null {
     return null;
   }
 }
+
+export function getAdminSessionFromRequest(request: Request): { email: string } | null {
+  try {
+    const cookiesHeader = request.headers.get('cookie') || '';
+    const match = cookiesHeader.match(/rubybr_admin_session=([^;]+)/);
+    const sessionToken = match ? decodeURIComponent(match[1]) : null;
+
+    if (!sessionToken) return null;
+    return verifySessionToken(sessionToken);
+  } catch {
+    return null;
+  }
+}
+

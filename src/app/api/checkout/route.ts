@@ -33,14 +33,6 @@ export async function POST(req: Request) {
     let promoBatchId: string | null = null;
     if (activeBatch && activeBatch.isActive) {
       promoBatchId = activeBatch.id;
-      await prisma.promotionalBatch.update({
-        where: { id: activeBatch.id },
-        data: {
-          remainingQuota: {
-            decrement: totalQuantity,
-          },
-        },
-      }).catch(() => {});
     }
 
     // 1. Agrupa e totaliza as quantidades solicitadas por (productId, size)
@@ -90,7 +82,7 @@ export async function POST(req: Request) {
       }
     }
 
-    // 3. Decrementa o estoque real de cada variante comprada
+    // 3. Decrementa o estoque real de cada variante comprada e atualiza a cota do lote
     for (const reqVar of requestedVariants) {
       await prisma.productVariant.update({
         where: {
@@ -108,6 +100,18 @@ export async function POST(req: Request) {
         console.warn(`Aviso ao atualizar estoque variante (${reqVar.productId} - ${reqVar.size}):`, err);
       });
     }
+
+    if (promoBatchId) {
+      await prisma.promotionalBatch.update({
+        where: { id: promoBatchId },
+        data: {
+          remainingQuota: {
+            decrement: totalQuantity,
+          },
+        },
+      }).catch(() => {});
+    }
+
 
     let subtotal = 0;
     const orderItemsData = items.map((item: any) => {

@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { getAdminSessionFromRequest } from '@/lib/auth';
 
 export const dynamic = 'force-dynamic';
 
@@ -36,6 +37,14 @@ export async function GET(request: Request) {
 // 2. ADICIONAR NOVA PEÇA (POST)
 export async function POST(request: Request) {
   try {
+    const session = getAdminSessionFromRequest(request);
+    if (!session) {
+      return NextResponse.json(
+        { error: 'Não autorizado. Faça login como administrador.' },
+        { status: 401 }
+      );
+    }
+
     const body = await request.json();
     const {
       name,
@@ -115,6 +124,14 @@ export async function POST(request: Request) {
 // 3. EDITAR PEÇA EXISTENTE (PUT)
 export async function PUT(request: Request) {
   try {
+    const session = getAdminSessionFromRequest(request);
+    if (!session) {
+      return NextResponse.json(
+        { error: 'Não autorizado. Faça login como administrador.' },
+        { status: 401 }
+      );
+    }
+
     const body = await request.json();
     const { id, name, club, league, season, type, imageUrl, retailPrice, description, isActive, allowCustom, variants } = body;
 
@@ -191,6 +208,14 @@ export async function PUT(request: Request) {
 // 4. EXCLUIR PEÇA (DELETE)
 export async function DELETE(request: Request) {
   try {
+    const session = getAdminSessionFromRequest(request);
+    if (!session) {
+      return NextResponse.json(
+        { error: 'Não autorizado. Faça login como administrador.' },
+        { status: 401 }
+      );
+    }
+
     const { searchParams } = new URL(request.url);
     const id = searchParams.get('id');
 

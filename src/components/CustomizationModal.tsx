@@ -23,15 +23,38 @@ export default function CustomizationModal({
   const [name, setName] = useState('');
   const [number, setNumber] = useState('');
 
+  // Limpa os campos quando o modal é aberto ou fechado
+  React.useEffect(() => {
+    if (!isOpen) {
+      setName('');
+      setNumber('');
+    }
+  }, [isOpen]);
+
   if (!isOpen) return null;
 
   const basePrice = product.retailPrice || 60.0;
   const surcharge = getSizeSurcharge(selectedSize);
   const totalItemPrice = basePrice + surcharge + 15.0;
 
+  const handleClose = () => {
+    setName('');
+    setNumber('');
+    onClose();
+  };
+
+  const hasContent = name.trim().length > 0 || number.trim().length > 0;
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    onConfirm(name.toUpperCase().trim(), number.trim());
+    const cleanName = name.toUpperCase().trim();
+    const cleanNumber = number.trim();
+
+    if (!cleanName && !cleanNumber) return;
+
+    onConfirm(cleanName, cleanNumber);
+    setName('');
+    setNumber('');
     onClose();
   };
 
@@ -39,7 +62,7 @@ export default function CustomizationModal({
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
       <div className="bg-zinc-900 border border-zinc-700 w-full max-w-md rounded-2xl p-6 shadow-2xl relative">
         <button
-          onClick={onClose}
+          onClick={handleClose}
           className="absolute top-4 right-4 text-zinc-400 hover:text-white p-1 rounded-lg hover:bg-zinc-800"
         >
           <X className="w-5 h-5" />
@@ -117,14 +140,15 @@ export default function CustomizationModal({
           <div className="pt-3 flex gap-2">
             <button
               type="button"
-              onClick={onClose}
+              onClick={handleClose}
               className="w-1/2 py-2.5 rounded-xl border border-zinc-700 text-zinc-300 font-bold text-xs hover:bg-zinc-800"
             >
               Cancelar
             </button>
             <button
               type="submit"
-              className="w-1/2 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-black font-black text-xs flex items-center justify-center gap-1.5 shadow-lg shadow-amber-950/50"
+              disabled={!hasContent}
+              className="w-1/2 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 disabled:opacity-40 disabled:cursor-not-allowed text-black font-black text-xs flex items-center justify-center gap-1.5 shadow-lg shadow-amber-950/50"
             >
               <Check className="w-4 h-4" />
               Aplicar e Comprar

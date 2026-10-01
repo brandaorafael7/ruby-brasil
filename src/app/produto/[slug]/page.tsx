@@ -12,11 +12,19 @@ interface PageProps {
 }
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
+  const rawSlug = params.slug || '';
+  let decodedSlug = rawSlug;
+  try {
+    decodedSlug = decodeURIComponent(rawSlug);
+  } catch {}
+
   const product = await prisma.product.findFirst({
     where: {
       OR: [
-        { slug: params.slug },
-        { id: params.slug },
+        { slug: rawSlug },
+        { slug: decodedSlug },
+        { id: rawSlug },
+        { id: decodedSlug },
       ],
     },
   });
@@ -53,11 +61,19 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 }
 
 export default async function ProductDetailPage({ params }: PageProps) {
+  const rawSlug = params.slug || '';
+  let decodedSlug = rawSlug;
+  try {
+    decodedSlug = decodeURIComponent(rawSlug);
+  } catch {}
+
   const product = await prisma.product.findFirst({
     where: {
       OR: [
-        { slug: params.slug },
-        { id: params.slug },
+        { slug: rawSlug },
+        { slug: decodedSlug },
+        { id: rawSlug },
+        { id: decodedSlug },
       ],
     },
     include: {

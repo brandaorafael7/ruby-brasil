@@ -179,7 +179,7 @@ export default function ProductCardRetail({ product }: Props) {
               className="bg-emerald-950/30 border border-emerald-500/20 rounded-lg p-1.5 mb-2.5 text-[10px] text-zinc-300 flex items-center justify-between cursor-pointer hover:bg-emerald-950/50 transition-colors"
             >
               <span>
-                Comprando <strong className="text-emerald-400">10+ peças</strong> sai a <strong className="text-amber-300">R$ 65,00</strong> com Frete Grátis!
+                Comprando <strong className="text-emerald-400">10+ peças</strong> você ganha <strong className="text-emerald-300">Frete 100% Grátis</strong>!
               </span>
               <ArrowRight className="w-3 h-3 text-emerald-400 shrink-0 ml-1" />
             </div>
