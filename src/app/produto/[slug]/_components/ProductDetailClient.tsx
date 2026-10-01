@@ -19,11 +19,11 @@ import {
   Minus,
   CheckCircle2,
 } from 'lucide-react';
-import { Product } from '@/lib/types';
-import { useCartStore } from '@/lib/store';
+import { Product } from '@/types';
+import { useCartStore } from '@/store';
 import { formatCurrency, getSizeSurcharge, getStandardSizesForProduct } from '@/lib/utils';
-import CustomizationModal from '@/components/CustomizationModal';
-import ProductCard from '@/components/ProductCard';
+import CustomizationModal from '@/components/product/CustomizationModal';
+import ProductCard from '@/components/product/ProductCard';
 
 interface Props {
   product: Product;

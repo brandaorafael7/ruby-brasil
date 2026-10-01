@@ -23,8 +23,8 @@ import {
   Phone,
   Layers,
 } from 'lucide-react';
-import { Product } from '@/lib/types';
-import ProductCard from './ProductCard';
+import { Product } from '@/types';
+import ProductCard from '@/components/product/ProductCard';
 
 interface Props {
   initialProducts: Product[];

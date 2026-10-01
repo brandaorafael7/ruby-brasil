@@ -1,5 +1,5 @@
 import { prisma } from '@/lib/prisma';
-import CatalogView from '@/components/CatalogView';
+import CatalogView from '@/components/catalog/CatalogView';
 
 export const dynamic = 'force-dynamic';
 

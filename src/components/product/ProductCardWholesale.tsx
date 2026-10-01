@@ -3,8 +3,8 @@
 import React, { useState } from 'react';
 import Image from 'next/image';
 import { Plus, Minus, Check, Layers, Flame } from 'lucide-react';
-import { Product } from '@/lib/types';
-import { useCartStore } from '@/lib/store';
+import { Product } from '@/types';
+import { useCartStore } from '@/store';
 import { formatCurrency } from '@/lib/utils';
 
 interface Props {

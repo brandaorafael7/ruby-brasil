@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { ShoppingBag, Settings, Truck, Flame } from 'lucide-react';
-import { useCartStore } from '@/lib/store';
+import { useCartStore } from '@/store';
 import { formatCurrency } from '@/lib/utils';
 
 export default function Navbar() {

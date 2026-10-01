@@ -1,7 +1,7 @@
 import { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { prisma } from '@/lib/prisma';
-import ProductDetailClient from './ProductDetailClient';
+import ProductDetailClient from './_components/ProductDetailClient';
 
 export const dynamic = 'force-dynamic';
 

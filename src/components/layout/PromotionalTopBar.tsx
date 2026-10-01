@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { Truck, Flame, Sparkles } from 'lucide-react';
-import { useCartStore } from '@/lib/store';
+import { useCartStore } from '@/store';
 
 export default function PromotionalTopBar() {
   const { promotionalBatch, setPromotionalBatch, getTotalPieces, isFreeShippingEligible } = useCartStore();

@@ -37,7 +37,7 @@ import {
   Filter,
 } from 'lucide-react';
 import { formatCurrency, getStandardSizesForProduct } from '@/lib/utils';
-import { PromotionalBatch, WholesaleTier } from '@/lib/types';
+import { PromotionalBatch, WholesaleTier } from '@/types';
 
 export const ORDER_STATUS_MAP: Record<
   string,

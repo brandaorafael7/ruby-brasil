@@ -17,7 +17,7 @@ import {
   Sparkles,
   MessageCircle,
 } from 'lucide-react';
-import { useCartStore } from '@/lib/store';
+import { useCartStore } from '@/store';
 import { formatCurrency, buildWhatsAppOrderMessage, getSizeSurcharge } from '@/lib/utils';
 
 export default function CartDrawer() {

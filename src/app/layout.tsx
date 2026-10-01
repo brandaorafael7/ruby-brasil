@@ -1,9 +1,9 @@
 import type { Metadata } from 'next';
 import './globals.css';
-import PromotionalTopBar from '@/components/PromotionalTopBar';
-import Navbar from '@/components/Navbar';
-import CartDrawer from '@/components/CartDrawer';
-import FloatingCartBar from '@/components/FloatingCartBar';
+import PromotionalTopBar from '@/components/layout/PromotionalTopBar';
+import Navbar from '@/components/layout/Navbar';
+import CartDrawer from '@/components/cart/CartDrawer';
+import FloatingCartBar from '@/components/cart/FloatingCartBar';
 
 export const metadata: Metadata = {
   title: 'RUBY BRASIL | Camisas de Futebol Direto de Fábrica B2B & Varejo',

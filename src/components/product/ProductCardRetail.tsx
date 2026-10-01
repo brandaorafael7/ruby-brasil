@@ -3,8 +3,8 @@
 import React, { useState } from 'react';
 import Image from 'next/image';
 import { ShoppingBag, Shirt, Check, ArrowRight } from 'lucide-react';
-import { Product } from '@/lib/types';
-import { useCartStore } from '@/lib/store';
+import { Product } from '@/types';
+import { useCartStore } from '@/store';
 import { formatCurrency, getStandardSizesForProduct } from '@/lib/utils';
 import CustomizationModal from './CustomizationModal';
 

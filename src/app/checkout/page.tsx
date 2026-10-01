@@ -11,9 +11,9 @@ import {
   Sparkles,
   ShoppingBag,
 } from 'lucide-react';
-import { useCartStore } from '@/lib/store';
+import { useCartStore } from '@/store';
 import { formatCurrency, buildWhatsAppOrderMessage, getSizeSurcharge } from '@/lib/utils';
-import { CheckoutForm } from '@/lib/types';
+import { CheckoutForm } from '@/types';
 
 export default function CheckoutPage() {
   const {

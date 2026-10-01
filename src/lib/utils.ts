@@ -1,6 +1,6 @@
 import { type ClassValue, clsx } from 'clsx';
 import { twMerge } from 'tailwind-merge';
-import { CartItem, CheckoutForm, WholesaleTier } from './types';
+import { CartItem, CheckoutForm, WholesaleTier } from '@/types';
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));

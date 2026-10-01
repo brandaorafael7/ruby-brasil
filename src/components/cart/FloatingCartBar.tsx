@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { usePathname } from 'next/navigation';
 import { ShoppingBag, ArrowRight, Sparkles, ChevronUp } from 'lucide-react';
-import { useCartStore } from '@/lib/store';
+import { useCartStore } from '@/store';
 import { formatCurrency } from '@/lib/utils';
 
 export default function FloatingCartBar() {

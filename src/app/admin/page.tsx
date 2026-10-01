@@ -1,6 +1,6 @@
 import React from 'react';
 import { prisma } from '@/lib/prisma';
-import AdminDashboardClient from './AdminDashboardClient';
+import AdminDashboardClient from './_components/AdminDashboardClient';
 
 export const dynamic = 'force-dynamic';
 

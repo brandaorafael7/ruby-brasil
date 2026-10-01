@@ -4,8 +4,8 @@ import React, { useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { ShoppingBag, Shirt, Check, Sparkles, ExternalLink, Copy, CheckCircle2 } from 'lucide-react';
-import { Product } from '@/lib/types';
-import { useCartStore } from '@/lib/store';
+import { Product } from '@/types';
+import { useCartStore } from '@/store';
 import { formatCurrency, getSizeSurcharge, getStandardSizesForProduct } from '@/lib/utils';
 import CustomizationModal from './CustomizationModal';
 

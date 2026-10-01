@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { X, Shirt, Check } from 'lucide-react';
-import { Product } from '@/lib/types';
+import { Product } from '@/types';
 import { formatCurrency, getSizeSurcharge } from '@/lib/utils';
 
 interface Props {
