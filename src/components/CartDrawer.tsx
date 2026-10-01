@@ -11,6 +11,7 @@ import {
   Truck,
   Flame,
   ArrowRight,
+  ArrowLeft,
   ShieldCheck,
   ShoppingBag,
   Sparkles,
@@ -120,9 +121,11 @@ export default function CartDrawer() {
             <button
               onClick={closeCart}
               id="close-cart-btn"
-              className="p-2 text-zinc-400 hover:text-white rounded-lg hover:bg-zinc-800 transition-colors"
+              className="px-2.5 py-1.5 text-zinc-400 hover:text-white rounded-xl hover:bg-zinc-800 transition-colors flex items-center gap-1.5 text-xs font-semibold border border-zinc-800/80 hover:border-zinc-700 bg-zinc-900/60"
+              title="Continuar Comprando (Fechar Carrinho)"
             >
-              <X className="w-5 h-5" />
+              <span className="hidden sm:inline text-[11px] text-zinc-300">Continuar Comprando</span>
+              <X className="w-4 h-4 text-zinc-400" />
             </button>
           </div>
 
@@ -183,15 +186,38 @@ export default function CartDrawer() {
             )}
           </div>
 
+          {/* DICA DE ADIÇÃO DE MÚLTIPLAS PEÇAS */}
+          <div className="px-3.5 py-2 bg-zinc-950 border-b border-zinc-800/80 flex items-center justify-between text-[11px] text-zinc-300">
+            <span className="flex items-center gap-1.5">
+              <Sparkles className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+              Monte seu carrinho com <strong>vários modelos e tamanhos</strong>!
+            </span>
+            <button
+              type="button"
+              onClick={closeCart}
+              className="text-emerald-400 hover:text-emerald-300 font-bold hover:underline shrink-0 ml-2"
+            >
+              + Adicionar mais
+            </button>
+          </div>
+
           {/* LISTA DE ITENS */}
           <div className="flex-1 overflow-y-auto p-4 space-y-3">
             {items.length === 0 ? (
               <div className="h-full flex flex-col items-center justify-center text-center p-6 text-zinc-500">
-                <ShoppingBag className="w-12 h-12 stroke-[1.5] mb-3 text-zinc-600" />
-                <p className="font-bold text-zinc-300">Seu carrinho está vazio</p>
-                <p className="text-xs text-zinc-500 mt-1">
-                  Adicione camisas do catálogo para montar seu pedido.
+                <ShoppingBag className="w-14 h-14 stroke-[1.5] mb-3 text-zinc-600" />
+                <p className="font-bold text-base text-zinc-200">Seu carrinho está vazio</p>
+                <p className="text-xs text-zinc-400 mt-1 max-w-xs">
+                  Navegue pelo catálogo e escolha seus modelos favoritos. Você pode selecionar quantas peças quiser antes de finalizar!
                 </p>
+                <button
+                  type="button"
+                  onClick={closeCart}
+                  className="mt-5 px-6 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs flex items-center gap-2 shadow-lg shadow-emerald-950/60 transition-all active:scale-95"
+                >
+                  <ArrowLeft className="w-4 h-4" />
+                  Continuar Comprando / Ver Catálogo
+                </button>
               </div>
             ) : (
               items.map((item) => {
@@ -326,16 +352,26 @@ export default function CartDrawer() {
                   href="/checkout"
                   onClick={closeCart}
                   id="checkout-direct-button"
-                  className="w-full py-3 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-500 active:scale-95 text-white font-black text-sm flex items-center justify-center gap-2 transition-all shadow-xl shadow-emerald-950/60"
+                  className="w-full py-3.5 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-500 active:scale-95 text-white font-black text-sm flex items-center justify-center gap-2 transition-all shadow-xl shadow-emerald-950/60"
                 >
-                  Fechar Pedido no Checkout
+                  Fechar Pedido no Checkout ({totalPieces} {totalPieces === 1 ? 'peça' : 'peças'})
                   <ArrowRight className="w-4 h-4" />
                 </Link>
 
                 <button
                   type="button"
+                  onClick={closeCart}
+                  id="continue-shopping-btn"
+                  className="w-full py-2.5 px-4 rounded-xl bg-zinc-800/80 hover:bg-zinc-800 text-zinc-200 hover:text-white font-bold text-xs flex items-center justify-center gap-2 border border-zinc-700/80 hover:border-zinc-500 transition-all active:scale-95 shadow-sm"
+                >
+                  <ArrowLeft className="w-4 h-4 text-emerald-400" />
+                  Continuar Comprando (Adicionar mais peças)
+                </button>
+
+                <button
+                  type="button"
                   onClick={handleWhatsAppQuickQuote}
-                  className="w-full py-2.5 px-4 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-200 hover:text-white font-bold text-xs flex items-center justify-center gap-2 border border-zinc-700 transition-colors"
+                  className="w-full py-2 px-4 rounded-xl bg-zinc-900 hover:bg-zinc-850 text-zinc-300 hover:text-white font-semibold text-xs flex items-center justify-center gap-2 border border-zinc-800 transition-colors"
                 >
                   <MessageCircle className="w-4 h-4 text-emerald-400" />
                   Finalizar Pedido via WhatsApp

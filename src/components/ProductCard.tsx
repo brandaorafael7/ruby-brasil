@@ -14,7 +14,7 @@ interface Props {
 }
 
 export default function ProductCard({ product }: Props) {
-  const { addItem } = useCartStore();
+  const { addItem, openCart } = useCartStore();
 
   const isKids =
     product.type === 'INFANTIL' ||
@@ -66,6 +66,7 @@ export default function ProductCard({ product }: Props) {
     if (!isSelectedInStock) return;
     addItem(product, selectedSize, 1);
     setJustAdded(true);
+    openCart();
     setTimeout(() => setJustAdded(false), 1800);
   };
 
@@ -73,6 +74,7 @@ export default function ProductCard({ product }: Props) {
     if (!isSelectedInStock) return;
     addItem(product, selectedSize, 1, name, number);
     setJustAdded(true);
+    openCart();
     setTimeout(() => setJustAdded(false), 1800);
   };
 
@@ -282,7 +284,7 @@ export default function ProductCard({ product }: Props) {
               ) : (
                 <>
                   <ShoppingBag className="w-4 h-4" />
-                  Comprar ({selectedSize})
+                  Adicionar ao Carrinho ({selectedSize})
                 </>
               )}
             </button>

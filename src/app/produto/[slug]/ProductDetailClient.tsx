@@ -31,7 +31,7 @@ interface Props {
 }
 
 export default function ProductDetailClient({ product, relatedProducts }: Props) {
-  const { addItem, openCart } = useCartStore();
+  const { addItem, openCart, getTotalPieces } = useCartStore();
 
   const isKids =
     product.type === 'INFANTIL' ||
@@ -84,6 +84,7 @@ export default function ProductDetailClient({ product, relatedProducts }: Props)
     if (!isSelectedInStock) return;
     addItem(product, selectedSize, quantity);
     setJustAdded(true);
+    openCart();
     setTimeout(() => setJustAdded(false), 2000);
   };
 
@@ -97,6 +98,7 @@ export default function ProductDetailClient({ product, relatedProducts }: Props)
     if (!isSelectedInStock) return;
     addItem(product, selectedSize, quantity, name, number);
     setJustAdded(true);
+    openCart();
     setTimeout(() => setJustAdded(false), 2000);
   };
 
@@ -439,6 +441,25 @@ export default function ProductDetailClient({ product, relatedProducts }: Props)
                   Personalizar com Nome e Número Oficial (+ R$ 15,00)
                 </button>
               )}
+
+              <div className="pt-2 flex items-center justify-between text-xs text-zinc-400">
+                <Link
+                  href="/"
+                  className="inline-flex items-center gap-1.5 text-zinc-300 hover:text-white font-bold transition-colors"
+                >
+                  <ArrowLeft className="w-3.5 h-3.5 text-emerald-400" />
+                  Continuar escolhendo outras camisas
+                </Link>
+                {getTotalPieces() > 0 && (
+                  <button
+                    type="button"
+                    onClick={openCart}
+                    className="text-emerald-400 hover:text-emerald-300 font-bold transition-colors"
+                  >
+                    Ver Carrinho ({getTotalPieces()} {getTotalPieces() === 1 ? 'peça' : 'peças'})
+                  </button>
+                )}
+              </div>
             </div>
 
           </div>

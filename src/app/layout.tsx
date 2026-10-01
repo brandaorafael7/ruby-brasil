@@ -3,6 +3,7 @@ import './globals.css';
 import PromotionalTopBar from '@/components/PromotionalTopBar';
 import Navbar from '@/components/Navbar';
 import CartDrawer from '@/components/CartDrawer';
+import FloatingCartBar from '@/components/FloatingCartBar';
 
 export const metadata: Metadata = {
   title: 'RUBY BRASIL | Camisas de Futebol Direto de Fábrica B2B & Varejo',
@@ -22,6 +23,7 @@ export default function RootLayout({
         <Navbar />
         <div className="flex-1">{children}</div>
         <CartDrawer />
+        <FloatingCartBar />
         <footer className="bg-zinc-950 border-t border-zinc-900 pt-12 pb-8 px-4 sm:px-6 lg:px-8 text-xs text-zinc-400">
           <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-4 gap-8 mb-10">
             

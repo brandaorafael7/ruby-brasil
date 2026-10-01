@@ -196,10 +196,10 @@ export default function CheckoutPage() {
         <div className="flex items-center justify-between mb-8 pb-4 border-b border-zinc-800">
           <Link
             href="/"
-            className="flex items-center gap-1.5 text-xs font-bold text-zinc-400 hover:text-white transition-colors"
+            className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-zinc-900 hover:bg-zinc-800 border border-zinc-700/80 hover:border-zinc-500 text-xs font-bold text-zinc-200 hover:text-white transition-all shadow-sm"
           >
-            <ArrowLeft className="w-4 h-4" />
-            Voltar e continuar comprando
+            <ArrowLeft className="w-4 h-4 text-emerald-400" />
+            Continuar Comprando (Adicionar mais peças)
           </Link>
           <div className="flex items-center gap-2 text-xs font-semibold text-emerald-400">
             <ShieldCheck className="w-4 h-4" />
