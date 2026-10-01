@@ -20,6 +20,12 @@ const DEFAULT_BATCH: PromotionalBatch = {
   description: 'Frete Fixo e Frete Grátis a partir da cota mínima.',
 };
 
+export function getProductVariantStock(product: Product, size: string): number {
+  const variant = product.variants?.find((v) => v.size === size);
+  if (variant !== undefined) return Math.max(0, variant.stockQuantity);
+  return product.variants && product.variants.length > 0 ? 0 : 50;
+}
+
 interface CartStore {
   items: CartItem[];
   tiers: WholesaleTier[];
@@ -39,7 +45,7 @@ interface CartStore {
     quantity: number,
     customName?: string,
     customNumber?: string
-  ) => void;
+  ) => { success: boolean; added: number; message?: string };
 
   addGrid: (
     product: Product,
@@ -49,6 +55,8 @@ interface CartStore {
   updateQuantity: (cartItemId: string, quantity: number) => void;
   removeItem: (cartItemId: string) => void;
   clearCart: () => void;
+  getVariantStock: (productId: string, size: string, product?: Product) => number;
+  getAvailableStockToAdd: (product: Product, size: string) => number;
 
   getTotalPieces: () => number;
   isWholesale: () => boolean;
@@ -79,16 +87,34 @@ export const useCartStore = create<CartStore>()(
       setPromotionalBatch: (batch) => set({ promotionalBatch: batch }),
 
       addItem: (product, size, quantity, customName, customNumber) => {
-        if (quantity <= 0) return;
+        if (quantity <= 0) return { success: false, added: 0 };
         const normalizedCustomName = customName?.trim() || undefined;
         const normalizedCustomNumber = customNumber?.trim() || undefined;
         const cartItemId = `${product.id}-${size}-${normalizedCustomName || 'none'}-${normalizedCustomNumber || 'none'}`;
+
+        const stock = getProductVariantStock(product, size);
+        const currentItems = get().items;
+        const currentInCartForSize = currentItems
+          .filter((i) => i.productId === product.id && i.size === size)
+          .reduce((acc, i) => acc + i.quantity, 0);
+
+        const available = Math.max(0, stock - currentInCartForSize);
+        if (available <= 0) {
+          return {
+            success: false,
+            added: 0,
+            message: `O tamanho ${size} já atingiu a quantidade máxima disponível no estoque (${stock} un).`,
+          };
+        }
+
+        const toAdd = Math.min(quantity, available);
 
         set((state) => {
           const existingIndex = state.items.findIndex((i) => i.cartItemId === cartItemId);
           if (existingIndex > -1) {
             const updated = [...state.items];
-            updated[existingIndex].quantity += quantity;
+            updated[existingIndex].quantity += toAdd;
+            updated[existingIndex].stockQuantity = stock;
             return { items: updated, isCartOpen: true };
           }
 
@@ -102,13 +128,23 @@ export const useCartStore = create<CartStore>()(
             imageUrl: product.imageUrl,
             retailPrice: product.retailPrice || 60.0,
             size,
-            quantity,
+            quantity: toAdd,
             customName: normalizedCustomName,
             customNumber: normalizedCustomNumber,
+            stockQuantity: stock,
           };
 
           return { items: [...state.items, newItem], isCartOpen: true };
         });
+
+        return {
+          success: true,
+          added: toAdd,
+          message:
+            toAdd < quantity
+              ? `Foram adicionadas apenas ${toAdd} unidade(s) devido ao limite do estoque (${stock} un).`
+              : undefined,
+        };
       },
 
       addGrid: (product, grid) => {
@@ -117,13 +153,22 @@ export const useCartStore = create<CartStore>()(
 
           Object.entries(grid).forEach(([size, qty]) => {
             if (qty <= 0) return;
+            const stock = getProductVariantStock(product, size);
+            const currentInCartForSize = newItems
+              .filter((i) => i.productId === product.id && i.size === size)
+              .reduce((acc, i) => acc + i.quantity, 0);
+            const available = Math.max(0, stock - currentInCartForSize);
+            const toAdd = Math.min(qty, available);
+            if (toAdd <= 0) return;
+
             const cartItemId = `${product.id}-${size}-none-none`;
             const existingIndex = newItems.findIndex((i) => i.cartItemId === cartItemId);
 
             if (existingIndex > -1) {
               newItems[existingIndex] = {
                 ...newItems[existingIndex],
-                quantity: newItems[existingIndex].quantity + qty,
+                quantity: newItems[existingIndex].quantity + toAdd,
+                stockQuantity: stock,
               };
             } else {
               newItems.push({
@@ -136,7 +181,8 @@ export const useCartStore = create<CartStore>()(
                 imageUrl: product.imageUrl,
                 retailPrice: product.retailPrice || 60.0,
                 size,
-                quantity: qty,
+                quantity: toAdd,
+                stockQuantity: stock,
               });
             }
           });
@@ -150,9 +196,24 @@ export const useCartStore = create<CartStore>()(
           if (quantity <= 0) {
             return { items: state.items.filter((i) => i.cartItemId !== cartItemId) };
           }
+          const targetItem = state.items.find((i) => i.cartItemId === cartItemId);
+          if (!targetItem) return state;
+
+          const maxStock = targetItem.stockQuantity ?? 999;
+          const otherInCartForSize = state.items
+            .filter((i) => i.cartItemId !== cartItemId && i.productId === targetItem.productId && i.size === targetItem.size)
+            .reduce((sum, i) => sum + i.quantity, 0);
+
+          const maxAllowedForThisItem = Math.max(0, maxStock - otherInCartForSize);
+          const finalQty = Math.min(quantity, maxAllowedForThisItem);
+
+          if (finalQty <= 0) {
+            return { items: state.items.filter((i) => i.cartItemId !== cartItemId) };
+          }
+
           return {
             items: state.items.map((i) =>
-              i.cartItemId === cartItemId ? { ...i, quantity } : i
+              i.cartItemId === cartItemId ? { ...i, quantity: finalQty } : i
             ),
           };
         });
@@ -165,6 +226,22 @@ export const useCartStore = create<CartStore>()(
       },
 
       clearCart: () => set({ items: [] }),
+
+      getVariantStock: (productId, size, product) => {
+        if (product) {
+          return getProductVariantStock(product, size);
+        }
+        const existingItem = get().items.find((i) => i.productId === productId && i.size === size);
+        return existingItem?.stockQuantity ?? 999;
+      },
+
+      getAvailableStockToAdd: (product, size) => {
+        const stock = getProductVariantStock(product, size);
+        const inCart = get().items
+          .filter((i) => i.productId === product.id && i.size === size)
+          .reduce((sum, i) => sum + i.quantity, 0);
+        return Math.max(0, stock - inCart);
+      },
 
       getTotalPieces: () => {
         return get().items.reduce((acc, item) => acc + item.quantity, 0);

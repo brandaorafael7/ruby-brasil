@@ -223,6 +223,11 @@ export default function CartDrawer() {
               items.map((item) => {
                 const appliedUnit = getItemUnitPrice(item);
                 const hasCustom = !!item.customName;
+                const otherInCartForSize = items
+                  .filter((i) => i.cartItemId !== item.cartItemId && i.productId === item.productId && i.size === item.size)
+                  .reduce((sum, i) => sum + i.quantity, 0);
+                const maxStock = item.stockQuantity ?? 999;
+                const isAtMaxStock = (item.quantity + otherInCartForSize) >= maxStock;
 
                 return (
                   <div
@@ -288,12 +293,19 @@ export default function CartDrawer() {
                           </span>
                           <button
                             onClick={() => updateQuantity(item.cartItemId, item.quantity + 1)}
-                            className="cart-increment-btn w-5 h-5 rounded bg-zinc-800 hover:bg-zinc-700 flex items-center justify-center text-zinc-300"
+                            disabled={isAtMaxStock}
+                            title={isAtMaxStock ? `Estoque máximo atingido (${maxStock} peças)` : 'Aumentar quantidade'}
+                            className="cart-increment-btn w-5 h-5 rounded bg-zinc-800 hover:bg-zinc-700 flex items-center justify-center text-zinc-300 disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:bg-zinc-800"
                           >
                             <Plus className="w-3 h-3" />
                           </button>
                         </div>
                       </div>
+                      {isAtMaxStock && maxStock < 999 && (
+                        <span className="text-[10px] text-amber-400 font-semibold block mt-1">
+                          Limite máximo do estoque ({maxStock} un)
+                        </span>
+                      )}
                     </div>
                   </div>
                 );

@@ -31,7 +31,7 @@ interface Props {
 }
 
 export default function ProductDetailClient({ product, relatedProducts }: Props) {
-  const { addItem, openCart, getTotalPieces } = useCartStore();
+  const { items, addItem, openCart, getTotalPieces } = useCartStore();
 
   const isKids =
     product.type === 'INFANTIL' ||
@@ -73,7 +73,20 @@ export default function ProductDetailClient({ product, relatedProducts }: Props)
   const [copiedLink, setCopiedLink] = useState(false);
 
   const selectedInfo = sizeInfoList.find((s) => s.size === selectedSize);
-  const isSelectedInStock = selectedInfo ? selectedInfo.inStock : false;
+  const inCartForSelectedSize = items
+    .filter((i) => i.productId === product.id && i.size === selectedSize)
+    .reduce((sum, i) => sum + i.quantity, 0);
+  const maxAvailable = Math.max(0, (selectedInfo?.stock || 0) - inCartForSelectedSize);
+  const isAvailableToAdd = (selectedInfo?.inStock || false) && maxAvailable > 0;
+
+  // Ajusta quantidade se exceder o estoque disponível
+  React.useEffect(() => {
+    if (maxAvailable > 0 && quantity > maxAvailable) {
+      setQuantity(maxAvailable);
+    } else if (maxAvailable === 0 && quantity > 1) {
+      setQuantity(1);
+    }
+  }, [selectedSize, maxAvailable, quantity]);
 
   const basePrice = product.retailPrice || 60.0;
   const surcharge = getSizeSurcharge(selectedSize);
@@ -81,25 +94,34 @@ export default function ProductDetailClient({ product, relatedProducts }: Props)
   const totalPrice = currentUnitPrice * quantity;
 
   const handleBuy = () => {
-    if (!isSelectedInStock) return;
-    addItem(product, selectedSize, quantity);
-    setJustAdded(true);
-    openCart();
-    setTimeout(() => setJustAdded(false), 2000);
+    if (!isAvailableToAdd) return;
+    const qtyToAdd = Math.min(quantity, maxAvailable);
+    const res = addItem(product, selectedSize, qtyToAdd);
+    if (res.success) {
+      setJustAdded(true);
+      openCart();
+      setTimeout(() => setJustAdded(false), 2000);
+    }
   };
 
   const handleBuyNow = () => {
-    if (!isSelectedInStock) return;
-    addItem(product, selectedSize, quantity);
-    openCart();
+    if (!isAvailableToAdd) return;
+    const qtyToAdd = Math.min(quantity, maxAvailable);
+    const res = addItem(product, selectedSize, qtyToAdd);
+    if (res.success) {
+      openCart();
+    }
   };
 
   const handleCustomConfirm = (name: string, number: string) => {
-    if (!isSelectedInStock) return;
-    addItem(product, selectedSize, quantity, name, number);
-    setJustAdded(true);
-    openCart();
-    setTimeout(() => setJustAdded(false), 2000);
+    if (!isAvailableToAdd) return;
+    const qtyToAdd = Math.min(quantity, maxAvailable);
+    const res = addItem(product, selectedSize, qtyToAdd, name, number);
+    if (res.success) {
+      setJustAdded(true);
+      openCart();
+      setTimeout(() => setJustAdded(false), 2000);
+    }
   };
 
   const handleCopyLink = () => {
@@ -301,15 +323,20 @@ export default function ProductDetailClient({ product, relatedProducts }: Props)
                   <span className="font-bold text-white">
                     {isKids ? 'Tamanho / Idade Infantil:' : 'Selecione o Tamanho:'}
                   </span>
-                  {isSelectedInStock ? (
-                    <span className="text-xs text-emerald-400 font-bold flex items-center gap-1.5">
-                      <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-                      Em Estoque Pronta Entrega
-                    </span>
-                  ) : (
+                  {!selectedInfo?.inStock ? (
                     <span className="text-xs text-rose-400 font-bold flex items-center gap-1.5">
                       <span className="w-2 h-2 rounded-full bg-rose-400" />
                       Tamanho Esgotado
+                    </span>
+                  ) : maxAvailable === 0 ? (
+                    <span className="text-xs text-amber-400 font-bold flex items-center gap-1.5">
+                      <span className="w-2 h-2 rounded-full bg-amber-400" />
+                      Todas as {selectedInfo?.stock} peças já estão no seu carrinho
+                    </span>
+                  ) : (
+                    <span className="text-xs text-emerald-400 font-bold flex items-center gap-1.5">
+                      <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                      Em Estoque ({maxAvailable} {maxAvailable === 1 ? 'disponível' : 'disponíveis'})
                     </span>
                   )}
                 </div>
@@ -317,6 +344,13 @@ export default function ProductDetailClient({ product, relatedProducts }: Props)
                 <div className={`grid ${standardSizes.length > 5 ? 'grid-cols-4 sm:grid-cols-7' : 'grid-cols-5'} gap-2`}>
                   {sizeInfoList.map((info) => {
                     const isSelected = selectedSize === info.size;
+                    const inCartForThisSize = items
+                      .filter((i) => i.productId === product.id && i.size === info.size)
+                      .reduce((sum, i) => sum + i.quantity, 0);
+                    const remForThisSize = Math.max(0, info.stock - inCartForThisSize);
+                    const isSoldOut = !info.inStock;
+                    const isMaxInCart = !isSoldOut && remForThisSize === 0;
+
                     return (
                       <button
                         key={info.size}
@@ -324,18 +358,18 @@ export default function ProductDetailClient({ product, relatedProducts }: Props)
                         onClick={() => setSelectedSize(info.size)}
                         className={`py-3 px-1 rounded-xl text-xs font-black border transition-all flex flex-col items-center justify-center relative ${
                           isSelected
-                            ? info.inStock
+                            ? !isSoldOut && !isMaxInCart
                               ? 'bg-rose-600 border-rose-500 text-white shadow-lg shadow-rose-950/60 scale-[1.03]'
                               : 'bg-zinc-800 border-rose-500/80 text-rose-300 scale-[1.03]'
-                            : !info.inStock
+                            : isSoldOut || isMaxInCart
                             ? 'bg-zinc-950/40 border-zinc-800/60 text-zinc-600 hover:border-zinc-700'
                             : 'bg-zinc-950 border-zinc-800 text-zinc-300 hover:border-zinc-700 hover:bg-zinc-900'
                         }`}
                       >
-                        <span className={`text-sm ${!info.inStock ? 'line-through opacity-60 text-zinc-500' : ''}`}>
+                        <span className={`text-sm ${isSoldOut ? 'line-through opacity-60 text-zinc-500' : ''}`}>
                           {info.size}
                         </span>
-                        {info.surcharge > 0 && info.inStock && (
+                        {info.surcharge > 0 && !isSoldOut && (
                           <span
                             className={`text-[9px] font-semibold leading-none mt-1 ${
                               isSelected ? 'text-rose-200' : 'text-amber-400'
@@ -344,11 +378,15 @@ export default function ProductDetailClient({ product, relatedProducts }: Props)
                             +{info.surcharge}
                           </span>
                         )}
-                        {!info.inStock && (
+                        {isSoldOut ? (
                           <span className="text-[8px] text-rose-400 font-semibold leading-none mt-1">
                             Esgotado
                           </span>
-                        )}
+                        ) : isMaxInCart ? (
+                          <span className="text-[8px] text-amber-400 font-semibold leading-none mt-1">
+                            No Carrinho
+                          </span>
+                        ) : null}
                       </button>
                     );
                   })}
@@ -356,28 +394,44 @@ export default function ProductDetailClient({ product, relatedProducts }: Props)
               </div>
 
               {/* SELETOR DE QUANTIDADE */}
-              <div className="mt-6 flex items-center justify-between bg-zinc-950 border border-zinc-800 p-3 rounded-2xl">
-                <span className="text-xs font-bold text-zinc-300">Quantidade de Peças:</span>
-                <div className="flex items-center gap-3">
-                  <button
-                    type="button"
-                    onClick={() => setQuantity((q) => Math.max(1, q - 1))}
-                    disabled={quantity <= 1}
-                    className="w-8 h-8 rounded-lg bg-zinc-900 border border-zinc-700 flex items-center justify-center text-zinc-300 hover:text-white disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-                  >
-                    <Minus className="w-3.5 h-3.5" />
-                  </button>
-                  <span className="w-10 text-center font-mono font-black text-base text-white">
-                    {quantity}
-                  </span>
-                  <button
-                    type="button"
-                    onClick={() => setQuantity((q) => q + 1)}
-                    className="w-8 h-8 rounded-lg bg-zinc-900 border border-zinc-700 flex items-center justify-center text-zinc-300 hover:text-white transition-colors"
-                  >
-                    <Plus className="w-3.5 h-3.5" />
-                  </button>
+              <div className="mt-6 flex flex-col gap-2">
+                <div className="flex items-center justify-between bg-zinc-950 border border-zinc-800 p-3 rounded-2xl">
+                  <div>
+                    <span className="text-xs font-bold text-zinc-300 block">Quantidade de Peças:</span>
+                    {maxAvailable > 0 && (
+                      <span className="text-[10px] text-zinc-500">
+                        Máximo disponível para adicionar: {maxAvailable} un
+                      </span>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <button
+                      type="button"
+                      onClick={() => setQuantity((q) => Math.max(1, q - 1))}
+                      disabled={quantity <= 1 || !isAvailableToAdd}
+                      className="w-8 h-8 rounded-lg bg-zinc-900 border border-zinc-700 flex items-center justify-center text-zinc-300 hover:text-white disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                    >
+                      <Minus className="w-3.5 h-3.5" />
+                    </button>
+                    <span className="w-10 text-center font-mono font-black text-base text-white">
+                      {isAvailableToAdd ? quantity : 0}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => setQuantity((q) => Math.min(maxAvailable, q + 1))}
+                      disabled={!isAvailableToAdd || quantity >= maxAvailable}
+                      className="w-8 h-8 rounded-lg bg-zinc-900 border border-zinc-700 flex items-center justify-center text-zinc-300 hover:text-white disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                    >
+                      <Plus className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
                 </div>
+
+                {selectedInfo?.inStock && maxAvailable === 0 && (
+                  <p className="text-[11px] text-amber-400 font-medium px-1">
+                    ⚠️ Limite do estoque atingido: você já adicionou todas as {selectedInfo.stock} unidades deste tamanho ao seu carrinho.
+                  </p>
+                )}
               </div>
             </div>
 
@@ -386,12 +440,12 @@ export default function ProductDetailClient({ product, relatedProducts }: Props)
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <button
                   type="button"
-                  disabled={!isSelectedInStock}
+                  disabled={!isAvailableToAdd}
                   onClick={handleBuy}
                   className={`w-full py-3.5 px-6 rounded-2xl text-xs sm:text-sm font-black flex items-center justify-center gap-2 transition-all ${
                     justAdded
                       ? 'bg-emerald-600 text-white'
-                      : !isSelectedInStock
+                      : !isAvailableToAdd
                       ? 'bg-zinc-800/80 text-zinc-500 border border-zinc-700/50 cursor-not-allowed'
                       : 'bg-zinc-900 hover:bg-zinc-800 border border-zinc-700 hover:border-zinc-500 text-white active:scale-95'
                   }`}
@@ -401,8 +455,10 @@ export default function ProductDetailClient({ product, relatedProducts }: Props)
                       <Check className="w-4 h-4 text-white" />
                       Adicionado ao Carrinho!
                     </>
-                  ) : !isSelectedInStock ? (
+                  ) : !selectedInfo?.inStock ? (
                     <>Tamanho Esgotado</>
+                  ) : maxAvailable === 0 ? (
+                    <>Limite no Carrinho ({selectedInfo.stock} un)</>
                   ) : (
                     <>
                       <ShoppingBag className="w-4 h-4 text-rose-400" />
@@ -413,10 +469,10 @@ export default function ProductDetailClient({ product, relatedProducts }: Props)
 
                 <button
                   type="button"
-                  disabled={!isSelectedInStock}
+                  disabled={!isAvailableToAdd}
                   onClick={handleBuyNow}
                   className={`w-full py-3.5 px-6 rounded-2xl text-xs sm:text-sm font-black flex items-center justify-center gap-2 transition-all ${
-                    !isSelectedInStock
+                    !isAvailableToAdd
                       ? 'bg-zinc-800/50 text-zinc-600 border border-zinc-800 cursor-not-allowed'
                       : 'bg-gradient-to-r from-rose-600 to-rose-500 hover:from-rose-500 hover:to-rose-400 text-white shadow-lg shadow-rose-950/60 active:scale-95'
                   }`}
@@ -429,10 +485,10 @@ export default function ProductDetailClient({ product, relatedProducts }: Props)
               {product.allowCustom && (
                 <button
                   type="button"
-                  disabled={!isSelectedInStock}
-                  onClick={() => isSelectedInStock && setIsCustomOpen(true)}
+                  disabled={!isAvailableToAdd}
+                  onClick={() => isAvailableToAdd && setIsCustomOpen(true)}
                   className={`w-full py-2.5 px-4 rounded-xl text-xs font-bold border flex items-center justify-center gap-2 transition-colors ${
-                    !isSelectedInStock
+                    !isAvailableToAdd
                       ? 'opacity-40 cursor-not-allowed border-zinc-800 bg-zinc-950 text-zinc-600'
                       : 'text-zinc-300 hover:text-white bg-zinc-950 hover:bg-zinc-900 border-zinc-800'
                   }`}

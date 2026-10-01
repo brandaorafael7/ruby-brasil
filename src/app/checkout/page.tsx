@@ -34,6 +34,7 @@ export default function CheckoutPage() {
   const [mounted, setMounted] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [completedOrder, setCompletedOrder] = useState<any>(null);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const [form, setForm] = useState<CheckoutForm>({
     customerType: 'PF',
@@ -93,6 +94,7 @@ export default function CheckoutPage() {
   const handleSubmitOrder = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
+    setErrorMessage(null);
 
     try {
       const res = await fetch('/api/checkout', {
@@ -127,11 +129,14 @@ export default function CheckoutPage() {
         const url = `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(message)}`;
         window.open(url, '_blank');
       } else {
+        setErrorMessage(data.error || 'Erro ao finalizar pedido.');
         alert(data.error || 'Erro ao finalizar pedido.');
       }
     } catch (err) {
       console.error(err);
-      alert('Ocorreu um erro ao comunicar com o servidor.');
+      const msg = 'Ocorreu um erro ao comunicar com o servidor.';
+      setErrorMessage(msg);
+      alert(msg);
     } finally {
       setIsSubmitting(false);
     }
@@ -206,6 +211,18 @@ export default function CheckoutPage() {
             <span>Ambiente Seguro • Atendimento WhatsApp Oficial</span>
           </div>
         </div>
+
+        {errorMessage && (
+          <div className="mb-6 p-4 rounded-2xl bg-rose-950/80 border border-rose-500/80 text-rose-200 text-sm flex items-start gap-3 shadow-xl animate-in fade-in">
+            <span className="text-xl shrink-0">⚠️</span>
+            <div className="flex-1">
+              <strong className="block font-black text-white text-sm mb-1">
+                Aviso de Disponibilidade de Estoque:
+              </strong>
+              <p className="text-xs text-rose-200 leading-relaxed">{errorMessage}</p>
+            </div>
+          </div>
+        )}
 
         <form onSubmit={handleSubmitOrder} className="grid grid-cols-1 lg:grid-cols-12 gap-8">
           

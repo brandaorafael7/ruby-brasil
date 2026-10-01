@@ -12,7 +12,7 @@ interface Props {
 }
 
 export default function ProductCardWholesale({ product }: Props) {
-  const { addGrid } = useCartStore();
+  const { items, addGrid } = useCartStore();
   const [grid, setGrid] = useState<Record<string, number>>({
     P: 0,
     M: 0,
@@ -27,9 +27,16 @@ export default function ProductCardWholesale({ product }: Props) {
   const totalSelected = Object.values(grid).reduce((acc, qty) => acc + qty, 0);
 
   const handleQtyChange = (size: string, delta: number) => {
+    const variant = product.variants?.find((v) => v.size === size);
+    const stock = variant !== undefined ? variant.stockQuantity : (product.variants?.length ? 0 : 50);
+    const inCartForThis = items
+      .filter((i) => i.productId === product.id && i.size === size)
+      .reduce((sum, i) => sum + i.quantity, 0);
+    const maxAllowedForSize = Math.max(0, stock - inCartForThis);
+
     setGrid((prev) => {
       const current = prev[size] || 0;
-      const nextVal = Math.max(0, current + delta);
+      const nextVal = Math.min(maxAllowedForSize, Math.max(0, current + delta));
       return { ...prev, [size]: nextVal };
     });
   };
@@ -124,6 +131,14 @@ export default function ProductCardWholesale({ product }: Props) {
           <div className="grid grid-cols-4 sm:grid-cols-7 gap-1.5">
             {['P', 'M', 'G', 'GG', 'XG', '3XL', '4XL'].map((size) => {
               const count = grid[size] || 0;
+              const variant = product.variants?.find((v) => v.size === size);
+              const stock = variant !== undefined ? variant.stockQuantity : (product.variants?.length ? 0 : 50);
+              const inCartForThis = items
+                .filter((i) => i.productId === product.id && i.size === size)
+                .reduce((sum, i) => sum + i.quantity, 0);
+              const maxAllowedForSize = Math.max(0, stock - inCartForThis);
+              const isAtMax = count >= maxAllowedForSize;
+
               return (
                 <div
                   key={size}
@@ -133,7 +148,7 @@ export default function ProductCardWholesale({ product }: Props) {
                       : 'bg-zinc-950 border-zinc-800'
                   }`}
                 >
-                  <span className="text-xs font-black text-zinc-300">{size}</span>
+                  <span className={`text-xs font-black ${maxAllowedForSize === 0 ? 'line-through text-zinc-600' : 'text-zinc-300'}`}>{size}</span>
                   
                   <div className="flex items-center gap-1 mt-1">
                     <button
@@ -152,7 +167,8 @@ export default function ProductCardWholesale({ product }: Props) {
                     <button
                       type="button"
                       onClick={() => handleQtyChange(size, 1)}
-                      className="w-5 h-5 rounded-md bg-zinc-800 hover:bg-emerald-600 flex items-center justify-center text-zinc-300 hover:text-white"
+                      disabled={isAtMax}
+                      className="w-5 h-5 rounded-md bg-zinc-800 hover:bg-emerald-600 flex items-center justify-center text-zinc-300 hover:text-white disabled:opacity-30 disabled:pointer-events-none"
                     >
                       <Plus className="w-3 h-3" />
                     </button>

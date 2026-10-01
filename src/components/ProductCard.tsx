@@ -14,7 +14,7 @@ interface Props {
 }
 
 export default function ProductCard({ product }: Props) {
-  const { addItem, openCart } = useCartStore();
+  const { items, addItem, openCart } = useCartStore();
 
   const isKids =
     product.type === 'INFANTIL' ||
@@ -56,26 +56,34 @@ export default function ProductCard({ product }: Props) {
   const [copiedLink, setCopiedLink] = useState(false);
 
   const selectedInfo = sizeInfoList.find((s) => s.size === selectedSize);
-  const isSelectedInStock = selectedInfo ? selectedInfo.inStock : false;
+  const inCartForSelectedSize = items
+    .filter((i) => i.productId === product.id && i.size === selectedSize)
+    .reduce((sum, i) => sum + i.quantity, 0);
+  const remainingStock = Math.max(0, (selectedInfo?.stock || 0) - inCartForSelectedSize);
+  const isAvailableToAdd = (selectedInfo?.inStock || false) && remainingStock > 0;
 
   const basePrice = product.retailPrice || 60.0;
   const surcharge = getSizeSurcharge(selectedSize);
   const currentPrice = basePrice + surcharge;
 
   const handleBuy = () => {
-    if (!isSelectedInStock) return;
-    addItem(product, selectedSize, 1);
-    setJustAdded(true);
-    openCart();
-    setTimeout(() => setJustAdded(false), 1800);
+    if (!isAvailableToAdd) return;
+    const res = addItem(product, selectedSize, 1);
+    if (res.success) {
+      setJustAdded(true);
+      openCart();
+      setTimeout(() => setJustAdded(false), 1800);
+    }
   };
 
   const handleCustomConfirm = (name: string, number: string) => {
-    if (!isSelectedInStock) return;
-    addItem(product, selectedSize, 1, name, number);
-    setJustAdded(true);
-    openCart();
-    setTimeout(() => setJustAdded(false), 1800);
+    if (!isAvailableToAdd) return;
+    const res = addItem(product, selectedSize, 1, name, number);
+    if (res.success) {
+      setJustAdded(true);
+      openCart();
+      setTimeout(() => setJustAdded(false), 1800);
+    }
   };
 
   const handleCopyLink = (e: React.MouseEvent) => {
@@ -206,21 +214,33 @@ export default function ProductCard({ product }: Props) {
                 <span className="font-semibold text-zinc-300">
                   {isKids ? 'Idade / Tamanho Infantil:' : 'Escolha o Tamanho:'}
                 </span>
-                {isSelectedInStock ? (
-                  <span className="text-[11px] text-emerald-400 font-semibold flex items-center gap-1">
-                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                    Em Estoque
-                  </span>
-                ) : (
+                {!selectedInfo?.inStock ? (
                   <span className="text-[11px] text-rose-400 font-bold flex items-center gap-1">
                     <span className="w-1.5 h-1.5 rounded-full bg-rose-400" />
                     Esgotado
+                  </span>
+                ) : remainingStock === 0 ? (
+                  <span className="text-[11px] text-amber-400 font-bold flex items-center gap-1">
+                    <span className="w-1.5 h-1.5 rounded-full bg-amber-400" />
+                    Máximo no Carrinho
+                  </span>
+                ) : (
+                  <span className="text-[11px] text-emerald-400 font-semibold flex items-center gap-1">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                    Em Estoque ({remainingStock} un)
                   </span>
                 )}
               </div>
               <div className={`grid ${standardSizes.length > 5 ? 'grid-cols-7' : 'grid-cols-5'} gap-1`}>
                 {sizeInfoList.map((info) => {
                   const isSelected = selectedSize === info.size;
+                  const inCartForThisSize = items
+                    .filter((i) => i.productId === product.id && i.size === info.size)
+                    .reduce((sum, i) => sum + i.quantity, 0);
+                  const remForThisSize = Math.max(0, info.stock - inCartForThisSize);
+                  const isSoldOut = !info.inStock;
+                  const isMaxInCart = !isSoldOut && remForThisSize === 0;
+
                   return (
                     <button
                       key={info.size}
@@ -228,18 +248,18 @@ export default function ProductCard({ product }: Props) {
                       onClick={() => setSelectedSize(info.size)}
                       className={`py-1.5 px-0.5 rounded-lg text-xs font-bold border transition-all flex flex-col items-center justify-center relative ${
                         isSelected
-                          ? info.inStock
+                          ? !isSoldOut && !isMaxInCart
                             ? 'bg-rose-600 border-rose-500 text-white shadow-md shadow-rose-950/50'
                             : 'bg-zinc-800 border-rose-500/80 text-rose-300'
-                          : !info.inStock
+                          : isSoldOut || isMaxInCart
                           ? 'bg-zinc-950/40 border-zinc-800/60 text-zinc-600 hover:border-zinc-700'
                           : 'bg-zinc-950 border-zinc-800 text-zinc-300 hover:border-zinc-700'
                       }`}
                     >
-                      <span className={`leading-tight ${!info.inStock ? 'line-through opacity-60 text-zinc-500' : ''}`}>
+                      <span className={`leading-tight ${isSoldOut ? 'line-through opacity-60 text-zinc-500' : ''}`}>
                         {info.size}
                       </span>
-                      {info.surcharge > 0 && info.inStock && (
+                      {info.surcharge > 0 && !isSoldOut && (
                         <span
                           className={`text-[8px] font-semibold leading-none mt-0.5 ${
                             isSelected ? 'text-rose-200' : 'text-amber-400'
@@ -248,11 +268,15 @@ export default function ProductCard({ product }: Props) {
                           +{info.surcharge}
                         </span>
                       )}
-                      {!info.inStock && (
+                      {isSoldOut ? (
                         <span className="text-[7px] text-rose-400/90 font-semibold leading-none mt-0.5">
                           Esgotado
                         </span>
-                      )}
+                      ) : isMaxInCart ? (
+                        <span className="text-[7px] text-amber-400/90 font-semibold leading-none mt-0.5">
+                          No Carrinho
+                        </span>
+                      ) : null}
                     </button>
                   );
                 })}
@@ -264,12 +288,12 @@ export default function ProductCard({ product }: Props) {
           <div className="mt-4 space-y-2">
             <button
               type="button"
-              disabled={!isSelectedInStock}
+              disabled={!isAvailableToAdd}
               onClick={handleBuy}
               className={`w-full py-2.5 px-4 rounded-xl text-xs sm:text-sm font-black flex items-center justify-center gap-2 transition-all ${
                 justAdded
                   ? 'bg-emerald-600 text-white'
-                  : !isSelectedInStock
+                  : !isAvailableToAdd
                   ? 'bg-zinc-800/80 text-zinc-500 border border-zinc-700/50 cursor-not-allowed'
                   : 'bg-gradient-to-r from-rose-600 to-rose-500 hover:from-rose-500 hover:to-rose-400 text-white shadow-lg shadow-rose-950/60 active:scale-95'
               }`}
@@ -279,8 +303,10 @@ export default function ProductCard({ product }: Props) {
                   <Check className="w-4 h-4 text-white" />
                   Adicionado ao Carrinho!
                 </>
-              ) : !isSelectedInStock ? (
+              ) : !selectedInfo?.inStock ? (
                 <>Tamanho {selectedSize} Esgotado</>
+              ) : remainingStock === 0 ? (
+                <>Limite no Carrinho ({selectedInfo?.stock} un)</>
               ) : (
                 <>
                   <ShoppingBag className="w-4 h-4" />
@@ -292,10 +318,10 @@ export default function ProductCard({ product }: Props) {
             {product.allowCustom && (
               <button
                 type="button"
-                disabled={!isSelectedInStock}
-                onClick={() => isSelectedInStock && setIsCustomOpen(true)}
+                disabled={!isAvailableToAdd}
+                onClick={() => isAvailableToAdd && setIsCustomOpen(true)}
                 className={`w-full py-1.5 px-3 rounded-lg text-xs font-semibold border flex items-center justify-center gap-1.5 transition-colors ${
-                  !isSelectedInStock
+                  !isAvailableToAdd
                     ? 'opacity-40 cursor-not-allowed border-zinc-800 bg-zinc-950 text-zinc-600'
                     : 'text-zinc-400 hover:text-white bg-zinc-950 hover:bg-zinc-800/80 border-zinc-800'
                 }`}

@@ -57,6 +57,7 @@ export interface CartItem {
   quantity: number;
   customName?: string;
   customNumber?: string;
+  stockQuantity?: number;
 }
 
 export type CustomerType = 'PF' | 'PJ';

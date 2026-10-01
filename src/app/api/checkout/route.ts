@@ -43,23 +43,70 @@ export async function POST(req: Request) {
       }).catch(() => {});
     }
 
-    // Decrementa o estoque real de cada variante comprada
+    // 1. Agrupa e totaliza as quantidades solicitadas por (productId, size)
+    const variantQuantities: Record<string, { productId: string; size: string; quantity: number }> = {};
     for (const item of items) {
-      if (item.productId && item.size) {
-        await prisma.productVariant.updateMany({
-          where: {
-            productId: item.productId,
-            size: item.size,
-          },
-          data: {
-            stockQuantity: {
-              decrement: Number(item.quantity) || 1,
-            },
-          },
-        }).catch((err) => {
-          console.warn(`Aviso ao atualizar estoque variante (${item.productId} - ${item.size}):`, err);
-        });
+      if (!item.productId || !item.size) continue;
+      const key = `${item.productId}:${item.size}`;
+      if (!variantQuantities[key]) {
+        variantQuantities[key] = { productId: item.productId, size: item.size, quantity: 0 };
       }
+      variantQuantities[key].quantity += Math.max(1, Number(item.quantity) || 1);
+    }
+
+    const requestedVariants = Object.values(variantQuantities);
+
+    // 2. Validação estrita de estoque no banco de dados antes de efetivar o pedido
+    for (const reqVar of requestedVariants) {
+      const variant = await prisma.productVariant.findUnique({
+        where: {
+          productId_size: {
+            productId: reqVar.productId,
+            size: reqVar.size,
+          },
+        },
+        include: {
+          product: {
+            select: { name: true },
+          },
+        },
+      });
+
+      if (!variant) {
+        return NextResponse.json(
+          { error: `O produto no tamanho ${reqVar.size} não foi localizado no catálogo.` },
+          { status: 400 }
+        );
+      }
+
+      if (variant.stockQuantity < reqVar.quantity) {
+        const prodName = variant.product?.name || 'Camisa';
+        return NextResponse.json(
+          {
+            error: `Estoque insuficiente para "${prodName}" (${variant.size}). Restam apenas ${variant.stockQuantity} unidade(s) em estoque, mas foram solicitadas ${reqVar.quantity}. Ajuste a quantidade no carrinho antes de continuar.`,
+          },
+          { status: 400 }
+        );
+      }
+    }
+
+    // 3. Decrementa o estoque real de cada variante comprada
+    for (const reqVar of requestedVariants) {
+      await prisma.productVariant.update({
+        where: {
+          productId_size: {
+            productId: reqVar.productId,
+            size: reqVar.size,
+          },
+        },
+        data: {
+          stockQuantity: {
+            decrement: reqVar.quantity,
+          },
+        },
+      }).catch((err) => {
+        console.warn(`Aviso ao atualizar estoque variante (${reqVar.productId} - ${reqVar.size}):`, err);
+      });
     }
 
     let subtotal = 0;
