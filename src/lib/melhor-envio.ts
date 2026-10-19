@@ -174,7 +174,7 @@ export async function calculateShippingRates({
   const originCep = sanitizePostalCode(
     fromPostalCode ||
       process.env.MELHOR_ENVIO_POSTAL_CODE ||
-      '49000000' // CEP padrão de envio
+      '49010000' // CEP padrão de envio (Aracaju - SE)
   );
 
   const isSandbox =
