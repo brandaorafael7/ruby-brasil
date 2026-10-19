@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import Link from 'next/link';
 import {
   ArrowLeft,
@@ -40,6 +40,8 @@ export default function CheckoutPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [completedOrder, setCompletedOrder] = useState<any>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+  const initialLoadedRef = useRef(false);
 
   // Estados de cálculo de frete Melhor Envio
   const [shippingOptions, setShippingOptions] = useState<ShippingOption[]>([]);
@@ -104,7 +106,7 @@ export default function CheckoutPage() {
 
           // Se já havia uma opção selecionada e ela existe na lista, preserva;
           // caso contrário, pré-seleciona a primeira (mais econômica)
-          const currentSelected = selectedShippingOption;
+          const currentSelected = useCartStore.getState().selectedShippingOption;
           const match = data.options.find(
             (opt: ShippingOption) => opt.id === currentSelected?.id
           );
@@ -124,7 +126,7 @@ export default function CheckoutPage() {
         setIsLoadingShipping(false);
       }
     },
-    [selectedShippingOption, setSelectedShippingOption]
+    [setSelectedShippingOption]
   );
 
   /**
@@ -186,14 +188,18 @@ export default function CheckoutPage() {
 
   useEffect(() => {
     setMounted(true);
-    // Se já havia CEP salvo no carrinho, recupera e recalcula
-    if (shippingZipCode && shippingZipCode.length === 8) {
-      const formatted = `${shippingZipCode.slice(0, 5)}-${shippingZipCode.slice(5)}`;
-      setForm((prev) => ({ ...prev, zipCode: formatted }));
-      fetchAddressViaCep(shippingZipCode);
-      fetchShippingQuotes(shippingZipCode, totalPieces);
+    // Executa apenas uma vez no carregamento da página
+    if (!initialLoadedRef.current) {
+      initialLoadedRef.current = true;
+      const initialZip = useCartStore.getState().shippingZipCode;
+      if (initialZip && initialZip.length === 8) {
+        const formatted = `${initialZip.slice(0, 5)}-${initialZip.slice(5)}`;
+        setForm((prev) => ({ ...prev, zipCode: formatted }));
+        fetchAddressViaCep(initialZip);
+        fetchShippingQuotes(initialZip, totalPieces);
+      }
     }
-  }, [shippingZipCode, totalPieces, fetchAddressViaCep, fetchShippingQuotes]);
+  }, [fetchAddressViaCep, fetchShippingQuotes, totalPieces]);
 
   if (!mounted) return null;
 

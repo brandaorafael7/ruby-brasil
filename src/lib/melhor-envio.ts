@@ -230,6 +230,7 @@ export async function calculateShippingRates({
         'User-Agent': 'RubyBrasil/1.0 (contato@rubybr.com.br)',
       },
       body: JSON.stringify(payload),
+      signal: AbortSignal.timeout(7000),
     });
 
     if (!res.ok) {
