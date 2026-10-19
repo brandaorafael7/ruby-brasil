@@ -145,7 +145,7 @@ export default function CartDrawer() {
                 </div>
                 <p className="text-[11px] text-zinc-400 mt-1 flex items-center gap-1.5">
                   <Truck className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
-                  <span>Envio via Melhor Envio (Correios e Jadlog) calculado no checkout.</span>
+                  <span>Envio via Melhor Envio (PAC, SEDEX e Loggi) calculado no checkout.</span>
                 </p>
               </div>
             ) : (

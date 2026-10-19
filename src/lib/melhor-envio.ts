@@ -52,8 +52,8 @@ export function getFallbackShippingRates(
   let pacDays = 7;
   let sedexBase = 39.9;
   let sedexDays = 2;
-  let jadlogBase = 24.5;
-  let jadlogDays = 5;
+  let loggiBase = 21.5;
+  let loggiDays = 4;
 
   switch (firstDigit) {
     case '0':
@@ -62,32 +62,32 @@ export function getFallbackShippingRates(
       pacDays = 4;
       sedexBase = 24.9;
       sedexDays = 1;
-      jadlogBase = 17.5;
-      jadlogDays = 3;
+      loggiBase = 15.5;
+      loggiDays = 2;
       break;
     case '2': // RJ / ES
       pacBase = 23.9;
       pacDays = 5;
       sedexBase = 33.9;
       sedexDays = 2;
-      jadlogBase = 21.9;
-      jadlogDays = 4;
+      loggiBase = 18.9;
+      loggiDays = 3;
       break;
     case '3': // MG
       pacBase = 24.5;
       pacDays = 5;
       sedexBase = 34.5;
       sedexDays = 2;
-      jadlogBase = 22.5;
-      jadlogDays = 4;
+      loggiBase = 19.5;
+      loggiDays = 3;
       break;
     case '4': // BA / SE
       pacBase = 27.5;
       pacDays = 6;
       sedexBase = 41.9;
       sedexDays = 2;
-      jadlogBase = 25.9;
-      jadlogDays = 5;
+      loggiBase = 24.9;
+      loggiDays = 5;
       break;
     case '5':
     case '6': // Nordeste
@@ -95,16 +95,16 @@ export function getFallbackShippingRates(
       pacDays = 8;
       sedexBase = 46.5;
       sedexDays = 3;
-      jadlogBase = 28.5;
-      jadlogDays = 6;
+      loggiBase = 26.5;
+      loggiDays = 6;
       break;
     case '7': // Centro-Oeste / DF / TO / RO / AC
       pacBase = 28.5;
       pacDays = 7;
       sedexBase = 43.5;
       sedexDays = 2;
-      jadlogBase = 27.5;
-      jadlogDays = 5;
+      loggiBase = 25.5;
+      loggiDays = 5;
       break;
     case '8':
     case '9': // Sul (PR, SC, RS)
@@ -112,21 +112,21 @@ export function getFallbackShippingRates(
       pacDays = 6;
       sedexBase = 38.5;
       sedexDays = 2;
-      jadlogBase = 23.9;
-      jadlogDays = 4;
+      loggiBase = 21.9;
+      loggiDays = 4;
       break;
     default:
       pacBase = 28.0;
       pacDays = 7;
       sedexBase = 44.0;
       sedexDays = 3;
-      jadlogBase = 26.0;
-      jadlogDays = 5;
+      loggiBase = 24.0;
+      loggiDays = 5;
   }
 
   const pacPrice = Number((pacBase + extraWeightFee).toFixed(2));
   const sedexPrice = Number((sedexBase + extraWeightFee * 1.4).toFixed(2));
-  const jadlogPrice = Number((jadlogBase + extraWeightFee * 0.95).toFixed(2));
+  const loggiPrice = Number((loggiBase + extraWeightFee * 0.95).toFixed(2));
 
   return [
     {
@@ -140,14 +140,14 @@ export function getFallbackShippingRates(
       deliveryRange: { min: Math.max(1, pacDays - 1), max: pacDays },
     },
     {
-      id: 'jadlog-package',
-      name: '.Package',
-      company: 'Jadlog',
-      companyPicture: 'https://assets.melhorenvio.com.br/companies/jadlog.png',
-      price: jadlogPrice,
+      id: 'loggi-express',
+      name: 'Loggi Express',
+      company: 'Loggi',
+      companyPicture: 'https://assets.melhorenvio.com.br/companies/loggi.png',
+      price: loggiPrice,
       currency: 'R$',
-      deliveryTime: jadlogDays,
-      deliveryRange: { min: Math.max(1, jadlogDays - 1), max: jadlogDays },
+      deliveryTime: loggiDays,
+      deliveryRange: { min: Math.max(1, loggiDays - 1), max: loggiDays },
     },
     {
       id: 'correios-sedex',
@@ -272,12 +272,24 @@ export async function calculateShippingRates({
       };
     }
 
-    // Filtra opções válidas e sem erro
+    // Filtra exclusivamente as opções permitidas: PAC, SEDEX e Loggi
     const validOptions: ShippingOption[] = data
       .filter((item: any) => {
         if (!item || item.error) return false;
         const price = parseFloat(item.custom_price || item.price);
-        return !isNaN(price) && price > 0;
+        if (isNaN(price) || price <= 0) return false;
+
+        const comp = (item.company?.name || '').toLowerCase();
+        const name = (item.name || '').toLowerCase();
+
+        // 1. Correios: PAC ou SEDEX
+        const isCorreios =
+          comp.includes('correios') && (name.includes('pac') || name.includes('sedex'));
+
+        // 2. Loggi: Express ou Loggi Ponto (exclui taxas de coleta do remetente)
+        const isLoggi = comp.includes('loggi') && !name.includes('coleta');
+
+        return isCorreios || isLoggi;
       })
       .map((item: any) => {
         const price = parseFloat(item.custom_price || item.price);
@@ -288,9 +300,14 @@ export async function calculateShippingRates({
           item.delivery_range?.max ||
           5;
 
+        let displayName = item.name || 'Padrão';
+        if (item.company?.name === 'Loggi' && displayName.toLowerCase() === 'express') {
+          displayName = 'Loggi Express';
+        }
+
         return {
           id: item.id,
-          name: item.name || 'Padrão',
+          name: displayName,
           company: item.company?.name || 'Transportadora',
           companyPicture: item.company?.picture,
           price: Number(price.toFixed(2)),

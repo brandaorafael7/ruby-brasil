@@ -51,7 +51,7 @@ const FAQS = [
   {
     question: 'Como funciona o cálculo do frete?',
     answer:
-      'O frete é calculado em tempo real através da integração oficial com o Melhor Envio. Você pode escolher as opções mais vantajosas dos Correios (PAC e SEDEX) ou transportadoras privadas (Jadlog), de acordo com seu CEP e prazo desejado.',
+      'O frete é calculado em tempo real através da integração oficial com o Melhor Envio. Você pode escolher as opções mais vantajosas dos Correios (PAC e SEDEX) ou da Loggi, de acordo com seu CEP e prazo desejado.',
   },
   {
     question: 'Posso mesclar times, modelos e tamanhos diferentes no mesmo pedido?',
@@ -261,7 +261,7 @@ export default function CatalogView({ initialProducts }: Props) {
               </div>
               <h3 className="text-sm font-black text-white">Envio Seguro Melhor Envio</h3>
               <p className="text-xs text-zinc-400 mt-1 leading-relaxed">
-                Cotação em tempo real com as melhores tarifas dos Correios (PAC/SEDEX) e Jadlog com rastreamento completo.
+                Cotação em tempo real com as melhores tarifas dos Correios (PAC/SEDEX) e Loggi com rastreamento completo.
               </p>
             </div>
 

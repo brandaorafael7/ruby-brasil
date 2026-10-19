@@ -247,7 +247,7 @@ export default function ProductDetailClient({ product, relatedProducts }: Props)
                 </div>
                 <div className="text-left">
                   <span className="text-[11px] font-bold text-white block">Melhor Envio</span>
-                  <span className="text-[10px] text-zinc-400">Correios e Jadlog</span>
+                  <span className="text-[10px] text-zinc-400">Correios e Loggi</span>
                 </div>
               </div>
 

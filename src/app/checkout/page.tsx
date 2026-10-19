@@ -598,7 +598,7 @@ export default function CheckoutPage() {
                 {isLoadingShipping ? (
                   <div className="p-5 rounded-xl bg-zinc-950/70 border border-zinc-800 flex items-center justify-center gap-2.5 text-xs text-zinc-300">
                     <Loader2 className="w-4 h-4 text-emerald-400 animate-spin" />
-                    <span>Consultando melhores tarifas em tempo real (Correios & Jadlog)...</span>
+                    <span>Consultando melhores tarifas em tempo real (PAC, SEDEX & Loggi)...</span>
                   </div>
                 ) : shippingOptions.length > 0 ? (
                   <div className="space-y-2">
