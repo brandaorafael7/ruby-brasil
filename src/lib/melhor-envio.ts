@@ -23,6 +23,18 @@ export function sanitizePostalCode(cep: string): string {
 }
 
 /**
+ * Endereço oficial do remetente da loja (Campinas - SP)
+ */
+export const DEFAULT_SENDER_ADDRESS = {
+  street: 'Rua Plácio Soave',
+  number: '46',
+  neighborhood: 'Chácara Santa Letícia',
+  city: 'Campinas',
+  state: 'SP',
+  postalCode: '13054040',
+};
+
+/**
  * Fornece cotações de contingência (fallback) realistas caso a API do Melhor Envio
  * esteja sem token configurado ou indisponível temporariamente.
  * Garante que o cliente NUNCA seja impedido de fechar a compra.
@@ -174,7 +186,7 @@ export async function calculateShippingRates({
   const originCep = sanitizePostalCode(
     fromPostalCode ||
       process.env.MELHOR_ENVIO_POSTAL_CODE ||
-      '49010000' // CEP padrão de envio (Aracaju - SE)
+      '13054040' // CEP padrão de envio (Campinas - SP)
   );
 
   const isSandbox =
