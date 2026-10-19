@@ -27,15 +27,14 @@ async function main() {
   });
   console.log(`Lote Promocional Criado: ${promoBatch.code} (Restam ${promoBatch.remainingQuota}/${promoBatch.totalQuota})`);
 
-  // 2. Criar Faixas Globais de Atacado
+  // 2. Criar Faixas Globais de Atacado (Regra Oficial: 1-49 un: R$ 60 | 50+ un: R$ 55)
   await prisma.wholesaleTier.createMany({
     data: [
-      { minQuantity: 10, maxQuantity: 29, unitPrice: 65.0 },
-      { minQuantity: 30, maxQuantity: 59, unitPrice: 55.0 },
-      { minQuantity: 60, maxQuantity: null, unitPrice: 48.0 },
+      { minQuantity: 1, maxQuantity: 49, unitPrice: 60.0 },
+      { minQuantity: 50, maxQuantity: null, unitPrice: 55.0 },
     ],
   });
-  console.log('Faixas de Atacado Criadas (10-29: R$ 65 | 30-59: R$ 55 | 60+: R$ 48)');
+  console.log('Faixas de Atacado Criadas (1-49: R$ 60,00 | 50+: R$ 55,00)');
 
   // 3. Catálogo de Produtos
   const products = [

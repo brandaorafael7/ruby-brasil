@@ -548,7 +548,7 @@ export default function CatalogView({ initialProducts }: Props) {
                 02
               </div>
               <h3 className="text-base font-extrabold text-white mb-2">
-                2. Descontos Automáticos
+                2. Desconto no Atacado (50+ Peças)
               </h3>
               <p className="text-xs text-zinc-400 leading-relaxed">
                 Monte seu pedido mesclando modelos e tamanhos. Com 50 peças ou mais, o preço de cada camisa cai automaticamente para R$ 55,00 no atacado direto da fábrica.

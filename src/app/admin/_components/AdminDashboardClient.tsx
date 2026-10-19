@@ -1085,7 +1085,7 @@ export default function AdminDashboardClient({
                 </div>
               )}
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-xs font-bold text-zinc-300 mb-1.5">
                     Cota Restante no Contador (Peças)
@@ -1096,11 +1096,12 @@ export default function AdminDashboardClient({
                     onChange={(e) => setRemainingQuotaInput(e.target.value)}
                     className="w-full bg-zinc-950 border border-zinc-700/80 rounded-xl px-4 py-3 text-sm text-white font-mono focus:outline-none focus:border-rose-500 font-bold"
                   />
+                  <p className="text-[11px] text-zinc-500 mt-1">Exibido na barra promocional do topo da loja.</p>
                 </div>
 
                 <div>
                   <label className="block text-xs font-bold text-zinc-300 mb-1.5">
-                    Cota Total Contratada (Peças)
+                    Cota Total do Lote (Peças)
                   </label>
                   <input
                     type="number"
@@ -1108,32 +1109,7 @@ export default function AdminDashboardClient({
                     onChange={(e) => setTotalQuotaInput(e.target.value)}
                     className="w-full bg-zinc-950 border border-zinc-700/80 rounded-xl px-4 py-3 text-sm text-white font-mono focus:outline-none focus:border-rose-500 font-bold"
                   />
-                </div>
-
-                <div>
-                  <label className="block text-xs font-bold text-zinc-300 mb-1.5">
-                    Mínimo Peças p/ Frete Grátis
-                  </label>
-                  <input
-                    type="number"
-                    value={minPiecesInput}
-                    onChange={(e) => setMinPiecesInput(e.target.value)}
-                    className="w-full bg-zinc-950 border border-zinc-700/80 rounded-xl px-4 py-3 text-sm text-white font-mono focus:outline-none focus:border-rose-500 font-bold"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-xs font-bold text-zinc-300 mb-1.5">
-                    Valor Frete Fixo (R$)
-                  </label>
-                  <input
-                    type="number"
-                    step="0.01"
-                    value={fixedShippingFeeInput}
-                    onChange={(e) => setFixedShippingFeeInput(e.target.value)}
-                    placeholder="30.00"
-                    className="w-full bg-zinc-950 border border-zinc-700/80 rounded-xl px-4 py-3 text-sm text-white font-mono focus:outline-none focus:border-rose-500 font-bold"
-                  />
+                  <p className="text-[11px] text-zinc-500 mt-1">Cota total de referência do lote promocional.</p>
                 </div>
               </div>
 
@@ -1149,33 +1125,49 @@ export default function AdminDashboardClient({
               </div>
             </div>
 
-            {/* TABELA DE FAIXAS DE ATACADO */}
+            {/* TABELA DE FAIXAS DE ATACADO (EXCLUSIVAMENTE 50+ PEÇAS) */}
             <div className="bg-zinc-900/90 border border-zinc-800/80 rounded-3xl p-6 shadow-2xl">
               <h3 className="text-lg font-black text-white flex items-center gap-2 mb-4 pb-3 border-b border-zinc-800">
                 <Layers className="w-5 h-5 text-rose-500" />
-                Tabela de Faixas de Preço de Atacado
+                Regra Oficial de Desconto no Atacado (50+ Peças)
               </h3>
 
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                {initialTiers.map((tier, idx) => (
-                  <div
-                    key={tier.id || idx}
-                    className="bg-zinc-950 border border-zinc-800 rounded-2xl p-5 flex flex-col justify-between"
-                  >
-                    <div>
-                      <div className="flex items-center justify-between text-xs text-zinc-400 mb-1">
-                        <span className="font-bold uppercase tracking-wider">Faixa {idx + 1}</span>
-                        <span className="bg-rose-500/20 text-rose-300 px-2 py-0.5 rounded font-mono text-[10px]">
-                          {tier.minQuantity} a {tier.maxQuantity || '∞'} peças
-                        </span>
-                      </div>
-                      <h4 className="text-3xl font-black text-white mt-2">
-                        {formatCurrency(tier.unitPrice)}
-                        <span className="text-xs font-normal text-zinc-400 ml-1">/ unidade</span>
-                      </h4>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="bg-zinc-950 border border-zinc-800 rounded-2xl p-5 flex flex-col justify-between">
+                  <div>
+                    <div className="flex items-center justify-between text-xs text-zinc-400 mb-1">
+                      <span className="font-bold uppercase tracking-wider text-zinc-400">Varejo</span>
+                      <span className="bg-zinc-800 text-zinc-300 px-2 py-0.5 rounded font-mono text-[10px]">
+                        1 a 49 peças
+                      </span>
                     </div>
+                    <h4 className="text-3xl font-black text-white mt-2">
+                      R$ 60,00
+                      <span className="text-xs font-normal text-zinc-400 ml-1">/ unidade</span>
+                    </h4>
+                    <p className="text-[11px] text-zinc-500 mt-2">
+                      Preço unitário padrão aplicado em compras de 1 a 49 peças.
+                    </p>
                   </div>
-                ))}
+                </div>
+
+                <div className="bg-zinc-950 border border-emerald-500/40 rounded-2xl p-5 flex flex-col justify-between ring-1 ring-emerald-500/20">
+                  <div>
+                    <div className="flex items-center justify-between text-xs text-emerald-400 mb-1">
+                      <span className="font-bold uppercase tracking-wider text-emerald-400">Desconto Atacado (Ativo)</span>
+                      <span className="bg-emerald-500/20 text-emerald-300 px-2 py-0.5 rounded font-mono text-[10px] font-bold">
+                        50+ peças
+                      </span>
+                    </div>
+                    <h4 className="text-3xl font-black text-emerald-400 mt-2">
+                      R$ 55,00
+                      <span className="text-xs font-normal text-zinc-400 ml-1">/ unidade</span>
+                    </h4>
+                    <p className="text-[11px] text-emerald-300/80 mt-2 font-medium">
+                      Desconto automático de R$ 5,00 por camisa ao atingir 50 ou mais unidades no carrinho.
+                    </p>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
