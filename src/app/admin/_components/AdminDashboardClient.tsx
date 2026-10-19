@@ -116,10 +116,9 @@ export function buildOrderWhatsAppReport(order: any): string {
   text += `Aqui está o status atualizado do seu pedido:\n\n`;
   text += `🔢 *Número do Pedido:* #${order.orderNumber}\n`;
   text += `📌 *Status:* ${statusInfo.emoji} *${statusInfo.label.toUpperCase()}*\n`;
-  text += `👕 *Total de Peças:* ${order.totalQuantity} camisa(s)\n`;
-  const shippingText = order.isFreeShipping
-    ? 'Frete Grátis'
-    : `Frete ${formatCurrency(order.shippingFee || 30)}`;
+  const shippingText = order.shippingService
+    ? `${order.shippingService}: ${formatCurrency(order.shippingCost || order.shippingFee || 0)}`
+    : `Frete ${formatCurrency(order.shippingCost || order.shippingFee || 0)}`;
   text += `💰 *Valor Total:* ${formatCurrency(order.finalTotal)} (${shippingText})\n\n`;
   text += `📋 *Itens do Pedido:*\n${itemsText || '  Nenhum item registrado'}\n\n`;
   text += `📍 *Endereço de Entrega:*\n`;
@@ -1494,8 +1493,8 @@ export default function AdminDashboardClient({
                               <span className="font-mono font-black text-emerald-400 text-sm block">
                                 {formatCurrency(order.finalTotal)}
                               </span>
-                              <span className="text-[10px] text-zinc-500 block">
-                                {order.isFreeShipping ? 'Frete Grátis' : 'Frete R$ 30'}
+                              <span className="text-[10px] text-zinc-500 block truncate max-w-[140px]" title={order.shippingService || 'Melhor Envio'}>
+                                {order.shippingService ? `${order.shippingService} (${formatCurrency(order.shippingCost || 0)})` : `Frete ${formatCurrency(order.shippingCost || 0)}`}
                               </span>
                             </td>
 
@@ -2131,9 +2130,9 @@ export default function AdminDashboardClient({
                   <span className="font-mono text-white">{formatCurrency(selectedOrder.subtotal)}</span>
                 </div>
                 <div className="flex justify-between text-zinc-400">
-                  <span>Frete:</span>
+                  <span>Frete ({selectedOrder.shippingService || 'Melhor Envio'}):</span>
                   <span className="font-mono text-emerald-400">
-                    {selectedOrder.isFreeShipping ? 'Grátis (10+ peças)' : 'R$ 30,00'}
+                    {formatCurrency(selectedOrder.shippingCost || 0)}
                   </span>
                 </div>
                 <div className="flex justify-between font-black text-sm text-white pt-2 border-t border-zinc-800">

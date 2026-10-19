@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
-import { CartItem, Product, PromotionalBatch, WholesaleTier } from '@/types';
+import { CartItem, Product, PromotionalBatch, WholesaleTier, ShippingOption } from '@/types';
 import { getSizeSurcharge } from '@/lib/utils';
 
 const DEFAULT_TIERS: WholesaleTier[] = [
@@ -32,12 +32,16 @@ interface CartStore {
   promotionalBatch: PromotionalBatch;
   isCartOpen: boolean;
   selectedMode: 'wholesale' | 'retail';
+  selectedShippingOption: ShippingOption | null;
+  shippingZipCode: string;
 
   setSelectedMode: (mode: 'wholesale' | 'retail') => void;
   openCart: () => void;
   closeCart: () => void;
   toggleCart: () => void;
   setPromotionalBatch: (batch: PromotionalBatch) => void;
+  setSelectedShippingOption: (option: ShippingOption | null) => void;
+  setShippingZipCode: (zipCode: string) => void;
 
   addItem: (
     product: Product,
@@ -79,12 +83,16 @@ export const useCartStore = create<CartStore>()(
       promotionalBatch: DEFAULT_BATCH,
       isCartOpen: false,
       selectedMode: 'wholesale',
+      selectedShippingOption: null,
+      shippingZipCode: '',
 
       setSelectedMode: (mode) => set({ selectedMode: mode }),
       openCart: () => set({ isCartOpen: true }),
       closeCart: () => set({ isCartOpen: false }),
       toggleCart: () => set((state) => ({ isCartOpen: !state.isCartOpen })),
       setPromotionalBatch: (batch) => set({ promotionalBatch: batch }),
+      setSelectedShippingOption: (option) => set({ selectedShippingOption: option }),
+      setShippingZipCode: (zipCode) => set({ shippingZipCode: zipCode }),
 
       addItem: (product, size, quantity, customName, customNumber) => {
         if (quantity <= 0) return { success: false, added: 0 };
@@ -225,7 +233,7 @@ export const useCartStore = create<CartStore>()(
         }));
       },
 
-      clearCart: () => set({ items: [] }),
+      clearCart: () => set({ items: [], selectedShippingOption: null }),
 
       getVariantStock: (productId, size, product) => {
         if (product) {
@@ -291,16 +299,11 @@ export const useCartStore = create<CartStore>()(
       },
 
       isFreeShippingEligible: () => {
-        const minPieces = get().promotionalBatch?.minPiecesForFreeShip ?? 10;
-        return get().getTotalPieces() >= minPieces;
+        return false; // Frete grátis removido: frete calculado via Melhor Envio
       },
 
       getShippingFee: () => {
-        const total = get().getTotalPieces();
-        if (total === 0) return 0;
-        const minPieces = get().promotionalBatch?.minPiecesForFreeShip ?? 10;
-        const fixedFee = get().promotionalBatch?.fixedShippingFee ?? 30.0;
-        return total >= minPieces ? 0.0 : fixedFee;
+        return get().selectedShippingOption?.price ?? 0;
       },
 
       getFinalTotal: () => {
@@ -320,6 +323,8 @@ export const useCartStore = create<CartStore>()(
       partialize: (state) => ({
         items: state.items,
         selectedMode: state.selectedMode,
+        selectedShippingOption: state.selectedShippingOption,
+        shippingZipCode: state.shippingZipCode,
       }),
     }
   )

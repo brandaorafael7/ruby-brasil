@@ -20,7 +20,7 @@ export default async function AdminPage() {
         minPiecesForFreeShip: 10,
         fixedShippingFee: 30.0,
         isActive: true,
-        description: 'Frete Fixo e Frete Grátis a partir da cota mínima.',
+        description: 'Cota Promocional e Atacado Ruby Brasil com Envio via Melhor Envio.',
       },
     });
   }

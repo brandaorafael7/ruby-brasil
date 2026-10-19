@@ -246,8 +246,8 @@ export default function ProductDetailClient({ product, relatedProducts }: Props)
                   <Truck className="w-4 h-4" />
                 </div>
                 <div className="text-left">
-                  <span className="text-[11px] font-bold text-white block">Frete Grátis</span>
-                  <span className="text-[10px] text-zinc-400">A partir de 10 camisas</span>
+                  <span className="text-[11px] font-bold text-white block">Melhor Envio</span>
+                  <span className="text-[10px] text-zinc-400">Correios e Jadlog</span>
                 </div>
               </div>
 
@@ -530,7 +530,7 @@ export default function ProductDetailClient({ product, relatedProducts }: Props)
                   Mais Camisas em Destaque
                 </h3>
                 <p className="text-xs text-zinc-400 mt-1">
-                  Confira outros mantos prontos para envio imediato com frete grátis a partir de 10 peças.
+                  Confira outros mantos prontos para envio imediato para todo o Brasil.
                 </p>
               </div>
               <Link

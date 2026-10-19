@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import {
   ArrowLeft,
@@ -10,10 +10,13 @@ import {
   MessageCircle,
   Sparkles,
   ShoppingBag,
+  Loader2,
+  RotateCcw,
 } from 'lucide-react';
 import { useCartStore } from '@/store';
 import { formatCurrency, buildWhatsAppOrderMessage, getSizeSurcharge } from '@/lib/utils';
-import { CheckoutForm } from '@/types';
+import { CheckoutForm, ShippingOption } from '@/types';
+import { sanitizePostalCode } from '@/lib/melhor-envio';
 
 export default function CheckoutPage() {
   const {
@@ -24,17 +27,25 @@ export default function CheckoutPage() {
     getItemUnitPrice,
     getSubtotal,
     getSavings,
-    isFreeShippingEligible,
     getShippingFee,
     getFinalTotal,
     clearCart,
-    promotionalBatch,
+    selectedShippingOption,
+    setSelectedShippingOption,
+    shippingZipCode,
+    setShippingZipCode,
   } = useCartStore();
 
   const [mounted, setMounted] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [completedOrder, setCompletedOrder] = useState<any>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+  // Estados de cálculo de frete Melhor Envio
+  const [shippingOptions, setShippingOptions] = useState<ShippingOption[]>([]);
+  const [isLoadingShipping, setIsLoadingShipping] = useState(false);
+  const [isLoadingCep, setIsLoadingCep] = useState(false);
+  const [shippingNotice, setShippingNotice] = useState<string | null>(null);
 
   const [form, setForm] = useState<CheckoutForm>({
     customerType: 'PF',
@@ -52,26 +63,139 @@ export default function CheckoutPage() {
     paymentMethod: 'WHATSAPP_ASSISTED',
   });
 
-  useEffect(() => {
-    setMounted(true);
-  }, []);
-
-  if (!mounted) return null;
-
   const totalPieces = getTotalPieces();
   const wholesaleActive = isWholesale();
   const currentTier = getCurrentTier();
   const subtotal = getSubtotal();
   const savings = getSavings();
-  const isFreeShip = isFreeShippingEligible();
   const shippingFee = getShippingFee();
   const finalTotal = getFinalTotal();
 
-  const minPiecesForFreeShip = promotionalBatch?.minPiecesForFreeShip || 10;
-  const fixedShippingFee = promotionalBatch?.fixedShippingFee || 30.0;
-
   const whatsappNumber = process.env.NEXT_PUBLIC_WHATSAPP_NUMBER || '5579988542410';
   const whatsappDisplay = '(79) 98854-2410';
+
+  /**
+   * Consulta a API do Melhor Envio e busca opções de frete
+   */
+  const fetchShippingQuotes = useCallback(
+    async (cep: string, pieces: number) => {
+      const cleanCep = sanitizePostalCode(cep);
+      if (cleanCep.length !== 8) return;
+
+      setIsLoadingShipping(true);
+      setShippingNotice(null);
+
+      try {
+        const res = await fetch('/api/shipping/calculate', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            zipCode: cleanCep,
+            totalPieces: Math.max(1, pieces),
+          }),
+        });
+
+        const data = await res.json();
+        if (res.ok && data.success && Array.isArray(data.options)) {
+          setShippingOptions(data.options);
+          if (data.message) {
+            setShippingNotice(data.message);
+          }
+
+          // Se já havia uma opção selecionada e ela existe na lista, preserva;
+          // caso contrário, pré-seleciona a primeira (mais econômica)
+          const currentSelected = selectedShippingOption;
+          const match = data.options.find(
+            (opt: ShippingOption) => opt.id === currentSelected?.id
+          );
+          if (match) {
+            setSelectedShippingOption(match);
+          } else if (data.options.length > 0) {
+            setSelectedShippingOption(data.options[0]);
+          }
+        } else {
+          setShippingOptions([]);
+          setShippingNotice(data.error || 'Nenhuma opção de frete encontrada para este CEP.');
+        }
+      } catch (err) {
+        console.error('Erro ao calcular frete no Melhor Envio:', err);
+        setShippingNotice('Não foi possível obter as cotações de frete no momento.');
+      } finally {
+        setIsLoadingShipping(false);
+      }
+    },
+    [selectedShippingOption, setSelectedShippingOption]
+  );
+
+  /**
+   * Consulta endereço via ViaCEP para autopreencher os campos de endereço
+   */
+  const fetchAddressViaCep = useCallback(
+    async (cleanCep: string) => {
+      if (cleanCep.length !== 8) return;
+      setIsLoadingCep(true);
+      try {
+        const res = await fetch(`https://viacep.com.br/ws/${cleanCep}/json/`);
+        if (res.ok) {
+          const data = await res.json();
+          if (!data.erro) {
+            setForm((prev) => ({
+              ...prev,
+              street: data.logradouro || prev.street,
+              neighborhood: data.bairro || prev.neighborhood,
+              city: data.localidade || prev.city,
+              state: data.uf || prev.state,
+            }));
+          }
+        }
+      } catch (err) {
+        console.warn('ViaCEP indisponível:', err);
+      } finally {
+        setIsLoadingCep(false);
+      }
+    },
+    []
+  );
+
+  /**
+   * Monitora a digitação do CEP e dispara o cálculo automaticamente ao atingir 8 dígitos
+   */
+  const handleZipCodeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    let raw = e.target.value.replace(/\D/g, '').slice(0, 8);
+    // Aplica máscara 00000-000 para exibição
+    let formatted = raw;
+    if (raw.length > 5) {
+      formatted = `${raw.slice(0, 5)}-${raw.slice(5)}`;
+    }
+
+    setForm((prev) => ({ ...prev, zipCode: formatted }));
+
+    if (raw.length === 8) {
+      setShippingZipCode(raw);
+      fetchAddressViaCep(raw);
+      fetchShippingQuotes(raw, totalPieces);
+    } else {
+      if (shippingOptions.length > 0) {
+        setShippingOptions([]);
+      }
+      if (selectedShippingOption) {
+        setSelectedShippingOption(null);
+      }
+    }
+  };
+
+  useEffect(() => {
+    setMounted(true);
+    // Se já havia CEP salvo no carrinho, recupera e recalcula
+    if (shippingZipCode && shippingZipCode.length === 8) {
+      const formatted = `${shippingZipCode.slice(0, 5)}-${shippingZipCode.slice(5)}`;
+      setForm((prev) => ({ ...prev, zipCode: formatted }));
+      fetchAddressViaCep(shippingZipCode);
+      fetchShippingQuotes(shippingZipCode, totalPieces);
+    }
+  }, [shippingZipCode, totalPieces, fetchAddressViaCep, fetchShippingQuotes]);
+
+  if (!mounted) return null;
 
   if (items.length === 0 && !completedOrder) {
     return (
@@ -96,12 +220,30 @@ export default function CheckoutPage() {
     setIsSubmitting(true);
     setErrorMessage(null);
 
+    // Validação obrigatória da seleção de frete
+    if (!selectedShippingOption) {
+      const msg = 'Por favor, informe seu CEP e selecione uma opção de frete antes de finalizar.';
+      setErrorMessage(msg);
+      alert(msg);
+      setIsSubmitting(false);
+      return;
+    }
+
     try {
+      const shippingServiceName = `${selectedShippingOption.name} - ${selectedShippingOption.company}`;
+      const payloadForm: CheckoutForm = {
+        ...form,
+        paymentMethod: 'WHATSAPP_ASSISTED',
+        shippingOption: selectedShippingOption,
+        shippingService: shippingServiceName,
+        shippingCost: selectedShippingOption.price,
+      };
+
       const res = await fetch('/api/checkout', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          form: { ...form, paymentMethod: 'WHATSAPP_ASSISTED' },
+          form: payloadForm,
           items,
         }),
       });
@@ -112,18 +254,18 @@ export default function CheckoutPage() {
         setCompletedOrder(data);
         clearCart();
 
-        // Enviar dados para o WhatsApp oficial (79) 98854-2410
+        // Enviar dados para o WhatsApp oficial com detalhes do Melhor Envio
         const message = buildWhatsAppOrderMessage({
           items,
-          form,
+          form: payloadForm,
           totalPieces,
           isWholesale: wholesaleActive,
           currentTier,
           subtotal,
           savings,
-          shippingFee,
-          finalTotal,
-          isFreeShipping: isFreeShip,
+          shippingFee: selectedShippingOption.price,
+          shippingService: `${shippingServiceName} (${selectedShippingOption.deliveryTime} dias úteis)`,
+          finalTotal: subtotal + selectedShippingOption.price,
         });
 
         const url = `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(message)}`;
@@ -149,53 +291,60 @@ export default function CheckoutPage() {
           <CheckCircle2 className="w-8 h-8" />
         </div>
 
-        <h1 className="text-2xl sm:text-3xl font-black text-white">Pedido Encaminhado com Sucesso!</h1>
-        <p className="text-zinc-400 text-sm mt-2">
-          Número do Pedido: <strong className="text-emerald-400 font-mono text-base">{completedOrder.orderNumber}</strong>
+        <span className="text-xs font-bold text-emerald-400 uppercase tracking-widest bg-emerald-500/10 px-3 py-1 rounded-full border border-emerald-500/20">
+          Pedido Gerado com Sucesso!
+        </span>
+
+        <h1 className="text-2xl sm:text-3xl font-black text-white mt-3">
+          Pedido #{completedOrder.orderNumber}
+        </h1>
+
+        <p className="text-sm text-zinc-300 mt-2 max-w-md mx-auto">
+          Os dados do seu pedido e a cotação de frete foram preparados. Finalize agora com nosso consultor no WhatsApp oficial para confirmar o estoque e efetuar o pagamento.
         </p>
 
-        <div className="bg-emerald-950/60 border border-emerald-500/40 rounded-xl p-4 max-w-md mx-auto my-4 text-xs text-emerald-300 font-semibold flex items-center justify-center gap-2">
-          <MessageCircle className="w-5 h-5 text-emerald-400 shrink-0" />
-          <span>Seu pedido foi aberto no WhatsApp para validação imediata e envio dos dados de pagamento.</span>
+        <div className="mt-8 p-6 rounded-2xl bg-zinc-900 border border-zinc-800 text-left max-w-md mx-auto space-y-3">
+          <div className="flex justify-between text-xs text-zinc-400 pb-2 border-b border-zinc-800">
+            <span>Número do Pedido:</span>
+            <strong className="text-white font-mono">{completedOrder.orderNumber}</strong>
+          </div>
+          <div className="flex justify-between text-xs text-zinc-400 pb-2 border-b border-zinc-800">
+            <span>Total com Frete:</span>
+            <strong className="text-emerald-400 text-sm font-black">
+              {formatCurrency(completedOrder.finalTotal)}
+            </strong>
+          </div>
+          <div className="flex justify-between text-xs text-zinc-400">
+            <span>Atendimento:</span>
+            <strong className="text-white">{whatsappDisplay}</strong>
+          </div>
         </div>
 
-        <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-6 text-left max-w-md mx-auto my-6 space-y-3 text-xs">
-          <div className="flex justify-between border-b border-zinc-800 pb-2">
-            <span className="text-zinc-400">Total do Pedido:</span>
-            <span className="font-black text-emerald-400 text-sm">{formatCurrency(completedOrder.finalTotal)}</span>
-          </div>
-          <div className="flex justify-between border-b border-zinc-800 pb-2">
-            <span className="text-zinc-400">Quantidade de Camisas:</span>
-            <span className="font-bold text-white">{completedOrder.totalQuantity || totalPieces} peças</span>
-          </div>
-          <div className="flex justify-between border-b border-zinc-800 pb-2">
-            <span className="text-zinc-400">Frete:</span>
-            <span className="font-bold text-white">
-              {completedOrder.isFreeShipping ? '🎉 GRÁTIS' : 'R$ 30,00 (Fixo)'}
-            </span>
-          </div>
-          <div className="flex justify-between border-b border-zinc-800 pb-2">
-            <span className="text-zinc-400">Canal de Atendimento:</span>
-            <span className="font-bold text-emerald-400">WhatsApp {whatsappDisplay}</span>
-          </div>
-          <p className="text-[11px] text-zinc-500 pt-1">
-            Caso a conversa do WhatsApp não tenha aberto automaticamente, você pode chamar diretamente pelo número <strong>{whatsappDisplay}</strong>.
-          </p>
+        <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-3">
+          <button
+            type="button"
+            onClick={() => {
+              const cleanNumber = whatsappNumber.replace(/\D/g, '');
+              window.open(`https://wa.me/${cleanNumber}`, '_blank');
+            }}
+            className="w-full sm:w-auto px-6 py-3.5 rounded-xl bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-500 hover:to-green-500 text-white font-black text-sm flex items-center justify-center gap-2 shadow-lg shadow-emerald-950/60"
+          >
+            <MessageCircle className="w-5 h-5 fill-current" />
+            Abrir Conversa no WhatsApp
+          </button>
+          <Link
+            href="/"
+            className="w-full sm:w-auto px-6 py-3.5 rounded-xl bg-zinc-900 hover:bg-zinc-800 border border-zinc-700 text-zinc-300 hover:text-white font-bold text-sm"
+          >
+            Voltar para a Loja
+          </Link>
         </div>
-
-        <Link
-          href="/"
-          className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-sm shadow-lg shadow-emerald-950/60 transition-colors"
-        >
-          <ArrowLeft className="w-4 h-4" />
-          Voltar para o Catálogo
-        </Link>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-zinc-950 py-8 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-zinc-950 text-zinc-100 py-10 px-4 sm:px-6 lg:px-8">
       <div className="max-w-6xl mx-auto">
         
         <div className="flex items-center justify-between mb-8 pb-4 border-b border-zinc-800">
@@ -217,7 +366,7 @@ export default function CheckoutPage() {
             <span className="text-xl shrink-0">⚠️</span>
             <div className="flex-1">
               <strong className="block font-black text-white text-sm mb-1">
-                Aviso de Disponibilidade de Estoque:
+                Aviso sobre o Pedido:
               </strong>
               <p className="text-xs text-rose-200 leading-relaxed">{errorMessage}</p>
             </div>
@@ -317,21 +466,29 @@ export default function CheckoutPage() {
               </div>
             </div>
 
-            {/* 2. ENDEREÇO DE ENTREGA */}
+            {/* 2. ENDEREÇO DE ENTREGA & CÁLCULO MELHOR ENVIO */}
             <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-5 shadow-lg">
               <h2 className="text-base font-black text-white flex items-center gap-2 mb-4">
                 <span className="w-6 h-6 rounded-full bg-emerald-500/20 text-emerald-400 text-xs flex items-center justify-center font-bold">2</span>
-                Endereço de Entrega
+                Endereço de Entrega & Cotação de Frete
               </h2>
 
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <div>
-                  <label className="block text-xs font-bold text-zinc-300 mb-1">CEP</label>
+                  <label className="block text-xs font-bold text-zinc-300 mb-1 flex items-center justify-between">
+                    <span>CEP</span>
+                    {isLoadingCep && (
+                      <span className="text-[10px] text-emerald-400 flex items-center gap-1 font-normal">
+                        <Loader2 className="w-3 h-3 animate-spin" /> Buscando...
+                      </span>
+                    )}
+                  </label>
                   <input
                     type="text"
                     required
+                    maxLength={9}
                     value={form.zipCode}
-                    onChange={(e) => setForm({ ...form, zipCode: e.target.value })}
+                    onChange={handleZipCodeChange}
                     placeholder="00000-000"
                     className="w-full bg-zinc-950 border border-zinc-700/80 rounded-xl px-3.5 py-2.5 text-xs sm:text-sm text-white focus:outline-none focus:border-emerald-500"
                   />
@@ -409,9 +566,100 @@ export default function CheckoutPage() {
                   />
                 </div>
               </div>
+
+              {/* OPÇÕES DE ENVIO (MELHOR ENVIO) */}
+              <div className="mt-5 pt-5 border-t border-zinc-800">
+                <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center gap-2">
+                    <Truck className="w-4 h-4 text-emerald-400" />
+                    <span className="text-xs sm:text-sm font-bold text-white">
+                      Opções de Envio (Melhor Envio)
+                    </span>
+                  </div>
+                  {shippingOptions.length > 0 && (
+                    <button
+                      type="button"
+                      onClick={() => fetchShippingQuotes(form.zipCode, totalPieces)}
+                      className="text-[11px] text-zinc-400 hover:text-white flex items-center gap-1 transition-colors"
+                      title="Recalcular Frete"
+                    >
+                      <RotateCcw className="w-3 h-3" />
+                      Recalcular
+                    </button>
+                  )}
+                </div>
+
+                {isLoadingShipping ? (
+                  <div className="p-5 rounded-xl bg-zinc-950/70 border border-zinc-800 flex items-center justify-center gap-2.5 text-xs text-zinc-300">
+                    <Loader2 className="w-4 h-4 text-emerald-400 animate-spin" />
+                    <span>Consultando melhores tarifas em tempo real (Correios & Jadlog)...</span>
+                  </div>
+                ) : shippingOptions.length > 0 ? (
+                  <div className="space-y-2">
+                    {shippingOptions.map((opt) => {
+                      const isSelected = selectedShippingOption?.id === opt.id;
+                      return (
+                        <div
+                          key={opt.id}
+                          onClick={() => setSelectedShippingOption(opt)}
+                          className={`p-3.5 rounded-xl border transition-all cursor-pointer flex items-center justify-between gap-3 ${
+                            isSelected
+                              ? 'bg-emerald-950/40 border-emerald-500/70 ring-1 ring-emerald-500/40 shadow-md shadow-emerald-950/40'
+                              : 'bg-zinc-950/70 border-zinc-800 hover:border-zinc-700 text-zinc-300'
+                          }`}
+                        >
+                          <div className="flex items-center gap-3">
+                            <div
+                              className={`w-4 h-4 rounded-full border flex items-center justify-center transition-colors ${
+                                isSelected
+                                  ? 'border-emerald-400 bg-emerald-500'
+                                  : 'border-zinc-600 bg-zinc-900'
+                              }`}
+                            >
+                              {isSelected && <div className="w-1.5 h-1.5 rounded-full bg-zinc-950" />}
+                            </div>
+
+                            <div>
+                              <div className="flex items-center gap-2">
+                                <span className="font-extrabold text-xs sm:text-sm text-white">
+                                  {opt.name}
+                                </span>
+                                <span className="text-[10px] bg-zinc-800 px-2 py-0.5 rounded-full text-zinc-300 font-semibold border border-zinc-700">
+                                  {opt.company}
+                                </span>
+                              </div>
+                              <span className="text-[11px] text-zinc-400 block mt-0.5">
+                                Prazo estimado: <strong>{opt.deliveryTime} {opt.deliveryTime === 1 ? 'dia útil' : 'dias úteis'}</strong>
+                              </span>
+                            </div>
+                          </div>
+
+                          <div className="text-right">
+                            <span className="font-black text-sm sm:text-base text-emerald-400">
+                              {formatCurrency(opt.price)}
+                            </span>
+                          </div>
+                        </div>
+                      );
+                    })}
+
+                    {shippingNotice && (
+                      <p className="text-[11px] text-zinc-400 italic pt-1 text-center">
+                        ℹ️ {shippingNotice}
+                      </p>
+                    )}
+                  </div>
+                ) : (
+                  <div className="p-4 rounded-xl bg-zinc-950/60 border border-dashed border-zinc-800 text-center text-xs text-zinc-400">
+                    <p>
+                      Informe um CEP válido com 8 dígitos acima para carregar as opções de frete disponíveis para o seu endereço.
+                    </p>
+                  </div>
+                )}
+              </div>
             </div>
 
-            {/* 3. FINALIZAÇÃO VIA WHATSAPP (PIX E CARTÃO REMOVIDOS) */}
+            {/* 3. ATENDIMENTO E PAGAMENTO VIA WHATSAPP */}
             <div className="bg-zinc-900 border border-emerald-500/40 rounded-2xl p-5 shadow-lg bg-gradient-to-br from-emerald-950/20 via-zinc-900 to-zinc-900">
               <h2 className="text-base font-black text-white flex items-center gap-2 mb-3">
                 <span className="w-6 h-6 rounded-full bg-emerald-500/20 text-emerald-400 text-xs flex items-center justify-center font-bold">3</span>
@@ -440,25 +688,24 @@ export default function CheckoutPage() {
 
           <div className="lg:col-span-5 space-y-4">
             
-            {/* STATUS DO FRETE */}
-            <div className={`p-4 rounded-2xl border ${
-              isFreeShip
-                ? 'bg-gradient-to-br from-emerald-950/60 to-zinc-900 border-emerald-500/50 shadow-lg shadow-emerald-950/30'
-                : 'bg-zinc-900 border-zinc-800'
-            }`}>
+            {/* STATUS DO FRETE (MELHOR ENVIO) */}
+            <div className="p-4 rounded-2xl border bg-zinc-900 border-zinc-800">
               <div className="flex items-center gap-2 mb-2">
                 <Truck className="w-5 h-5 text-emerald-400" />
-                <h3 className="font-black text-sm text-white">Regra de Frete</h3>
+                <h3 className="font-black text-sm text-white">Frete Seguro (Melhor Envio)</h3>
               </div>
 
-              {isFreeShip ? (
+              {selectedShippingOption ? (
                 <div>
-                  <div className="flex items-center gap-1.5 text-xs font-bold text-emerald-300">
-                    <Sparkles className="w-4 h-4 text-amber-300" />
-                    Frete 100% Grátis Garantido!
+                  <div className="flex items-center justify-between text-xs font-bold text-white mb-1">
+                    <span className="flex items-center gap-1.5 text-emerald-300">
+                      <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+                      {selectedShippingOption.name} - {selectedShippingOption.company}
+                    </span>
+                    <span className="text-emerald-400">{formatCurrency(selectedShippingOption.price)}</span>
                   </div>
-                  <p className="text-[11px] text-zinc-300 mt-1">
-                    Seu pedido possui <strong>{totalPieces} camisas</strong> (a partir de {minPiecesForFreeShip} peças o frete é por nossa conta).
+                  <p className="text-[11px] text-zinc-400">
+                    Prazo em até <strong>{selectedShippingOption.deliveryTime} dias úteis</strong> com código de rastreamento e seguro oficial.
                   </p>
                 </div>
               ) : (
@@ -466,14 +713,14 @@ export default function CheckoutPage() {
                   <p className="text-xs text-zinc-300">
                     Pedido atual: <strong>{totalPieces} {totalPieces === 1 ? 'camisa' : 'camisas'}</strong>.
                   </p>
-                  <p className="text-[11px] text-amber-300 font-semibold mt-1">
-                    Frete fixo de <strong>{formatCurrency(fixedShippingFee)}</strong>. Adicione mais <strong>{minPiecesForFreeShip - totalPieces}</strong> {minPiecesForFreeShip - totalPieces === 1 ? 'camisa' : 'camisas'} para liberar <strong>Frete Grátis</strong>!
+                  <p className="text-[11px] text-zinc-400 mt-1">
+                    Digite seu CEP no formulário ao lado para selecionar a transportadora e a melhor tarifa.
                   </p>
                 </div>
               )}
 
               {totalPieces >= 50 && (
-                <div className="mt-2 pt-2 border-t border-emerald-500/30 flex items-center gap-1.5 text-[11px] font-bold text-emerald-300">
+                <div className="mt-2.5 pt-2 border-t border-emerald-500/30 flex items-center gap-1.5 text-[11px] font-bold text-emerald-300">
                   <Sparkles className="w-3.5 h-3.5 text-amber-400" />
                   Preço Atacado Especial: R$ 55,00 / unidade!
                 </div>
@@ -520,11 +767,11 @@ export default function CheckoutPage() {
                 )}
 
                 <div className="flex justify-between text-zinc-300">
-                  <span>Frete</span>
-                  {isFreeShip ? (
-                    <span className="text-emerald-400 font-bold">GRÁTIS ({minPiecesForFreeShip}+ peças)</span>
+                  <span>Frete {selectedShippingOption ? `(${selectedShippingOption.name})` : '(Melhor Envio)'}</span>
+                  {selectedShippingOption ? (
+                    <span className="font-bold text-white">{formatCurrency(selectedShippingOption.price)}</span>
                   ) : (
-                    <span className="font-bold text-white">{formatCurrency(shippingFee)}</span>
+                    <span className="text-zinc-400 italic">Digite o CEP para calcular</span>
                   )}
                 </div>
 
@@ -539,12 +786,14 @@ export default function CheckoutPage() {
               <button
                 type="submit"
                 id="submit-order-button"
-                disabled={isSubmitting}
+                disabled={isSubmitting || !selectedShippingOption}
                 className="w-full py-4 px-4 rounded-xl bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-500 hover:to-green-500 active:scale-95 text-white font-black text-sm flex items-center justify-center gap-2.5 shadow-xl shadow-emerald-950/70 transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <MessageCircle className="w-5 h-5 fill-current" />
                 {isSubmitting ? (
                   <span>Gerando Pedido...</span>
+                ) : !selectedShippingOption ? (
+                  <span>Selecione uma opção de frete acima</span>
                 ) : (
                   <span>Enviar Pedido para o WhatsApp {whatsappDisplay}</span>
                 )}

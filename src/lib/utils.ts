@@ -55,6 +55,7 @@ export function buildWhatsAppOrderMessage({
   subtotal,
   savings,
   shippingFee,
+  shippingService,
   finalTotal,
   isFreeShipping,
 }: {
@@ -66,8 +67,9 @@ export function buildWhatsAppOrderMessage({
   subtotal: number;
   savings: number;
   shippingFee: number;
+  shippingService?: string;
   finalTotal: number;
-  isFreeShipping: boolean;
+  isFreeShipping?: boolean;
 }): string {
   const customerTypeLabel = form.customerType === 'PJ' ? 'Pessoa Jurídica (CNPJ)' : 'Pessoa Física (CPF)';
   const docLabel = form.customerType === 'PJ' ? 'CNPJ' : 'CPF';
@@ -91,7 +93,8 @@ export function buildWhatsAppOrderMessage({
   if (totalPieces >= 50) {
     text += `• Economia Atacado: ${formatCurrency(savings)}\n`;
   }
-  text += `• Frete: ${isFreeShipping ? '🎉 FRETE GRÁTIS' : `${formatCurrency(shippingFee)} (Frete Fixo)`}\n\n`;
+  const shippingServiceText = shippingService ? ` (${shippingService})` : ' (Melhor Envio)';
+  text += `• Frete${shippingServiceText}: ${formatCurrency(shippingFee)}\n\n`;
 
   text += `📋 *GRADE DETALHADA DE ITENS:*\n`;
   items.forEach((item, index) => {
@@ -104,7 +107,8 @@ export function buildWhatsAppOrderMessage({
 
   text += `\n💰 *VALOR TOTAL:*\n`;
   text += `• Subtotal Produtos: ${formatCurrency(subtotal)}\n`;
-  text += `• Frete: ${isFreeShipping ? 'GRÁTIS' : formatCurrency(shippingFee)}\n`;
+  if (savings > 0) text += `• Economia Atacado: -${formatCurrency(savings)}\n`;
+  text += `• Frete${shippingServiceText}: ${formatCurrency(shippingFee)}\n`;
   text += `• *TOTAL DO PEDIDO: ${formatCurrency(finalTotal)}*\n`;
   text += `• Finalização: *Canal Oficial Ruby Brasil*\n\n`;
 

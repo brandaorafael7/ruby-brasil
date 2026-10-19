@@ -51,12 +51,12 @@ const FAQS = [
   {
     question: 'Como funciona o cálculo do frete?',
     answer:
-      'Para pedidos com menos de 10 camisas, o frete é fixado em apenas R$ 30,00 para qualquer lugar do Brasil. Já para pedidos com 10 camisas ou mais, o FRETE É 100% GRÁTIS!',
+      'O frete é calculado em tempo real através da integração oficial com o Melhor Envio. Você pode escolher as opções mais vantajosas dos Correios (PAC e SEDEX) ou transportadoras privadas (Jadlog), de acordo com seu CEP e prazo desejado.',
   },
   {
     question: 'Posso mesclar times, modelos e tamanhos diferentes no mesmo pedido?',
     answer:
-      'Sim, com certeza! Você pode misturar qualquer clube do Brasileirão, times europeus, seleções e edições retrô em qualquer tamanho adulto (do P ao 4XL) ou infantil (16 ao 28) para atingir as metas de frete grátis (10 un) ou atacado (50 un).',
+      'Sim, com certeza! Você pode misturar qualquer clube do Brasileirão, times europeus, seleções e edições retrô em qualquer tamanho adulto (do P ao 4XL) ou infantil (16 ao 28) para atingir a meta de atacado (50 un a R$ 55,00/un).',
   },
   {
     question: 'Qual é o padrão de qualidade das camisas?',
@@ -88,7 +88,7 @@ const TESTIMONIALS = [
     name: 'Rodrigo Alencar',
     role: 'Cliente em Belo Horizonte - MG',
     comment:
-      'Juntei com o pessoal da pelada e pedimos 14 camisas para pegar o frete grátis. Chegou tudo certinho, tecidos impecáveis com todos os detalhes e etiquetas. Melhor fornecedor do Brasil!',
+      'Juntei com o pessoal da pelada e pedimos 14 camisas pelo site. Chegou tudo certinho, tecidos impecáveis com todos os detalhes e etiquetas. Melhor fornecedor do Brasil!',
     rating: 5,
     tag: 'Pedido Coletivo (14 un)',
   },
@@ -184,26 +184,26 @@ export default function CatalogView({ initialProducts }: Props) {
             {/* FAIXA DE CONDIÇÕES COMERCIAIS */}
             <div className="mt-8 grid grid-cols-1 sm:grid-cols-3 gap-3 p-3 bg-zinc-900/90 border border-zinc-800 rounded-2xl shadow-2xl max-w-2xl mx-auto">
               <div className="flex items-center gap-3 p-2.5 rounded-xl bg-zinc-950/80 border border-zinc-800/80">
-                <Truck className="w-5 h-5 text-amber-400 shrink-0" />
+                <Sparkles className="w-5 h-5 text-zinc-300 shrink-0" />
                 <div className="text-left text-xs">
-                  <span className="text-zinc-400 block text-[10px]">Menos de 10 camisas</span>
-                  <strong className="text-white font-black">Frete R$ 30 Fixo</strong>
+                  <span className="text-zinc-400 block text-[10px]">Varejo (1 a 49 peças)</span>
+                  <strong className="text-white font-black">R$ 60,00 / un</strong>
                 </div>
               </div>
 
               <div className="flex items-center gap-3 p-2.5 rounded-xl bg-zinc-950/80 border border-emerald-500/30 shadow-sm shadow-emerald-950/30">
-                <Sparkles className="w-5 h-5 text-emerald-400 shrink-0" />
+                <Flame className="w-5 h-5 text-emerald-400 shrink-0" />
                 <div className="text-left text-xs">
-                  <span className="text-zinc-400 block text-[10px]">A partir de 10 camisas</span>
-                  <strong className="text-emerald-400 font-black">Frete 100% Grátis</strong>
+                  <span className="text-zinc-400 block text-[10px]">Atacado (50+ peças)</span>
+                  <strong className="text-emerald-400 font-black">R$ 55,00 / un</strong>
                 </div>
               </div>
 
-              <div className="flex items-center gap-3 p-2.5 rounded-xl bg-zinc-950/80 border border-rose-500/30 shadow-sm shadow-rose-950/30">
-                <Flame className="w-5 h-5 text-rose-400 shrink-0" />
+              <div className="flex items-center gap-3 p-2.5 rounded-xl bg-zinc-950/80 border border-amber-500/30 shadow-sm shadow-amber-950/30">
+                <Truck className="w-5 h-5 text-amber-400 shrink-0" />
                 <div className="text-left text-xs">
-                  <span className="text-zinc-400 block text-[10px]">Atacado 50+ camisas</span>
-                  <strong className="text-rose-300 font-black">R$ 55,00 / un</strong>
+                  <span className="text-zinc-400 block text-[10px]">Envio para todo o Brasil</span>
+                  <strong className="text-amber-300 font-black">Melhor Envio Oficial</strong>
                 </div>
               </div>
             </div>
@@ -259,9 +259,9 @@ export default function CatalogView({ initialProducts }: Props) {
               <div className="w-10 h-10 rounded-xl bg-rose-500/10 border border-rose-500/20 flex items-center justify-center text-rose-400 mb-3">
                 <Truck className="w-5 h-5" />
               </div>
-              <h3 className="text-sm font-black text-white">Frete R$ 30 ou Grátis</h3>
+              <h3 className="text-sm font-black text-white">Envio Seguro Melhor Envio</h3>
               <p className="text-xs text-zinc-400 mt-1 leading-relaxed">
-                Menos de 10 camisas: frete fixo de R$ 30. A partir de 10 camisas o frete é 100% por nossa conta!
+                Cotação em tempo real com as melhores tarifas dos Correios (PAC/SEDEX) e Jadlog com rastreamento completo.
               </p>
             </div>
 
@@ -470,8 +470,8 @@ export default function CatalogView({ initialProducts }: Props) {
                 <Truck className="w-5 h-5" />
               </div>
               <div>
-                <strong className="text-xs font-black text-white block">Frete Grátis acima de 10 un</strong>
-                <span className="text-[11px] text-zinc-400">Entra na contagem geral de frete e atacado R$ 55</span>
+                <strong className="text-xs font-black text-white block">Envio Seguro Nacional</strong>
+                <span className="text-[11px] text-zinc-400">Entrega rápida para todo o Brasil via Melhor Envio</span>
               </div>
             </div>
           </div>
@@ -551,7 +551,7 @@ export default function CatalogView({ initialProducts }: Props) {
                 2. Descontos Automáticos
               </h3>
               <p className="text-xs text-zinc-400 leading-relaxed">
-                Ao atingir 10 peças, o frete vira 100% grátis! Com 50 peças ou mais, o preço de cada camisa cai automaticamente para R$ 55,00 no atacado.
+                Monte seu pedido mesclando modelos e tamanhos. Com 50 peças ou mais, o preço de cada camisa cai automaticamente para R$ 55,00 no atacado direto da fábrica.
               </p>
             </div>
 
@@ -740,7 +740,7 @@ export default function CatalogView({ initialProducts }: Props) {
             Pronto para Montar seu Pedido ou Revender?
           </h2>
           <p className="mt-3 text-xs sm:text-base text-zinc-300 max-w-xl mx-auto">
-            Aproveite o preço especial de R$ 60 no varejo ou R$ 55 no atacado (50+ peças) com frete grátis a partir de 10 camisas!
+            Aproveite o preço especial de R$ 60 no varejo ou R$ 55 no atacado (50+ peças) com envio seguro via Melhor Envio!
           </p>
 
           <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-3">

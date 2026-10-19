@@ -37,6 +37,7 @@ export default function CartDrawer() {
     getShippingFee,
     getFinalTotal,
     promotionalBatch,
+    selectedShippingOption,
   } = useCartStore();
 
   const [mounted, setMounted] = useState(false);
@@ -52,14 +53,9 @@ export default function CartDrawer() {
   const currentTier = getCurrentTier();
   const subtotal = getSubtotal();
   const savings = getSavings();
-  const isFreeShip = isFreeShippingEligible();
   const shippingFee = getShippingFee();
   const finalTotal = getFinalTotal();
 
-  const minPiecesForFreeShip = promotionalBatch?.minPiecesForFreeShip || 10;
-  const fixedShippingFee = promotionalBatch?.fixedShippingFee || 30.0;
-
-  const percentToFreeShip = Math.min(100, (totalPieces / minPiecesForFreeShip) * 100);
   const percentToWholesale = Math.min(100, (totalPieces / 50) * 100);
 
   const whatsappNumber = process.env.NEXT_PUBLIC_WHATSAPP_NUMBER || '5579988542410';
@@ -79,8 +75,10 @@ export default function CartDrawer() {
       subtotal,
       savings,
       shippingFee,
+      shippingService: selectedShippingOption
+        ? `${selectedShippingOption.name} - ${selectedShippingOption.company}`
+        : undefined,
       finalTotal,
-      isFreeShipping: isFreeShip,
     });
 
     const url = `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(message)}`;
@@ -108,12 +106,10 @@ export default function CartDrawer() {
                   Carrinho de Compras
                   <span id="cart-pieces-count" className="text-xs font-bold text-zinc-400">({totalPieces} peças)</span>
                 </h2>
-                <span id="cart-mode-badge" className={`text-[11px] font-semibold ${totalPieces >= 50 ? 'text-emerald-400' : isFreeShip ? 'text-emerald-400' : 'text-amber-400'}`}>
+                <span id="cart-mode-badge" className={`text-[11px] font-semibold ${totalPieces >= 50 ? 'text-emerald-400' : 'text-zinc-300'}`}>
                   {totalPieces >= 50
-                    ? '🚀 Atacado Especial (R$ 55/un)'
-                    : isFreeShip
-                    ? '🎉 Frete 100% Grátis Ativo'
-                    : `📦 Frete Fixo R$ ${fixedShippingFee.toFixed(0)} (até ${minPiecesForFreeShip - 1} peças)`}
+                    ? '🚀 Atacado Ativado (R$ 55,00/un)'
+                    : '📦 Envio Seguro via Melhor Envio'}
                 </span>
               </div>
             </div>
@@ -129,58 +125,37 @@ export default function CartDrawer() {
             </button>
           </div>
 
-          {/* BARRA DE METAS E FRETE */}
+          {/* BARRA DE METAS E ATACADO */}
           <div className="p-3.5 bg-zinc-900 border-b border-zinc-800/80">
-            {totalPieces < minPiecesForFreeShip ? (
-              <div>
-                <div className="flex items-center justify-between text-xs mb-1.5">
+            {totalPieces < 50 ? (
+              <div className="space-y-1.5">
+                <div className="flex items-center justify-between text-xs mb-1">
                   <span className="text-zinc-300 font-medium">
-                    Faltam <strong className="text-amber-300 font-bold">{minPiecesForFreeShip - totalPieces} peças</strong> para Frete Grátis
+                    Faltam <strong className="text-amber-300 font-bold">{50 - totalPieces} {50 - totalPieces === 1 ? 'camisa' : 'camisas'}</strong> para Atacado
                   </span>
                   <span className="text-emerald-400 font-bold text-[11px]">
-                    {minPiecesForFreeShip}+ peças = Frete Grátis
+                    50+ peças = R$ 55,00/un
                   </span>
                 </div>
                 <div className="w-full bg-zinc-800 h-2.5 rounded-full overflow-hidden">
-                  <div
-                    className="bg-gradient-to-r from-amber-500 to-emerald-400 h-full rounded-full transition-all duration-500"
-                    style={{ width: `${percentToFreeShip}%` }}
-                  />
-                </div>
-                <p className="text-[11px] text-zinc-400 mt-1.5 flex items-center gap-1">
-                  <Truck className="w-3.5 h-3.5 text-amber-400" />
-                  Menos de {minPiecesForFreeShip} camisas: Frete fixado em R$ {fixedShippingFee.toFixed(2)}.
-                </p>
-              </div>
-            ) : totalPieces < 50 ? (
-              <div className="space-y-1.5">
-                <div className="flex items-center justify-between text-xs">
-                  <span className="text-emerald-400 font-bold flex items-center gap-1">
-                    <Sparkles className="w-3.5 h-3.5 text-amber-300" />
-                    Frete Grátis Garantido!
-                  </span>
-                  <span className="text-zinc-300 text-[11px]">
-                    Faltam <strong className="text-amber-300 font-bold">{50 - totalPieces}</strong> para R$ 55/un
-                  </span>
-                </div>
-                <div className="w-full bg-zinc-800 h-2 rounded-full overflow-hidden">
                   <div
                     className="bg-gradient-to-r from-emerald-500 to-teal-400 h-full rounded-full transition-all duration-500"
                     style={{ width: `${percentToWholesale}%` }}
                   />
                 </div>
-                <p className="text-[10px] text-zinc-400">
-                  Comprando 50 camisas ou mais o valor unitário cai para R$ 55,00.
+                <p className="text-[11px] text-zinc-400 mt-1 flex items-center gap-1.5">
+                  <Truck className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                  <span>Envio via Melhor Envio (Correios e Jadlog) calculado no checkout.</span>
                 </p>
               </div>
             ) : (
               <div className="bg-emerald-950/60 border border-emerald-500/40 rounded-xl p-2.5 text-xs">
                 <div className="flex items-center gap-1.5 text-emerald-300 font-black">
                   <Sparkles className="w-4 h-4 text-amber-300 animate-pulse" />
-                  ATACADO MÁXIMO & FRETE GRÁTIS ATIVADOS!
+                  PREÇO ATACADO ATIVADO: R$ 55,00 POR CAMISA!
                 </div>
                 <p className="text-zinc-300 text-[11px] mt-0.5">
-                  Seu pedido atingiu a faixa máxima de desconto: R$ 55,00 por camisa com frete 100% grátis.
+                  Seu pedido atingiu a faixa máxima de desconto de fábrica. Frete calculado no checkout via Melhor Envio.
                 </p>
               </div>
             )}
@@ -335,14 +310,16 @@ export default function CartDrawer() {
                 <div className="flex justify-between text-zinc-300">
                   <span className="flex items-center gap-1">
                     <Truck className="w-3.5 h-3.5 text-zinc-400" />
-                    Frete
+                    Frete (Melhor Envio)
                   </span>
-                  {isFreeShip ? (
-                    <span className="text-emerald-400 font-black flex items-center gap-1">
-                      GRÁTIS ({minPiecesForFreeShip}+ peças)
+                  {selectedShippingOption ? (
+                    <span className="text-zinc-200 font-semibold">
+                      {formatCurrency(selectedShippingOption.price)} ({selectedShippingOption.name})
                     </span>
                   ) : (
-                    <span className="text-zinc-200 font-semibold">{formatCurrency(shippingFee)} (Fixo)</span>
+                    <span className="text-zinc-400 text-xs italic">
+                      Calculado no checkout
+                    </span>
                   )}
                 </div>
 

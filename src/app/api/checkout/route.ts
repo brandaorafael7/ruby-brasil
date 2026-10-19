@@ -24,11 +24,17 @@ export async function POST(req: Request) {
       orderBy: { createdAt: 'desc' },
     });
 
-    const minPiecesForFreeShip = activeBatch?.minPiecesForFreeShip ?? 10;
-    const fixedShippingFee = activeBatch?.fixedShippingFee ?? 30.0;
-
-    const isFreeShipping = totalQuantity >= minPiecesForFreeShip;
-    const shippingCost = isFreeShipping ? 0.0 : (totalQuantity > 0 ? fixedShippingFee : 0.0);
+    // Frete via Melhor Envio selecionado pelo cliente
+    const shippingCost = Math.max(
+      0,
+      Number(form.shippingCost) || Number(form.shippingOption?.price) || 0
+    );
+    const shippingService =
+      form.shippingService ||
+      (form.shippingOption
+        ? `${form.shippingOption.name} - ${form.shippingOption.company}`
+        : null);
+    const isFreeShipping = false;
 
     let promoBatchId: string | null = null;
     if (activeBatch && activeBatch.isActive) {
@@ -158,6 +164,7 @@ export async function POST(req: Request) {
         subtotal,
         discountAmount,
         shippingCost,
+        shippingService,
         isFreeShipping,
         finalTotal,
         paymentMethod: 'WHATSAPP_ASSISTED',

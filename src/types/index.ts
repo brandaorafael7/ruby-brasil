@@ -63,6 +63,18 @@ export interface CartItem {
 export type CustomerType = 'PF' | 'PJ';
 export type PaymentMethod = 'PIX' | 'CREDIT_CARD' | 'WHATSAPP_ASSISTED';
 
+export interface ShippingOption {
+  id: number | string;
+  name: string;
+  company: string;
+  companyPicture?: string;
+  price: number;
+  currency: string;
+  deliveryTime: number;
+  deliveryRange?: { min: number; max: number };
+  error?: string | null;
+}
+
 export interface CheckoutForm {
   customerType: CustomerType;
   document: string;
@@ -77,4 +89,8 @@ export interface CheckoutForm {
   city: string;
   state: string;
   paymentMethod: PaymentMethod;
+  shippingOption?: ShippingOption | null;
+  shippingService?: string;
+  shippingCost?: number;
 }
+

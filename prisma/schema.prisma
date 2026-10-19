@@ -95,6 +95,7 @@ model Order {
   discountAmount     Float             @default(0.0)
   shippingCost       Float             @default(0.0)
   isFreeShipping     Boolean           @default(false)
+  shippingService    String?           // ex: "PAC - Correios", "SEDEX", "Jadlog"
   finalTotal         Float
 
   paymentMethod      String            @default("PIX") // "PIX", "CREDIT_CARD", "WHATSAPP_ASSISTED"

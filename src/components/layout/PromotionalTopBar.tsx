@@ -53,24 +53,12 @@ export default function PromotionalTopBar() {
         </div>
 
         <div className="flex items-center gap-2">
-          {isEligible ? (
-            <span className="inline-flex items-center gap-1.5 bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 px-2.5 py-0.5 rounded-full font-bold animate-pulse">
-              <Sparkles className="w-3.5 h-3.5 text-amber-300" />
-              FRETE GRÁTIS ATIVADO NO SEU PEDIDO!
+          <div className="flex items-center gap-1.5 text-zinc-300">
+            <Truck className="w-4 h-4 text-emerald-400 shrink-0" />
+            <span>
+              Envio Seguro para todo o Brasil via <strong className="text-emerald-300 font-bold">Melhor Envio</strong>
             </span>
-          ) : (
-            <div className="flex items-center gap-1.5 text-zinc-300">
-              <Truck className="w-4 h-4 text-emerald-400" />
-              <span>
-                <strong>FRETE GRÁTIS</strong> a partir de <strong>{minPieces} camisas</strong>
-              </span>
-              {totalPieces > 0 && totalPieces < minPieces && (
-                <span className="text-amber-400 text-xs font-semibold ml-1">
-                  (Faltam {minPieces - totalPieces})
-                </span>
-              )}
-            </div>
-          )}
+          </div>
         </div>
 
       </div>

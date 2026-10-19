@@ -8,7 +8,7 @@ import FloatingCartBar from '@/components/cart/FloatingCartBar';
 export const metadata: Metadata = {
   title: 'RUBY BRASIL | Camisas de Futebol Direto de Fábrica B2B & Varejo',
   description:
-    'Plataforma oficial Ruby Brasil de distribuição de camisas de futebol com modelo híbrido de Atacado B2B e Varejo. Frete Grátis a partir de 10 peças no Lote Promocional de 6.000 camisas.',
+    'Plataforma oficial Ruby Brasil de distribuição de camisas de futebol com modelo híbrido de Atacado B2B e Varejo. Envio seguro para todo o Brasil via Melhor Envio (Correios e Jadlog).',
 };
 
 export default function RootLayout({
@@ -54,8 +54,8 @@ export default function RootLayout({
               <ul className="space-y-1.5 text-xs text-zinc-400">
                 <li>• Varejo: <strong className="text-white">R$ 60,00</strong> / unidade</li>
                 <li>• Atacado (50+ un): <strong className="text-rose-300">R$ 55,00</strong> / unidade</li>
-                <li>• Menos de 10 camisas: <strong className="text-white">Frete R$ 30 fixo</strong></li>
-                <li>• 10+ camisas: <strong className="text-emerald-400">Frete 100% Grátis</strong></li>
+                <li>• Envio: <strong className="text-emerald-400">Melhor Envio Oficial</strong></li>
+                <li>• Transportadoras: <strong className="text-white">Correios & Jadlog</strong></li>
                 <li>• Personalização: <strong className="text-white">+ R$ 15,00</strong> / peça</li>
               </ul>
             </div>
