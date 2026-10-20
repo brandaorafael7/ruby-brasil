@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getSizeSurcharge } from '@/lib/utils';
+import { sanitizePostalCode } from '@/lib/melhor-envio';
 
 export async function POST(req: Request) {
   try {
@@ -9,6 +10,25 @@ export async function POST(req: Request) {
 
     if (!items || items.length === 0) {
       return NextResponse.json({ error: 'O carrinho está vazio' }, { status: 400 });
+    }
+
+    // OBRIGAÇÃO: Endereço de entrega completo no momento da compra
+    const cleanZip = sanitizePostalCode(form?.zipCode || '');
+    if (
+      cleanZip.length !== 8 ||
+      !form?.street?.trim() ||
+      !form?.number?.trim() ||
+      !form?.neighborhood?.trim() ||
+      !form?.city?.trim() ||
+      !form?.state?.trim()
+    ) {
+      return NextResponse.json(
+        {
+          error:
+            'É obrigatório informar um endereço de entrega completo (CEP válido, Rua, Número, Bairro, Cidade e Estado) no momento da compra.',
+        },
+        { status: 400 }
+      );
     }
 
     const totalQuantity = items.reduce((acc: number, item: any) => acc + item.quantity, 0);
@@ -117,7 +137,6 @@ export async function POST(req: Request) {
         },
       }).catch(() => {});
     }
-
 
     let subtotal = 0;
     const orderItemsData = items.map((item: any) => {

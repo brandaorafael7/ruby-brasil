@@ -7,7 +7,7 @@ import { useCartStore } from '@/store';
 import { formatCurrency } from '@/lib/utils';
 
 export default function Navbar() {
-  const { getTotalPieces, getSubtotal, isWholesale, openCart, promotionalBatch } = useCartStore();
+  const { getTotalPieces, getSubtotal, isWholesale, openCart } = useCartStore();
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
@@ -17,7 +17,6 @@ export default function Navbar() {
   const totalPieces = mounted ? getTotalPieces() : 0;
   const subtotal = mounted ? getSubtotal() : 0;
   const wholesaleActive = mounted ? isWholesale() : false;
-  const minPieces = promotionalBatch?.minPiecesForFreeShip ?? 10;
 
   return (
     <header className="sticky top-0 z-40 bg-zinc-950/95 backdrop-blur-md border-b border-zinc-800/80 shadow-lg">

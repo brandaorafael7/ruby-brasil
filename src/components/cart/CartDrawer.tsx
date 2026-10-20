@@ -62,6 +62,14 @@ export default function CartDrawer() {
   const whatsappDisplay = '(79) 98854-2410';
 
   const handleWhatsAppQuickQuote = () => {
+    // Endereço de entrega obrigatório no momento da compra
+    if (!wholesaleActive) {
+      alert('É obrigatório informar o endereço de entrega no checkout para calcular o frete e despachar o pedido.');
+      closeCart();
+      window.location.href = '/checkout';
+      return;
+    }
+
     const message = buildWhatsAppOrderMessage({
       items,
       form: {

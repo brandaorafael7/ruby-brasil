@@ -226,6 +226,24 @@ export default function CheckoutPage() {
     setIsSubmitting(true);
     setErrorMessage(null);
 
+    // Validação estrita: Endereço de entrega completo obrigatório no momento da compra
+    const cleanCep = sanitizePostalCode(form.zipCode);
+    if (
+      cleanCep.length !== 8 ||
+      !form.street?.trim() ||
+      !form.number?.trim() ||
+      !form.neighborhood?.trim() ||
+      !form.city?.trim() ||
+      !form.state?.trim()
+    ) {
+      const msg =
+        'É obrigatório informar o endereço de entrega completo (CEP válido, Rua, Número, Bairro, Cidade e Estado) no momento da compra.';
+      setErrorMessage(msg);
+      alert(msg);
+      setIsSubmitting(false);
+      return;
+    }
+
     // Validação obrigatória da seleção de frete
     if (!selectedShippingOption) {
       const msg = 'Por favor, informe seu CEP e selecione uma opção de frete antes de finalizar.';
@@ -379,6 +397,19 @@ export default function CheckoutPage() {
           </div>
         )}
 
+        {/* AVISO DE ENDEREÇO DE ENTREGA OBRIGATÓRIO NO MOMENTO DA COMPRA */}
+        <div className="mb-6 p-4 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 flex items-start gap-3 shadow-lg">
+          <Truck className="w-5 h-5 text-emerald-400 shrink-0 mt-0.5" />
+          <div className="flex-1 text-xs">
+            <strong className="block text-emerald-300 font-bold text-sm mb-0.5">
+              Endereço de Entrega Obrigatório no Momento da Compra
+            </strong>
+            <p className="text-zinc-300 leading-relaxed">
+              Para calcular as cotações de frete via <strong className="text-white">Melhor Envio (PAC, SEDEX e Loggi)</strong> e despachar sua encomenda com código de rastreamento, o preenchimento do endereço de entrega completo é indispensável.
+            </p>
+          </div>
+        </div>
+
         <form onSubmit={handleSubmitOrder} className="grid grid-cols-1 lg:grid-cols-12 gap-8">
           
           <div className="lg:col-span-7 space-y-6">
@@ -474,9 +505,14 @@ export default function CheckoutPage() {
 
             {/* 2. ENDEREÇO DE ENTREGA & CÁLCULO MELHOR ENVIO */}
             <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-5 shadow-lg">
-              <h2 className="text-base font-black text-white flex items-center gap-2 mb-4">
-                <span className="w-6 h-6 rounded-full bg-emerald-500/20 text-emerald-400 text-xs flex items-center justify-center font-bold">2</span>
-                Endereço de Entrega & Cotação de Frete
+              <h2 className="text-base font-black text-white flex items-center justify-between gap-2 mb-4">
+                <span className="flex items-center gap-2">
+                  <span className="w-6 h-6 rounded-full bg-emerald-500/20 text-emerald-400 text-xs flex items-center justify-center font-bold">2</span>
+                  Endereço de Entrega & Cotação de Frete
+                </span>
+                <span className="text-[10px] font-bold uppercase tracking-wider bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 px-2 py-0.5 rounded">
+                  Obrigatório no Checkout
+                </span>
               </h2>
 
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
