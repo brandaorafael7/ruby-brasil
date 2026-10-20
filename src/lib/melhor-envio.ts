@@ -12,8 +12,14 @@ export interface ShippingCalculationResult {
   fromPostalCode: string;
   toPostalCode: string;
   isFallback: boolean;
+  packageWeightKg?: number;
   message?: string;
 }
+
+/**
+ * Peso oficial configurado por camisa: 300g (0.30 kg)
+ */
+export const SHIRT_WEIGHT_KG = 0.30;
 
 /**
  * Remove pontuação de CEP, deixando apenas 8 dígitos.
@@ -206,16 +212,17 @@ export async function calculateShippingRates({
       fromPostalCode: originCep,
       toPostalCode: cleanToCep,
       isFallback: true,
+      packageWeightKg: Number((Math.max(1, totalPieces) * SHIRT_WEIGHT_KG).toFixed(2)),
       message: 'Cotação estimada (configure MELHOR_ENVIO_TOKEN para valores em tempo real).',
     };
   }
 
-  // Especificações da embalagem com base no número de peças
+  // Especificações da embalagem com base na gramatura de 300g por camisa
   const qty = Math.max(1, totalPieces);
-  const weight = Math.max(0.3, Number((qty * 0.25).toFixed(2))); // ~250g por camisa
-  const height = Math.max(4, Math.min(100, Math.ceil(qty * 1.5)));
-  const width = Math.max(15, Math.min(100, 20 + Math.floor(qty / 10)));
-  const length = Math.max(20, Math.min(100, 25 + Math.floor(qty / 10)));
+  const weight = Number((qty * SHIRT_WEIGHT_KG).toFixed(2)); // Gramatura oficial: 300g (0.30 kg) por peça
+  const height = Math.max(4, Math.min(80, Math.ceil(qty * 1.5)));
+  const width = Math.max(16, Math.min(60, 20 + Math.floor(qty / 5)));
+  const length = Math.max(22, Math.min(60, 25 + Math.floor(qty / 5)));
 
   const payload = {
     from: { postal_code: originCep },
@@ -254,6 +261,7 @@ export async function calculateShippingRates({
         fromPostalCode: originCep,
         toPostalCode: cleanToCep,
         isFallback: true,
+        packageWeightKg: weight,
         message: 'Cotação aproximada via Correios/Transportadoras.',
       };
     }
@@ -269,6 +277,7 @@ export async function calculateShippingRates({
         fromPostalCode: originCep,
         toPostalCode: cleanToCep,
         isFallback: true,
+        packageWeightKg: weight,
       };
     }
 
@@ -329,6 +338,7 @@ export async function calculateShippingRates({
         fromPostalCode: originCep,
         toPostalCode: cleanToCep,
         isFallback: true,
+        packageWeightKg: weight,
       };
     }
 
@@ -338,6 +348,7 @@ export async function calculateShippingRates({
       fromPostalCode: originCep,
       toPostalCode: cleanToCep,
       isFallback: false,
+      packageWeightKg: weight,
     };
   } catch (error) {
     console.error('[Melhor Envio] Erro ao conectar:', error);
@@ -348,6 +359,7 @@ export async function calculateShippingRates({
       fromPostalCode: originCep,
       toPostalCode: cleanToCep,
       isFallback: true,
+      packageWeightKg: weight,
     };
   }
 }

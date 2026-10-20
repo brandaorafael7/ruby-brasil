@@ -16,13 +16,13 @@ async function main() {
   // 1. Criar Lote Promocional de 6.000 peças
   const promoBatch = await prisma.promotionalBatch.create({
     data: {
-      name: 'Lote Master Fornecedor 2024 - Frete Grátis Nacional',
+      name: 'Lote Master Fornecedor 2024 - Ruby Brasil',
       code: 'LOTE-6000',
       totalQuota: 6000,
       remainingQuota: 5842,
       minPiecesForFreeShip: 10,
       isActive: true,
-      description: 'Condição especial de frete 100% gratuito direto da fábrica para compras no atacado a partir de 10 peças.',
+      description: 'Condição especial direto de fábrica no atacado a partir de 50 peças e envio seguro via Melhor Envio.',
     },
   });
   console.log(`Lote Promocional Criado: ${promoBatch.code} (Restam ${promoBatch.remainingQuota}/${promoBatch.totalQuota})`);

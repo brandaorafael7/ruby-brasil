@@ -17,7 +17,7 @@ const DEFAULT_BATCH: PromotionalBatch = {
   minPiecesForFreeShip: 10,
   fixedShippingFee: 30.0,
   isActive: true,
-  description: 'Frete Fixo e Frete Grátis a partir da cota mínima.',
+  description: 'Envio seguro para todo o Brasil via Melhor Envio (PAC, SEDEX e Loggi).',
 };
 
 export function getProductVariantStock(product: Product, size: string): number {

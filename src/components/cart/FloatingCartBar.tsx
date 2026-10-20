@@ -13,8 +13,6 @@ export default function FloatingCartBar() {
     getFinalTotal,
     openCart,
     isCartOpen,
-    promotionalBatch,
-    isFreeShippingEligible,
   } = useCartStore();
 
   const [mounted, setMounted] = useState(false);
@@ -34,8 +32,6 @@ export default function FloatingCartBar() {
   if (totalPieces === 0) return null;
 
   const finalTotal = getFinalTotal();
-  const isFreeShip = isFreeShippingEligible();
-  const minPieces = promotionalBatch?.minPiecesForFreeShip || 10;
 
   return (
     <aside

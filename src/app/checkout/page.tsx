@@ -656,24 +656,29 @@ export default function CheckoutPage() {
 
               {/* OPÇÕES DE ENVIO (MELHOR ENVIO) */}
               <div className="mt-5 pt-5 border-t border-zinc-800">
-                <div className="flex items-center justify-between mb-3">
+                <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
                   <div className="flex items-center gap-2">
                     <Truck className="w-4 h-4 text-emerald-400" />
                     <span className="text-xs sm:text-sm font-bold text-white">
                       Opções de Envio (Melhor Envio)
                     </span>
                   </div>
-                  {shippingOptions.length > 0 && (
-                    <button
-                      type="button"
-                      onClick={() => fetchShippingQuotes(form.zipCode, totalPieces)}
-                      className="text-[11px] text-zinc-400 hover:text-white flex items-center gap-1 transition-colors"
-                      title="Recalcular Frete"
-                    >
-                      <RotateCcw className="w-3 h-3" />
-                      Recalcular
-                    </button>
-                  )}
+                  <div className="flex items-center gap-2">
+                    <span className="text-[10px] sm:text-[11px] bg-zinc-950 text-zinc-300 font-mono px-2.5 py-1 rounded-lg border border-zinc-800">
+                      Gramatura: <strong className="text-emerald-400">300g/peça</strong> • Peso Total: <strong>{(totalPieces * 0.3).toFixed(1).replace('.', ',')} kg</strong>
+                    </span>
+                    {shippingOptions.length > 0 && (
+                      <button
+                        type="button"
+                        onClick={() => fetchShippingQuotes(form.zipCode, totalPieces)}
+                        className="text-[11px] text-zinc-400 hover:text-white flex items-center gap-1 transition-colors"
+                        title="Recalcular Frete"
+                      >
+                        <RotateCcw className="w-3 h-3" />
+                        Recalcular
+                      </button>
+                    )}
+                  </div>
                 </div>
 
                 {isLoadingShipping ? (

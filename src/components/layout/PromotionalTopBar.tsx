@@ -5,10 +5,8 @@ import { Truck, Flame, Sparkles } from 'lucide-react';
 import { useCartStore } from '@/store';
 
 export default function PromotionalTopBar() {
-  const { promotionalBatch, setPromotionalBatch, getTotalPieces, isFreeShippingEligible } = useCartStore();
+  const { promotionalBatch, setPromotionalBatch } = useCartStore();
   const [mounted, setMounted] = useState(false);
-  const totalPieces = mounted ? getTotalPieces() : 0;
-  const isEligible = mounted ? isFreeShippingEligible() : false;
 
   useEffect(() => {
     setMounted(true);
@@ -28,7 +26,6 @@ export default function PromotionalTopBar() {
     return () => clearInterval(interval);
   }, [setPromotionalBatch]);
 
-  const minPieces = promotionalBatch?.minPiecesForFreeShip ?? 10;
   const remaining = promotionalBatch?.remainingQuota ?? 5842;
 
   return (
