@@ -14,7 +14,13 @@ import {
   RotateCcw,
 } from 'lucide-react';
 import { useCartStore } from '@/store';
-import { formatCurrency, buildWhatsAppOrderMessage, getSizeSurcharge } from '@/lib/utils';
+import {
+  formatCurrency,
+  buildWhatsAppOrderMessage,
+  getSizeSurcharge,
+  formatCPFOrCNPJ,
+  isValidCPF,
+} from '@/lib/utils';
 import { CheckoutForm, ShippingOption } from '@/types';
 import { sanitizePostalCode } from '@/lib/melhor-envio';
 
@@ -186,6 +192,11 @@ export default function CheckoutPage() {
     }
   };
 
+  const handleDocumentChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const formatted = formatCPFOrCNPJ(e.target.value, form.customerType);
+    setForm((prev) => ({ ...prev, document: formatted }));
+  };
+
   useEffect(() => {
     setMounted(true);
     // Executa apenas uma vez no carregamento da página
@@ -225,6 +236,36 @@ export default function CheckoutPage() {
     e.preventDefault();
     setIsSubmitting(true);
     setErrorMessage(null);
+
+    // Validação estrita: CPF / CNPJ obrigatório para entrega
+    const cleanDoc = (form.document || '').replace(/\D/g, '');
+    if (form.customerType === 'PJ') {
+      if (cleanDoc.length !== 14) {
+        const msg =
+          'É obrigatório informar um CNPJ válido com 14 dígitos para a emissão do envio e entrega.';
+        setErrorMessage(msg);
+        alert(msg);
+        setIsSubmitting(false);
+        return;
+      }
+    } else {
+      if (cleanDoc.length !== 11) {
+        const msg =
+          'É obrigatório informar um CPF válido com 11 dígitos para a entrega e emissão da etiqueta de envio.';
+        setErrorMessage(msg);
+        alert(msg);
+        setIsSubmitting(false);
+        return;
+      }
+      if (!isValidCPF(cleanDoc)) {
+        const msg =
+          'O CPF informado é inválido. Por favor, confira os números digitados para prosseguir.';
+        setErrorMessage(msg);
+        alert(msg);
+        setIsSubmitting(false);
+        return;
+      }
+    }
 
     // Validação estrita: Endereço de entrega completo obrigatório no momento da compra
     const cleanCep = sanitizePostalCode(form.zipCode);
@@ -462,16 +503,20 @@ export default function CheckoutPage() {
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold text-zinc-300 mb-1">
-                    {form.customerType === 'PJ' ? 'CNPJ' : 'CPF'}
+                  <label className="block text-xs font-bold text-zinc-300 mb-1 flex items-center justify-between">
+                    <span>{form.customerType === 'PJ' ? 'CNPJ' : 'CPF'} <strong className="text-rose-400">*</strong></span>
+                    <span className="text-[10px] text-amber-400 font-bold bg-amber-500/10 px-2 py-0.5 rounded border border-amber-500/20">
+                      Obrigatório p/ Entrega
+                    </span>
                   </label>
                   <input
                     type="text"
                     required
+                    maxLength={form.customerType === 'PJ' ? 18 : 14}
                     value={form.document}
-                    onChange={(e) => setForm({ ...form, document: e.target.value })}
+                    onChange={handleDocumentChange}
                     placeholder={form.customerType === 'PJ' ? '00.000.000/0001-00' : '000.000.000-00'}
-                    className="w-full bg-zinc-950 border border-zinc-700/80 rounded-xl px-3.5 py-2.5 text-xs sm:text-sm text-white focus:outline-none focus:border-emerald-500"
+                    className="w-full bg-zinc-950 border border-zinc-700/80 rounded-xl px-3.5 py-2.5 text-xs sm:text-sm text-white focus:outline-none focus:border-emerald-500 font-mono"
                   />
                 </div>
 

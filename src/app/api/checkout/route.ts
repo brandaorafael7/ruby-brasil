@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { getSizeSurcharge } from '@/lib/utils';
+import { getSizeSurcharge, isValidCPF } from '@/lib/utils';
 import { sanitizePostalCode } from '@/lib/melhor-envio';
 
 export async function POST(req: Request) {
@@ -10,6 +10,31 @@ export async function POST(req: Request) {
 
     if (!items || items.length === 0) {
       return NextResponse.json({ error: 'O carrinho está vazio' }, { status: 400 });
+    }
+
+    // OBRIGAÇÃO: CPF / CNPJ obrigatório para entrega
+    const cleanDoc = (form?.document || '').replace(/\D/g, '');
+    const isPj = form?.customerType === 'PJ';
+    if (isPj) {
+      if (cleanDoc.length !== 14) {
+        return NextResponse.json(
+          { error: 'É obrigatório informar um CNPJ válido com 14 dígitos para a entrega e emissão do pedido.' },
+          { status: 400 }
+        );
+      }
+    } else {
+      if (cleanDoc.length !== 11) {
+        return NextResponse.json(
+          { error: 'É obrigatório informar um CPF válido com 11 dígitos para a entrega e emissão da etiqueta de envio.' },
+          { status: 400 }
+        );
+      }
+      if (!isValidCPF(cleanDoc)) {
+        return NextResponse.json(
+          { error: 'O CPF informado é inválido. Por favor, confira os dígitos digitados.' },
+          { status: 400 }
+        );
+      }
     }
 
     // OBRIGAÇÃO: Endereço de entrega completo no momento da compra
