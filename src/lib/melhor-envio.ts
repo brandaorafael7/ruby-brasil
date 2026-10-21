@@ -1,9 +1,10 @@
 import { ShippingOption } from '@/types';
 
-interface CalculateShippingParams {
+export interface CalculateShippingParams {
   toPostalCode: string;
   totalPieces: number;
   fromPostalCode?: string;
+  orderValue?: number;
 }
 
 export interface ShippingCalculationResult {
@@ -20,6 +21,11 @@ export interface ShippingCalculationResult {
  * Peso oficial configurado por camisa: 300g (0.30 kg)
  */
 export const SHIRT_WEIGHT_KG = 0.30;
+
+/**
+ * Valor declarado fixo para seguro de carga no Melhor Envio: R$ 100,00 por peça
+ */
+export const SHIRT_INSURANCE_VALUE_PER_PIECE = 100.0;
 
 /**
  * Remove pontuação de CEP, deixando apenas 8 dígitos.
@@ -175,6 +181,7 @@ export async function calculateShippingRates({
   toPostalCode,
   totalPieces,
   fromPostalCode,
+  orderValue,
 }: CalculateShippingParams): Promise<ShippingCalculationResult> {
   const cleanToCep = sanitizePostalCode(toPostalCode);
   if (cleanToCep.length !== 8) {
@@ -225,6 +232,9 @@ export async function calculateShippingRates({
   const width = Math.max(16, Math.min(60, 20 + Math.floor(qty / 5)));
   const length = Math.max(22, Math.min(60, 25 + Math.floor(qty / 5)));
 
+  // Valor declarado / Seguro de carga fixo configurado: R$ 100,00 por peça
+  const declaredValue = Number((qty * SHIRT_INSURANCE_VALUE_PER_PIECE).toFixed(2));
+
   const payload = {
     from: { postal_code: originCep },
     to: { postal_code: cleanToCep },
@@ -235,6 +245,7 @@ export async function calculateShippingRates({
       weight,
     },
     options: {
+      insurance_value: declaredValue,
       receipt: false,
       own_hand: false,
     },

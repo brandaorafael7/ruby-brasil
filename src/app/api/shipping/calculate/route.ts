@@ -4,7 +4,7 @@ import { calculateShippingRates, sanitizePostalCode } from '@/lib/melhor-envio';
 export async function POST(req: Request) {
   try {
     const body = await req.json();
-    const { zipCode, totalPieces, fromPostalCode } = body;
+    const { zipCode, totalPieces, fromPostalCode, orderValue } = body;
 
     const cleanCep = sanitizePostalCode(zipCode);
     if (!cleanCep || cleanCep.length !== 8) {
@@ -20,6 +20,7 @@ export async function POST(req: Request) {
       toPostalCode: cleanCep,
       totalPieces: pieces,
       fromPostalCode,
+      orderValue: orderValue !== undefined ? Number(orderValue) : undefined,
     });
 
     return NextResponse.json(result);

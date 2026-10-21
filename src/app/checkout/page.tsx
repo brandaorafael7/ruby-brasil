@@ -94,12 +94,14 @@ export default function CheckoutPage() {
       setShippingNotice(null);
 
       try {
+        const currentSubtotal = useCartStore.getState().getSubtotal();
         const res = await fetch('/api/shipping/calculate', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             zipCode: cleanCep,
             totalPieces: Math.max(1, pieces),
+            orderValue: currentSubtotal,
           }),
         });
 
@@ -665,7 +667,7 @@ export default function CheckoutPage() {
                   </div>
                   <div className="flex items-center gap-2">
                     <span className="text-[10px] sm:text-[11px] bg-zinc-950 text-zinc-300 font-mono px-2.5 py-1 rounded-lg border border-zinc-800">
-                      Gramatura: <strong className="text-emerald-400">300g/peça</strong> • Peso Total: <strong>{(totalPieces * 0.3).toFixed(1).replace('.', ',')} kg</strong>
+                      Gramatura: <strong className="text-emerald-400">300g/peça</strong> • Seguro: <strong className="text-emerald-400">R$ 100/peça</strong> • Peso: <strong>{(totalPieces * 0.3).toFixed(1).replace('.', ',')} kg</strong>
                     </span>
                     {shippingOptions.length > 0 && (
                       <button
