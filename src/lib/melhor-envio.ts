@@ -37,7 +37,7 @@ export const DEFAULT_SENDER_ADDRESS = {
   neighborhood: 'Chácara Santa Letícia',
   city: 'Campinas',
   state: 'SP',
-  postalCode: '13054040',
+  postalCode: '13054971',
 };
 
 /**
@@ -192,7 +192,8 @@ export async function calculateShippingRates({
   const originCep = sanitizePostalCode(
     fromPostalCode ||
       process.env.MELHOR_ENVIO_POSTAL_CODE ||
-      '13054040' // CEP padrão de envio (Campinas - SP)
+      DEFAULT_SENDER_ADDRESS.postalCode ||
+      '13054971' // CEP padrão de envio (Campinas - SP)
   );
 
   const isSandbox =
