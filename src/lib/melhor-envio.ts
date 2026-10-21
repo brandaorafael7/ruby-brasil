@@ -28,6 +28,11 @@ export const SHIRT_WEIGHT_KG = 0.30;
 export const SHIRT_INSURANCE_VALUE_PER_PIECE = 100.0;
 
 /**
+ * Margem de segurança e taxa de embalagem/manuseio (oculta do cliente, embutida no valor final do frete): R$ 5,00
+ */
+export const SHIPPING_HANDLING_FEE = 5.0;
+
+/**
  * Remove pontuação de CEP, deixando apenas 8 dígitos.
  */
 export function sanitizePostalCode(cep: string): string {
@@ -136,9 +141,9 @@ export function getFallbackShippingRates(
       loggiDays = 5;
   }
 
-  const pacPrice = Number((pacBase + extraWeightFee).toFixed(2));
-  const sedexPrice = Number((sedexBase + extraWeightFee * 1.4).toFixed(2));
-  const loggiPrice = Number((loggiBase + extraWeightFee * 0.95).toFixed(2));
+  const pacPrice = Number((pacBase + extraWeightFee + SHIPPING_HANDLING_FEE).toFixed(2));
+  const sedexPrice = Number((sedexBase + extraWeightFee * 1.4 + SHIPPING_HANDLING_FEE).toFixed(2));
+  const loggiPrice = Number((loggiBase + extraWeightFee * 0.95 + SHIPPING_HANDLING_FEE).toFixed(2));
 
   return [
     {
@@ -313,7 +318,9 @@ export async function calculateShippingRates({
         return isCorreios || isLoggi;
       })
       .map((item: any) => {
-        const price = parseFloat(item.custom_price || item.price);
+        const rawPrice = parseFloat(item.custom_price || item.price);
+        // Margem de embalagem/segurança embutida diretamente no valor final (oculta do cliente)
+        const finalPrice = Number((rawPrice + SHIPPING_HANDLING_FEE).toFixed(2));
         const deliveryTime =
           item.custom_delivery_time ||
           item.delivery_time ||
@@ -331,7 +338,7 @@ export async function calculateShippingRates({
           name: displayName,
           company: item.company?.name || 'Transportadora',
           companyPicture: item.company?.picture,
-          price: Number(price.toFixed(2)),
+          price: finalPrice,
           currency: item.currency || 'R$',
           deliveryTime,
           deliveryRange: item.delivery_range

@@ -666,8 +666,9 @@ export default function CheckoutPage() {
                     </span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <span className="text-[10px] sm:text-[11px] bg-zinc-950 text-zinc-300 font-mono px-2.5 py-1 rounded-lg border border-zinc-800">
-                      Gramatura: <strong className="text-emerald-400">300g/peça</strong> • Seguro: <strong className="text-emerald-400">R$ 100/peça</strong> • Peso: <strong>{(totalPieces * 0.3).toFixed(1).replace('.', ',')} kg</strong>
+                    <span className="text-[10px] sm:text-[11px] bg-zinc-950 text-zinc-300 font-medium px-2.5 py-1 rounded-lg border border-zinc-800 flex items-center gap-1.5">
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 inline-block animate-pulse" />
+                      Envio com Rastreio Oficial • Direto de Fábrica
                     </span>
                     {shippingOptions.length > 0 && (
                       <button
