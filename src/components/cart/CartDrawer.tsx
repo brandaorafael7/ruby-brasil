@@ -114,10 +114,8 @@ export default function CartDrawer() {
                   Carrinho de Compras
                   <span id="cart-pieces-count" className="text-xs font-bold text-zinc-400">({totalPieces} peças)</span>
                 </h2>
-                <span id="cart-mode-badge" className={`text-[11px] font-semibold ${totalPieces >= 50 ? 'text-emerald-400' : 'text-zinc-300'}`}>
-                  {totalPieces >= 50
-                    ? '🚀 Atacado Ativado (R$ 55,00/un)'
-                    : '📦 Envio Seguro via Melhor Envio'}
+                <span id="cart-mode-badge" className="text-[11px] font-semibold text-zinc-300">
+                  📦 Envio Seguro via Melhor Envio
                 </span>
               </div>
             </div>
@@ -133,40 +131,12 @@ export default function CartDrawer() {
             </button>
           </div>
 
-          {/* BARRA DE METAS E ATACADO */}
+          {/* INFORMAÇÃO DE ENVIO E GARANTIA */}
           <div className="p-3.5 bg-zinc-900 border-b border-zinc-800/80">
-            {totalPieces < 50 ? (
-              <div className="space-y-1.5">
-                <div className="flex items-center justify-between text-xs mb-1">
-                  <span className="text-zinc-300 font-medium">
-                    Faltam <strong className="text-amber-300 font-bold">{50 - totalPieces} {50 - totalPieces === 1 ? 'camisa' : 'camisas'}</strong> para Atacado
-                  </span>
-                  <span className="text-emerald-400 font-bold text-[11px]">
-                    50+ peças = R$ 55,00/un
-                  </span>
-                </div>
-                <div className="w-full bg-zinc-800 h-2.5 rounded-full overflow-hidden">
-                  <div
-                    className="bg-gradient-to-r from-emerald-500 to-teal-400 h-full rounded-full transition-all duration-500"
-                    style={{ width: `${percentToWholesale}%` }}
-                  />
-                </div>
-                <p className="text-[11px] text-zinc-400 mt-1 flex items-center gap-1.5">
-                  <Truck className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
-                  <span>Envio via Melhor Envio (PAC, SEDEX e Loggi) calculado no checkout.</span>
-                </p>
-              </div>
-            ) : (
-              <div className="bg-emerald-950/60 border border-emerald-500/40 rounded-xl p-2.5 text-xs">
-                <div className="flex items-center gap-1.5 text-emerald-300 font-black">
-                  <Sparkles className="w-4 h-4 text-amber-300 animate-pulse" />
-                  PREÇO ATACADO ATIVADO: R$ 55,00 POR CAMISA!
-                </div>
-                <p className="text-zinc-300 text-[11px] mt-0.5">
-                  Seu pedido atingiu a faixa máxima de desconto de fábrica. Frete calculado no checkout via Melhor Envio.
-                </p>
-              </div>
-            )}
+            <div className="flex items-center gap-2 text-xs text-zinc-300">
+              <Truck className="w-4 h-4 text-emerald-400 shrink-0" />
+              <span>Envio com seguro para todo o Brasil via Melhor Envio (PAC, SEDEX e Loggi).</span>
+            </div>
           </div>
 
           {/* DICA DE ADIÇÃO DE MÚLTIPLAS PEÇAS */}
@@ -304,16 +274,6 @@ export default function CartDrawer() {
                   <span>Subtotal ({totalPieces} peças)</span>
                   <span className="font-semibold text-white">{formatCurrency(subtotal)}</span>
                 </div>
-
-                {savings > 0 && (
-                  <div className="flex justify-between text-emerald-400 font-bold bg-emerald-950/40 p-1.5 rounded-lg border border-emerald-500/30">
-                    <span className="flex items-center gap-1">
-                      <Flame className="w-3.5 h-3.5 text-amber-300" />
-                      Economia Atacado 50+ peças:
-                    </span>
-                    <span>- {formatCurrency(savings)}</span>
-                  </div>
-                )}
 
                 <div className="flex justify-between text-zinc-300">
                   <span className="flex items-center gap-1">

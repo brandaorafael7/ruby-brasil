@@ -52,8 +52,8 @@ export default function RootLayout({
                 Condições Comerciais
               </h4>
               <ul className="space-y-1.5 text-xs text-zinc-400">
-                <li>• Varejo: <strong className="text-white">R$ 60,00</strong> / unidade</li>
-                <li>• Atacado (50+ un): <strong className="text-rose-300">R$ 55,00</strong> / unidade</li>
+                <li>• Preço Base: <strong className="text-white">R$ 60,00</strong> / unidade</li>
+                <li>• Qualidade: <strong className="text-rose-300">Padrão Tailandês 1:1</strong></li>
                 <li>• Envio: <strong className="text-emerald-400">Melhor Envio Oficial</strong></li>
                 <li>• Transportadoras: <strong className="text-white">Correios (PAC, SEDEX) & Loggi</strong></li>
                 <li>• Personalização: <strong className="text-white">+ R$ 15,00</strong> / peça</li>

@@ -256,8 +256,8 @@ export default function ProductDetailClient({ product, relatedProducts }: Props)
                   <Sparkles className="w-4 h-4" />
                 </div>
                 <div className="text-left">
-                  <span className="text-[11px] font-bold text-white block">Atacado R$ 55</span>
-                  <span className="text-[10px] text-zinc-400">A partir de 50 peças</span>
+                  <span className="text-[11px] font-bold text-white block">Qualidade 1:1</span>
+                  <span className="text-[10px] text-zinc-400">Padrão Tailandesa</span>
                 </div>
               </div>
             </div>
@@ -289,10 +289,10 @@ export default function ProductDetailClient({ product, relatedProducts }: Props)
               </p>
 
               {/* BLOCO DE PREÇOS */}
-              <div className="mt-6 p-4 rounded-2xl bg-zinc-950 border border-zinc-800 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div className="mt-6 p-4 rounded-2xl bg-zinc-950 border border-zinc-800 flex items-center justify-between gap-4">
                 <div>
                   <span className="text-[11px] text-zinc-400 uppercase font-semibold block">
-                    Valor Unitário (Varejo)
+                    Valor Unitário
                   </span>
                   <div className="flex items-baseline gap-2 mt-0.5">
                     <span className="text-3xl font-black text-white">
@@ -306,13 +306,13 @@ export default function ProductDetailClient({ product, relatedProducts }: Props)
                   </div>
                 </div>
 
-                <div className="sm:text-right border-t sm:border-t-0 sm:border-l border-zinc-800 pt-3 sm:pt-0 sm:pl-4">
-                  <span className="text-[11px] text-zinc-400 block">Preço de Atacado (50+ un):</span>
-                  <span className="text-lg font-black text-emerald-400 block mt-0.5">
-                    {surcharge > 0 ? `${formatCurrency(55 + surcharge)} / un` : 'R$ 55,00 / un'}
+                <div className="text-right border-l border-zinc-800 pl-4">
+                  <span className="text-[11px] text-zinc-400 block">Envio Nacional</span>
+                  <span className="text-sm font-bold text-emerald-400 block mt-0.5">
+                    Pronta Entrega
                   </span>
-                  <span className="text-[10px] text-emerald-300/80 font-medium">
-                    Economize R$ 5 por camisa
+                  <span className="text-[10px] text-zinc-400">
+                    Estoque no Brasil
                   </span>
                 </div>
               </div>

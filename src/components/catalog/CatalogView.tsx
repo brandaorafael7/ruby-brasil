@@ -44,9 +44,9 @@ const CATEGORIES = [
 
 const FAQS = [
   {
-    question: 'Qual o valor unitário das camisas no varejo e no atacado?',
+    question: 'Qual o valor unitário das camisas?',
     answer:
-      'No varejo, o valor unitário é de R$ 60,00 por camisa. Para pedidos no atacado a partir de 50 camisas, o valor cai automaticamente para apenas R$ 55,00 por unidade!',
+      'Trabalhamos com preço justo direto de fábrica a partir de R$ 60,00 por camisa para o padrão Tailandês 1:1 oficial.',
   },
   {
     question: 'Como funciona o cálculo do frete?',
@@ -56,7 +56,7 @@ const FAQS = [
   {
     question: 'Posso mesclar times, modelos e tamanhos diferentes no mesmo pedido?',
     answer:
-      'Sim, com certeza! Você pode misturar qualquer clube do Brasileirão, times europeus, seleções e edições retrô em qualquer tamanho adulto (do P ao 4XL) ou infantil (16 ao 28) para atingir a meta de atacado (50 un a R$ 55,00/un).',
+      'Sim, com certeza! Você pode misturar qualquer clube do Brasileirão, times europeus, seleções e edições retrô em qualquer tamanho adulto (do P ao 4XL) ou infantil (16 ao 28) no seu carrinho com total liberdade.',
   },
   {
     question: 'Qual é o padrão de qualidade das camisas?',
@@ -80,9 +80,9 @@ const TESTIMONIALS = [
     name: 'Marcos Vinícius',
     role: 'Revendedor em Salvador - BA',
     comment:
-      'Peguei 50 camisas para revender na minha cidade pelo atacado a R$ 55. A qualidade Tailandesa 1:1 é surreal de perfeita, vendi todas em menos de 10 dias. Já montei meu segundo pedido!',
+      'Comprei camisas para revender na minha cidade direto pelo site. A qualidade Tailandesa 1:1 é surreal de perfeita, vendi todas em menos de 10 dias. Já montei meu próximo pedido!',
     rating: 5,
-    tag: 'Pedido Atacado (50 un)',
+    tag: 'Revenda de Camisas',
   },
   {
     name: 'Rodrigo Alencar',
@@ -178,26 +178,19 @@ export default function CatalogView({ initialProducts }: Props) {
 
             {/* Subtítulo */}
             <p className="mt-4 sm:mt-5 text-sm sm:text-base text-zinc-300 leading-relaxed max-w-2xl mx-auto font-medium">
-              Padrão oficial Tailandês 1:1 com tecido tecnológico Dri-Fit, bordados impecáveis e etiquetas autênticas. Compre no varejo ou lucre alto revendendo no atacado.
+              Padrão oficial Tailandês 1:1 com tecido tecnológico Dri-Fit, bordados impecáveis e etiquetas autênticas. Compre para sua coleção ou para revender.
             </p>
 
             {/* FAIXA DE CONDIÇÕES COMERCIAIS */}
-            <div className="mt-8 grid grid-cols-1 sm:grid-cols-3 gap-3 p-3 bg-zinc-900/90 border border-zinc-800 rounded-2xl shadow-2xl max-w-2xl mx-auto">
+            <div className="mt-8 grid grid-cols-1 sm:grid-cols-2 gap-3 p-3 bg-zinc-900/90 border border-zinc-800 rounded-2xl shadow-2xl max-w-xl mx-auto">
               <div className="flex items-center gap-3 p-2.5 rounded-xl bg-zinc-950/80 border border-zinc-800/80">
                 <Sparkles className="w-5 h-5 text-zinc-300 shrink-0" />
                 <div className="text-left text-xs">
-                  <span className="text-zinc-400 block text-[10px]">Varejo (1 a 49 peças)</span>
-                  <strong className="text-white font-black">R$ 60,00 / un</strong>
+                  <span className="text-zinc-400 block text-[10px]">Padrão Tailandês 1:1</span>
+                  <strong className="text-white font-black">Qualidade Oficial</strong>
                 </div>
               </div>
 
-              <div className="flex items-center gap-3 p-2.5 rounded-xl bg-zinc-950/80 border border-emerald-500/30 shadow-sm shadow-emerald-950/30">
-                <Flame className="w-5 h-5 text-emerald-400 shrink-0" />
-                <div className="text-left text-xs">
-                  <span className="text-zinc-400 block text-[10px]">Atacado (50+ peças)</span>
-                  <strong className="text-emerald-400 font-black">R$ 55,00 / un</strong>
-                </div>
-              </div>
 
               <div className="flex items-center gap-3 p-2.5 rounded-xl bg-zinc-950/80 border border-amber-500/30 shadow-sm shadow-amber-950/30">
                 <Truck className="w-5 h-5 text-amber-400 shrink-0" />
@@ -269,9 +262,9 @@ export default function CatalogView({ initialProducts }: Props) {
               <div className="w-10 h-10 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-400 mb-3">
                 <Flame className="w-5 h-5" />
               </div>
-              <h3 className="text-sm font-black text-white">Atacado a R$ 55,00</h3>
+              <h3 className="text-sm font-black text-white">Preço Direto de Fábrica</h3>
               <p className="text-xs text-zinc-400 mt-1 leading-relaxed">
-                A partir de 50 camisas o valor unitário cai para R$ 55,00 com margem excelente de revenda.
+                Valores imbatíveis com padrão oficial Tailandês 1:1 e envio rápido para todo o país.
               </p>
             </div>
 
@@ -362,7 +355,7 @@ export default function CatalogView({ initialProducts }: Props) {
               Mostrando <strong className="text-white">{filteredProducts.length}</strong> peças encontradas
             </span>
             <span className="hidden sm:inline">
-              Preço Base: <strong className="text-rose-400">R$ 60,00</strong> • 50+ peças: <strong className="text-emerald-400">R$ 55,00</strong>
+              Preço Direto de Fábrica • Padrão Tailandês 1:1 Oficial
             </span>
           </div>
         </div>
@@ -548,10 +541,10 @@ export default function CatalogView({ initialProducts }: Props) {
                 02
               </div>
               <h3 className="text-base font-extrabold text-white mb-2">
-                2. Desconto no Atacado (50+ Peças)
+                2. Calcule seu Frete
               </h3>
               <p className="text-xs text-zinc-400 leading-relaxed">
-                Monte seu pedido mesclando modelos e tamanhos. Com 50 peças ou mais, o preço de cada camisa cai automaticamente para R$ 55,00 no atacado direto da fábrica.
+                Digite seu CEP no checkout para cotar fretes oficiais dos Correios (PAC/SEDEX) e Loggi com seguro e rastreamento completo.
               </p>
             </div>
 
@@ -740,7 +733,7 @@ export default function CatalogView({ initialProducts }: Props) {
             Pronto para Montar seu Pedido ou Revender?
           </h2>
           <p className="mt-3 text-xs sm:text-base text-zinc-300 max-w-xl mx-auto">
-            Aproveite o preço especial de R$ 60 no varejo ou R$ 55 no atacado (50+ peças) com envio seguro via Melhor Envio!
+            Aproveite a melhor qualidade Tailandesa 1:1 do Brasil com envio seguro e rastreado via Melhor Envio!
           </p>
 
           <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-3">

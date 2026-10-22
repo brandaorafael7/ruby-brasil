@@ -4,8 +4,7 @@ import { CartItem, Product, PromotionalBatch, WholesaleTier, ShippingOption } fr
 import { getSizeSurcharge } from '@/lib/utils';
 
 const DEFAULT_TIERS: WholesaleTier[] = [
-  { minQuantity: 1, maxQuantity: 49, unitPrice: 60.0 },
-  { minQuantity: 50, maxQuantity: null, unitPrice: 55.0 },
+  { minQuantity: 1, maxQuantity: null, unitPrice: 60.0 },
 ];
 
 const DEFAULT_BATCH: PromotionalBatch = {
@@ -256,27 +255,23 @@ export const useCartStore = create<CartStore>()(
       },
 
       isWholesale: () => {
-        return get().getTotalPieces() >= 50;
+        return false;
       },
 
       getCurrentTier: () => {
-        const total = get().getTotalPieces();
         const tiers = get().tiers;
-        if (total >= 50) return tiers.find((t) => t.minQuantity === 50) || { minQuantity: 50, maxQuantity: null, unitPrice: 55.0 };
-        return tiers.find((t) => t.minQuantity === 1) || { minQuantity: 1, maxQuantity: 49, unitPrice: 60.0 };
+        return tiers[0] || { minQuantity: 1, maxQuantity: null, unitPrice: 60.0 };
       },
 
       getItemUnitPrice: (item) => {
-        const total = get().getTotalPieces();
-        const base = total >= 50 ? 55.0 : (item.retailPrice || 60.0);
+        const base = item.retailPrice || 60.0;
         return base + getSizeSurcharge(item.size);
       },
 
       getSubtotal: () => {
         const items = get().items;
-        const total = get().getTotalPieces();
         return items.reduce((acc, item) => {
-          const base = total >= 50 ? 55.0 : (item.retailPrice || 60.0);
+          const base = item.retailPrice || 60.0;
           const surcharge = getSizeSurcharge(item.size);
           const customFee = item.customName ? 15.0 : 0.0;
           return acc + (base + surcharge + customFee) * item.quantity;
@@ -293,9 +288,7 @@ export const useCartStore = create<CartStore>()(
       },
 
       getSavings: () => {
-        const total = get().getTotalPieces();
-        if (total < 50) return 0;
-        return total * 5.0; // Desconto de R$ 5,00 por camisa ao comprar 50+ (R$ 60 - R$ 55)
+        return 0;
       },
 
       isFreeShippingEligible: () => {
@@ -313,8 +306,7 @@ export const useCartStore = create<CartStore>()(
       },
 
       getPiecesUntilWholesale: () => {
-        const total = get().getTotalPieces();
-        return Math.max(0, 50 - total);
+        return 0;
       },
     }),
     {

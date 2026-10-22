@@ -170,9 +170,9 @@ export default function ProductCard({ product }: Props) {
               </div>
             </div>
             <div className="text-right">
-              <span className="bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 text-[10px] font-bold px-2 py-0.5 rounded-full inline-flex items-center gap-1">
-                <Sparkles className="w-3 h-3 text-amber-300" />
-                {surcharge > 0 ? `${formatCurrency(55 + surcharge)} (50+ un)` : 'R$ 55 (50+ un)'}
+              <span className="bg-zinc-800 text-zinc-300 border border-zinc-700 text-[10px] font-semibold px-2 py-0.5 rounded-full inline-flex items-center gap-1">
+                <Sparkles className="w-3 h-3 text-amber-400" />
+                Tailandesa 1:1
               </span>
             </div>
           </div>

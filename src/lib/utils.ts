@@ -130,10 +130,6 @@ export function buildWhatsAppOrderMessage({
 
   text += `📊 *CONDIÇÃO COMERCIAL:*\n`;
   text += `• Total de Peças: ${totalPieces} camisa(s)\n`;
-  text += `• Preço Unitário: ${totalPieces >= 50 ? 'R$ 55,00 (Atacado 50+ peças)' : 'R$ 60,00 / unidade'}\n`;
-  if (totalPieces >= 50) {
-    text += `• Economia Atacado: ${formatCurrency(savings)}\n`;
-  }
   const shippingServiceText = shippingService ? ` (${shippingService})` : ' (Melhor Envio)';
   text += `• Frete${shippingServiceText}: ${formatCurrency(shippingFee)}\n\n`;
 
@@ -148,7 +144,6 @@ export function buildWhatsAppOrderMessage({
 
   text += `\n💰 *VALOR TOTAL:*\n`;
   text += `• Subtotal Produtos: ${formatCurrency(subtotal)}\n`;
-  if (savings > 0) text += `• Economia Atacado: -${formatCurrency(savings)}\n`;
   text += `• Frete${shippingServiceText}: ${formatCurrency(shippingFee)}\n`;
   text += `• *TOTAL DO PEDIDO: ${formatCurrency(finalTotal)}*\n`;
   text += `• Finalização: *Canal Oficial Ruby Brasil*\n\n`;

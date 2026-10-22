@@ -174,15 +174,6 @@ export default function ProductCardRetail({ product }: Props) {
           </div>
 
           <div className="mt-3 pt-3 border-t border-zinc-800/80">
-            <div
-              onClick={() => setSelectedMode('wholesale')}
-              className="bg-emerald-950/30 border border-emerald-500/20 rounded-lg p-1.5 mb-2.5 text-[10px] text-zinc-300 flex items-center justify-between cursor-pointer hover:bg-emerald-950/50 transition-colors"
-            >
-              <span>
-                Comprando <strong className="text-emerald-400">50+ peças</strong> pague apenas <strong className="text-emerald-300">R$ 55/un no Atacado</strong>!
-              </span>
-              <ArrowRight className="w-3 h-3 text-emerald-400 shrink-0 ml-1" />
-            </div>
 
             <button
               type="button"

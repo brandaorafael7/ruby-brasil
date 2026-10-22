@@ -60,16 +60,8 @@ export default function FloatingCartBar() {
             </div>
 
             <p className="text-[10px] sm:text-[11px] text-zinc-300 font-semibold truncate flex items-center gap-1">
-              {totalPieces >= 50 ? (
-                <>
-                  <Sparkles className="w-3 h-3 text-amber-300 shrink-0" />
-                  <span className="text-emerald-300">Atacado R$ 55/unidade ativo!</span>
-                </>
-              ) : (
-                <span className="text-amber-300">
-                  Faltam {50 - totalPieces} {50 - totalPieces === 1 ? 'peça' : 'peças'} para Atacado R$ 55/un
-                </span>
-              )}
+              <Sparkles className="w-3 h-3 text-emerald-400 shrink-0" />
+              <span className="text-zinc-300">Envio seguro para todo o Brasil</span>
             </p>
           </div>
         </div>

@@ -101,19 +101,9 @@ export default function ProductCardWholesale({ product }: Props) {
             {product.description || 'Tecido respirável de alta tecnologia, escudos bordados e acabamento oficial.'}
           </p>
 
-          <div className="grid grid-cols-3 gap-1 bg-zinc-950 p-1.5 rounded-lg border border-zinc-800/80 my-3 text-[10px] text-center font-medium">
-            <div className="p-1 rounded bg-zinc-900/60">
-              <span className="text-zinc-400 block">10 a 29 un</span>
-              <strong className="text-white">R$ 65,00</strong>
-            </div>
-            <div className="p-1 rounded bg-zinc-900/60">
-              <span className="text-zinc-400 block">30 a 59 un</span>
-              <strong className="text-emerald-400">R$ 55,00</strong>
-            </div>
-            <div className="p-1 rounded bg-amber-500/10 border border-amber-500/20">
-              <span className="text-amber-300 block">60+ un</span>
-              <strong className="text-amber-400">R$ 48,00</strong>
-            </div>
+          <div className="bg-zinc-950 p-2 rounded-lg border border-zinc-800/80 my-3 text-xs text-center font-medium">
+            <span className="text-zinc-400 block text-[10px]">Preço Unitário</span>
+            <strong className="text-white font-bold">{formatCurrency(product.retailPrice || 60.0)}</strong>
           </div>
         </div>
 

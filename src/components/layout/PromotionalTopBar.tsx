@@ -45,7 +45,7 @@ export default function PromotionalTopBar() {
             Restam {remaining.toLocaleString('pt-BR')} peças
           </span>
           <span className="hidden sm:inline text-zinc-300">
-            • Varejo R$ 60 • 50+ camisas <strong className="text-emerald-400">R$ 55/un</strong>
+            • Padrão Tailandês 1:1 Oficial Direto de Fábrica
           </span>
         </div>
 

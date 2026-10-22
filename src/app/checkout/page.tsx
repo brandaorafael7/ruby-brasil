@@ -813,13 +813,6 @@ export default function CheckoutPage() {
                   </p>
                 </div>
               )}
-
-              {totalPieces >= 50 && (
-                <div className="mt-2.5 pt-2 border-t border-emerald-500/30 flex items-center gap-1.5 text-[11px] font-bold text-emerald-300">
-                  <Sparkles className="w-3.5 h-3.5 text-amber-400" />
-                  Preço Atacado Especial: R$ 55,00 / unidade!
-                </div>
-              )}
             </div>
 
             {/* RESUMO DO PEDIDO */}
@@ -853,13 +846,6 @@ export default function CheckoutPage() {
                   <span>Subtotal ({totalPieces} peças)</span>
                   <span className="font-bold text-white">{formatCurrency(subtotal)}</span>
                 </div>
-
-                {savings > 0 && (
-                  <div className="flex justify-between text-emerald-400 font-bold bg-emerald-950/40 p-1.5 rounded-lg border border-emerald-500/20">
-                    <span>Desconto Atacado 50+ peças:</span>
-                    <span>- {formatCurrency(savings)}</span>
-                  </div>
-                )}
 
                 <div className="flex justify-between text-zinc-300">
                   <span>Frete {selectedShippingOption ? `(${selectedShippingOption.name})` : '(Melhor Envio)'}</span>

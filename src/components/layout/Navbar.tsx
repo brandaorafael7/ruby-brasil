@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { ShoppingBag, Settings, Truck, Flame } from 'lucide-react';
+import { ShoppingBag, Settings, Truck, Flame, Sparkles } from 'lucide-react';
 import { useCartStore } from '@/store';
 import { formatCurrency } from '@/lib/utils';
 
@@ -49,8 +49,8 @@ export default function Navbar() {
             <span>Envio <strong className="text-emerald-400">Melhor Envio</strong> (PAC, SEDEX & Loggi)</span>
           </div>
           <div className="flex items-center gap-1.5 bg-zinc-900 border border-zinc-800 px-3 py-1.5 rounded-full text-[11px]">
-            <Flame className="w-3.5 h-3.5 text-amber-400" />
-            <span>50+ camisas por <strong className="text-amber-300">R$ 55,00/un</strong></span>
+            <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+            <span>Padrão <strong className="text-amber-300">Tailandês 1:1</strong></span>
           </div>
         </div>
 

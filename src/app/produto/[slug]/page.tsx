@@ -39,7 +39,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   const title = `${product.name} | RUBY BRASIL Oficial`;
   const description =
     product.description ||
-    `Camisa ${product.name} padrão oficial Tailandesa 1:1. R$ 60,00 varejo e R$ 55,00 atacado (50+ un). Envio seguro para todo o Brasil via Melhor Envio!`;
+    `Camisa ${product.name} padrão oficial Tailandesa 1:1. Envio seguro para todo o Brasil via Melhor Envio!`;
 
   return {
     title,

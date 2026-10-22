@@ -57,12 +57,10 @@ export async function POST(req: Request) {
     }
 
     const totalQuantity = items.reduce((acc: number, item: any) => acc + item.quantity, 0);
-    const isWholesale = totalQuantity >= 50;
+    const isWholesale = false;
 
-    // Regras de Preço (João Felipe):
-    // 50 ou mais camisas: R$ 55,00 cada
-    // Menos de 50 camisas: Preço base R$ 60,00 cada (ou item.retailPrice)
-    const appliedTierPrice = totalQuantity >= 50 ? 55.0 : 60.0;
+    // Preço individual por produto (mantendo valor de versões Torcedor/Jogador sem desconto de atacado a R$ 55)
+    const appliedTierPrice = 60.0;
 
     const activeBatch = await prisma.promotionalBatch.findFirst({
       where: { isActive: true },
@@ -165,7 +163,7 @@ export async function POST(req: Request) {
 
     let subtotal = 0;
     const orderItemsData = items.map((item: any) => {
-      const basePrice = totalQuantity >= 50 ? 55.0 : (item.retailPrice || 60.0);
+      const basePrice = item.retailPrice || 60.0;
       const surcharge = getSizeSurcharge(item.size);
       const unitPrice = basePrice + surcharge;
       const customFee = item.customName ? 15.0 : 0.0;
