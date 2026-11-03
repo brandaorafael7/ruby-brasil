@@ -4,7 +4,6 @@ import React, { useState, useEffect, useRef, useMemo } from 'react';
 import Link from 'next/link';
 import {
   Flame,
-  Settings,
   RefreshCw,
   Save,
   CheckCircle,
@@ -25,18 +24,20 @@ import {
   UploadCloud,
   Link as LinkIcon,
   Loader2,
-  CheckCircle2,
   Clock,
-  Truck,
+  CalendarClock,
   FileText,
   Copy,
   ExternalLink,
   MessageCircle,
   Send,
   Check,
-  Filter,
 } from 'lucide-react';
-import { formatCurrency, getStandardSizesForProduct } from '@/lib/utils';
+import {
+  formatCurrency,
+  getStandardSizesForProduct,
+  getProductPreSaleInfo,
+} from '@/lib/utils';
 import { PromotionalBatch, WholesaleTier } from '@/types';
 
 export const ORDER_STATUS_MAP: Record<
@@ -107,7 +108,11 @@ export function buildOrderWhatsAppReport(order: any): string {
       const custom = item.customName
         ? ` (Personalizada: ${item.customName} #${item.customNumber || 'S/N'})`
         : '';
-      return `  ${idx + 1}. *${item.product?.name || 'Camisa'}* [Tam: ${item.size}] x ${item.quantity}un - ${formatCurrency(item.totalItemPrice || 0)}${custom}`;
+      const preSale = getProductPreSaleInfo(item.product);
+      const preSaleLabel = preSale.isPreSale
+        ? ` [⏳ PRÉ-VENDA${preSale.preSaleEta ? `: ${preSale.preSaleEta}` : ''}]`
+        : '';
+      return `  ${idx + 1}. *${item.product?.name || 'Camisa'}*${preSaleLabel} [Tam: ${item.size}] x ${item.quantity}un - ${formatCurrency(item.totalItemPrice || 0)}${custom}`;
     })
     .join('\n');
 
@@ -221,7 +226,6 @@ interface Props {
 
 export default function AdminDashboardClient({
   initialBatch,
-  initialTiers,
   initialProducts,
   initialOrders,
 }: Props) {
@@ -333,6 +337,8 @@ export default function AdminDashboardClient({
     isActive: true,
     allowCustom: true,
     customPrice: '15.00',
+    isPreSale: false,
+    preSaleEta: '',
     variants: [
       { size: 'P', stockQuantity: 50 },
       { size: 'M', stockQuantity: 100 },
@@ -465,7 +471,7 @@ export default function AdminDashboardClient({
     return { total, totalRevenue, totalPieces, pending, processing, confirmed, shipped, delivered };
   }, [orders]);
 
-  const handleOpenCreateModal = () => {
+  const handleOpenCreateModal = (defaultPreSale = false) => {
     setIsEditing(false);
     setImageUploadMode('file');
     if (fileInputRef.current) fileInputRef.current.value = '';
@@ -474,7 +480,7 @@ export default function AdminDashboardClient({
       name: '',
       club: '',
       league: 'Brasileirão',
-      season: '24/25',
+      season: '25/26',
       type: 'TORCEDOR',
       imageUrl: '',
       retailPrice: '60.00',
@@ -482,6 +488,8 @@ export default function AdminDashboardClient({
       isActive: true,
       allowCustom: true,
       customPrice: '15.00',
+      isPreSale: defaultPreSale,
+      preSaleEta: defaultPreSale ? 'Chega em 15 dias' : '',
       variants: [
         { size: 'P', stockQuantity: 50 },
         { size: 'M', stockQuantity: 100 },
@@ -511,6 +519,8 @@ export default function AdminDashboardClient({
       return { size, stockQuantity: found ? found.stockQuantity : 0 };
     });
 
+    const preSaleInfo = getProductPreSaleInfo(p);
+
     setFormData({
       id: p.id,
       name: p.name,
@@ -524,6 +534,8 @@ export default function AdminDashboardClient({
       isActive: p.isActive,
       allowCustom: p.allowCustom ?? true,
       customPrice: String(p.customPrice || '15.00'),
+      isPreSale: preSaleInfo.isPreSale,
+      preSaleEta: preSaleInfo.preSaleEta,
       variants: currentVariants,
     });
     setIsModalOpen(true);
@@ -554,10 +566,14 @@ export default function AdminDashboardClient({
       if (res.ok) {
         if (isEditing) {
           setProducts((prev) => prev.map((item) => (item.id === data.id ? data : item)));
-          showToast('Peça atualizada com sucesso no banco Neon!');
+          showToast('Peça atualizada com sucesso no catálogo!');
         } else {
           setProducts((prev) => [data, ...prev]);
-          showToast('Nova peça cadastrada com sucesso no catálogo!');
+          showToast(
+            formData.isPreSale
+              ? 'Novo modelo em Pré-Venda adicionado com sucesso!'
+              : 'Nova peça cadastrada com sucesso no catálogo!'
+          );
         }
         setIsModalOpen(false);
       } else {
@@ -578,13 +594,41 @@ export default function AdminDashboardClient({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ id: p.id, isActive: !p.isActive }),
       });
-      const data = await res.json();
       if (res.ok) {
         setProducts((prev) => prev.map((item) => (item.id === p.id ? { ...item, isActive: !p.isActive } : item)));
         showToast(p.isActive ? 'Peça pausada (oculta no catálogo).' : 'Peça ativada na loja!');
       }
-    } catch (err) {
+    } catch {
       alert('Erro ao alterar status.');
+    }
+  };
+
+  const handleTogglePreSale = async (p: any) => {
+    const current = getProductPreSaleInfo(p);
+    const nextIsPreSale = !current.isPreSale;
+    const nextEta = nextIsPreSale ? current.preSaleEta || 'Chega em breve' : '';
+
+    try {
+      const res = await fetch('/api/products', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          id: p.id,
+          isPreSale: nextIsPreSale,
+          preSaleEta: nextEta,
+        }),
+      });
+      const data = await res.json();
+      if (res.ok && data) {
+        setProducts((prev) => prev.map((item) => (item.id === p.id ? data : item)));
+        showToast(
+          nextIsPreSale
+            ? 'Peça marcada como Pré-Venda (Modelo que irá chegar)!'
+            : 'Peça alterada para Pronta Entrega!'
+        );
+      }
+    } catch {
+      alert('Erro ao alterar modo de Pré-Venda.');
     }
   };
 
@@ -600,7 +644,7 @@ export default function AdminDashboardClient({
       } else {
         alert(data.error || 'Erro ao excluir peça.');
       }
-    } catch (err) {
+    } catch {
       alert('Erro de conexão ao excluir.');
     }
   };
@@ -650,13 +694,21 @@ export default function AdminDashboardClient({
     }
   };
 
+  const preSaleCount = useMemo(() => {
+    return products.filter((p) => getProductPreSaleInfo(p).isPreSale).length;
+  }, [products]);
+
   const filteredProducts = products.filter((p) => {
+    const preSaleInfo = getProductPreSaleInfo(p);
     const matchesSearch =
       p.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       p.club?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       p.league?.toLowerCase().includes(searchTerm.toLowerCase());
 
-    const matchesLeague = selectedLeague === 'TODAS' || p.league === selectedLeague;
+    const matchesLeague =
+      selectedLeague === 'TODAS' ||
+      (selectedLeague === 'Pré-Venda' && preSaleInfo.isPreSale) ||
+      p.league === selectedLeague;
 
     return matchesSearch && matchesLeague;
   });
@@ -669,10 +721,10 @@ export default function AdminDashboardClient({
       {/* TOAST FEEDBACK */}
       {productFeedback && (
         <div
-          className={`fixed top-5 right-5 z-50 px-5 py-3.5 rounded-2xl shadow-2xl border text-xs sm:text-sm font-bold flex items-center gap-2.5 transition-all animate-bounce ${
+          className={`fixed top-5 right-5 z-50 px-5 py-3.5 rounded-2xl shadow-2xl border text-xs sm:text-sm font-bold flex items-center gap-2.5 transition-all ${
             productFeedback.type === 'success'
-              ? 'bg-emerald-950/90 border-emerald-500/60 text-emerald-200'
-              : 'bg-rose-950/90 border-rose-500/60 text-rose-200'
+              ? 'bg-emerald-950/95 border-emerald-500/60 text-emerald-200'
+              : 'bg-rose-950/95 border-rose-500/60 text-rose-200'
           }`}
         >
           <CheckCircle className="w-5 h-5 text-emerald-400 shrink-0" />
@@ -693,7 +745,7 @@ export default function AdminDashboardClient({
             </Link>
 
             <div className="flex items-center gap-2.5">
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-rose-600 via-rose-500 to-amber-500 flex items-center justify-center shadow-lg shadow-rose-950/60 border border-rose-400/30">
+              <div className="w-10 h-10 rounded-xl bg-rose-600 flex items-center justify-center shadow-lg border border-rose-400/30">
                 <span className="text-xl">💎</span>
               </div>
               <div>
@@ -706,24 +758,35 @@ export default function AdminDashboardClient({
                   </span>
                 </div>
                 <p className="text-[11px] text-zinc-400 font-medium mt-0.5 hidden sm:block">
-                  Painel de Controle • Banco Neon PostgreSQL
+                  Painel de Controle • Pronta Entrega & Pré-Venda
                 </p>
               </div>
             </div>
           </div>
 
-          <div className="flex items-center gap-2.5 sm:gap-4">
+          <div className="flex items-center gap-2 sm:gap-3">
+            {/* BOTÃO ADICIONAR PRÉ-VENDA */}
+            <button
+              onClick={() => handleOpenCreateModal(true)}
+              className="px-3.5 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-zinc-950 font-extrabold text-xs sm:text-sm flex items-center gap-1.5 shadow-lg shadow-amber-950/50 transition-all hover:scale-[1.02] active:scale-[0.98]"
+              title="Cadastrar modelo que irá chegar (Pré-Venda)"
+            >
+              <CalendarClock className="w-4 h-4" />
+              <span className="hidden md:inline">Adicionar Pré-Venda</span>
+              <span className="md:hidden">Pré-Venda</span>
+            </button>
+
             {/* BOTÃO ADICIONAR NOVA PEÇA NO TOPO */}
             <button
-              onClick={handleOpenCreateModal}
-              className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-500 hover:to-emerald-400 text-white font-extrabold text-xs sm:text-sm flex items-center gap-2 shadow-lg shadow-emerald-950/60 transition-all hover:scale-[1.02] active:scale-[0.98]"
+              onClick={() => handleOpenCreateModal(false)}
+              className="px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold text-xs sm:text-sm flex items-center gap-2 shadow-lg shadow-emerald-950/60 transition-all hover:scale-[1.02] active:scale-[0.98]"
             >
               <PlusCircle className="w-4 h-4" />
               <span>Adicionar Peça</span>
             </button>
 
             {/* BADGE DE USUÁRIO */}
-            <div className="hidden lg:flex items-center gap-2 px-3 py-1.5 rounded-xl bg-zinc-900 border border-zinc-800 text-xs text-zinc-300">
+            <div className="hidden xl:flex items-center gap-2 px-3 py-1.5 rounded-xl bg-zinc-900 border border-zinc-800 text-xs text-zinc-300">
               <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
               <User className="w-3.5 h-3.5 text-zinc-400" />
               <span className="font-mono text-[11px] text-zinc-300 font-semibold">{adminEmail}</span>
@@ -761,11 +824,13 @@ export default function AdminDashboardClient({
               <span className="text-2xl sm:text-3xl font-black text-white">{products.length}</span>
               <span className="text-xs text-rose-400 font-bold">modelos</span>
             </div>
-            <span className="text-[11px] text-zinc-500 mt-1 block">Peças cadastradas</span>
+            <span className="text-[11px] text-amber-400 font-semibold mt-1 block">
+              {preSaleCount} modelo(s) em Pré-Venda
+            </span>
           </div>
 
-          <div className="bg-gradient-to-br from-rose-950/40 via-zinc-900 to-zinc-900 border border-rose-500/30 rounded-2xl p-5 shadow-lg">
-            <span className="text-[11px] font-bold text-rose-300 uppercase tracking-wider block flex items-center gap-1">
+          <div className="bg-zinc-900/90 border border-rose-500/30 rounded-2xl p-5 shadow-lg">
+            <span className="text-[11px] font-bold text-rose-300 uppercase tracking-wider flex items-center gap-1">
               <Flame className="w-3.5 h-3.5 text-amber-400" />
               Cota do Lote
             </span>
@@ -800,7 +865,7 @@ export default function AdminDashboardClient({
               <span className="text-2xl sm:text-3xl font-black text-white">{orders.length}</span>
               <span className="text-xs text-emerald-400 font-bold">pedidos</span>
             </div>
-            <span className="text-[11px] text-zinc-500 mt-1 block">Registrados no Neon</span>
+            <span className="text-[11px] text-zinc-500 mt-1 block">Registrados no banco</span>
           </div>
         </div>
 
@@ -815,7 +880,7 @@ export default function AdminDashboardClient({
             }`}
           >
             <Package className="w-4 h-4" />
-            Catálogo de Peças ({products.length})
+            Catálogo & Pré-Venda ({products.length})
           </button>
 
           <button
@@ -850,20 +915,30 @@ export default function AdminDashboardClient({
               <div>
                 <h2 className="text-xl font-black text-white flex items-center gap-2">
                   <Package className="w-6 h-6 text-rose-500" />
-                  Gerenciamento de Peças e Camisas
+                  Gerenciamento de Peças & Pré-Venda
                 </h2>
                 <p className="text-xs text-zinc-400 mt-1">
-                  Cadastre novas camisas, atualize preços de varejo, fotos e controle estoque por tamanho.
+                  Cadastre camisas a pronta entrega ou adicione modelos em Pré-Venda (que irão chegar) para reserva antecipada.
                 </p>
               </div>
 
-              <button
-                onClick={handleOpenCreateModal}
-                className="px-5 py-3 rounded-2xl bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-500 hover:to-emerald-400 text-white font-extrabold text-xs sm:text-sm flex items-center gap-2 shadow-lg shadow-emerald-950/60 transition-all hover:scale-[1.02] active:scale-[0.98]"
-              >
-                <PlusCircle className="w-4 h-4" />
-                Adicionar Nova Peça
-              </button>
+              <div className="flex flex-wrap items-center gap-2.5">
+                <button
+                  onClick={() => handleOpenCreateModal(true)}
+                  className="px-4 py-3 rounded-2xl bg-amber-500 hover:bg-amber-400 text-zinc-950 font-extrabold text-xs sm:text-sm flex items-center gap-2 shadow-lg shadow-amber-950/50 transition-all hover:scale-[1.02] active:scale-[0.98]"
+                >
+                  <CalendarClock className="w-4 h-4" />
+                  Adicionar Modelo em Pré-Venda
+                </button>
+
+                <button
+                  onClick={() => handleOpenCreateModal(false)}
+                  className="px-5 py-3 rounded-2xl bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold text-xs sm:text-sm flex items-center gap-2 shadow-lg shadow-emerald-950/60 transition-all hover:scale-[1.02] active:scale-[0.98]"
+                >
+                  <PlusCircle className="w-4 h-4" />
+                  Adicionar Pronta Entrega
+                </button>
+              </div>
             </div>
 
             {/* FILTROS E BUSCA */}
@@ -880,19 +955,46 @@ export default function AdminDashboardClient({
               </div>
 
               <div className="flex items-center gap-1.5 overflow-x-auto w-full pb-2 sm:pb-0">
-                {['TODAS', 'Infantil', 'Brasileirão', 'Premier League', 'La Liga', 'Seleções', 'Retrô'].map((league) => (
-                  <button
-                    key={league}
-                    onClick={() => setSelectedLeague(league)}
-                    className={`px-3 py-1.5 rounded-lg text-xs font-bold whitespace-nowrap transition-colors ${
-                      selectedLeague === league
-                        ? 'bg-rose-500/20 text-rose-300 border border-rose-500/40'
-                        : 'bg-zinc-950 text-zinc-400 hover:text-white border border-zinc-800'
-                    }`}
-                  >
-                    {league}
-                  </button>
-                ))}
+                {[
+                  'TODAS',
+                  'Pré-Venda',
+                  'Infantil',
+                  'Brasileirão',
+                  'Premier League',
+                  'La Liga',
+                  'Seleções',
+                  'Retrô',
+                ].map((league) => {
+                  const isPreSaleFilter = league === 'Pré-Venda';
+                  const isSelected = selectedLeague === league;
+                  return (
+                    <button
+                      key={league}
+                      onClick={() => setSelectedLeague(league)}
+                      className={`px-3 py-1.5 rounded-lg text-xs font-bold whitespace-nowrap transition-colors inline-flex items-center gap-1.5 ${
+                        isSelected
+                          ? isPreSaleFilter
+                            ? 'bg-amber-500 text-zinc-950 border border-amber-400'
+                            : 'bg-rose-500/20 text-rose-300 border border-rose-500/40'
+                          : isPreSaleFilter
+                          ? 'bg-amber-500/10 text-amber-300 hover:bg-amber-500/20 border border-amber-500/30'
+                          : 'bg-zinc-950 text-zinc-400 hover:text-white border border-zinc-800'
+                      }`}
+                    >
+                      {isPreSaleFilter && <Clock className="w-3 h-3" />}
+                      <span>{league}</span>
+                      {isPreSaleFilter && (
+                        <span
+                          className={`text-[10px] font-black px-1.5 py-0.5 rounded-full ${
+                            isSelected ? 'bg-zinc-950 text-amber-400' : 'bg-amber-500/20 text-amber-300'
+                          }`}
+                        >
+                          {preSaleCount}
+                        </span>
+                      )}
+                    </button>
+                  );
+                })}
               </div>
             </div>
 
@@ -903,10 +1005,10 @@ export default function AdminDashboardClient({
                   <tr>
                     <th className="py-3.5 px-4">Foto</th>
                     <th className="py-3.5 px-4">Camisa / Clube</th>
-                    <th className="py-3.5 px-3">Liga / Tipo</th>
-                    <th className="py-3.5 px-3">Preço Varejo</th>
+                    <th className="py-3.5 px-3">Liga / Modalidade</th>
+                    <th className="py-3.5 px-3">Preço Base</th>
                     <th className="py-3.5 px-3">Grade de Tamanhos</th>
-                    <th className="py-3.5 px-3 text-center">Status</th>
+                    <th className="py-3.5 px-3 text-center">Status & Modo</th>
                     <th className="py-3.5 px-4 text-right">Ações</th>
                   </tr>
                 </thead>
@@ -918,135 +1020,170 @@ export default function AdminDashboardClient({
                       </td>
                     </tr>
                   ) : (
-                    filteredProducts.map((p) => (
-                      <tr key={p.id} className="hover:bg-zinc-800/40 transition-colors">
-                        <td className="py-3.5 px-4">
-                          {p.imageUrl ? (
-                            <img
-                              src={p.imageUrl}
-                              alt={p.name}
-                              className="w-11 h-11 object-cover rounded-xl bg-zinc-900 border border-zinc-700/80 shadow-sm"
-                            />
-                          ) : (
-                            <div className="w-11 h-11 rounded-xl bg-zinc-900 flex items-center justify-center text-zinc-500 border border-zinc-800">
-                              <ImageIcon className="w-5 h-5" />
-                            </div>
-                          )}
-                        </td>
-                        <td className="py-3.5 px-4 font-bold text-white">
-                          <a
-                            href={`/produto/${p.slug}`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-sm font-extrabold hover:text-rose-400 transition-colors inline-flex items-center gap-1.5 group/link"
-                            title="Abrir página desta camisa em nova aba"
-                          >
-                            <span>{p.name}</span>
-                            <ExternalLink className="w-3 h-3 text-zinc-500 group-hover/link:text-rose-400 opacity-60 group-hover/link:opacity-100 transition-opacity" />
-                          </a>
-                          <span className="text-[11px] font-normal text-zinc-400 block mt-0.5">
-                            {p.club} • {p.season}
-                          </span>
-                        </td>
-                        <td className="py-3.5 px-3">
-                          <span className="bg-zinc-800 px-2 py-0.5 rounded text-[10px] font-bold text-zinc-200 mr-1 border border-zinc-700">
-                            {p.league}
-                          </span>
-                          <span className="text-zinc-400 text-[10px] block mt-1 font-mono">
-                            {p.type}
-                          </span>
-                        </td>
-                        <td className="py-3.5 px-3 font-mono font-black text-amber-400 text-sm">
-                          {formatCurrency(p.retailPrice)}
-                        </td>
-                        <td className="py-3.5 px-3">
-                          <div className="flex flex-wrap items-center gap-1 font-mono text-[10px]">
-                            {(() => {
-                              const standardSizes = getStandardSizesForProduct(p);
-                              const relevantVariants = (p.variants || []).filter((v: any) => {
-                                if (standardSizes.includes(v.size)) return true;
-                                return v.stockQuantity > 0;
-                              });
-                              const sortedVariants = [...relevantVariants].sort((a: any, b: any) => {
-                                const idxA = standardSizes.indexOf(a.size);
-                                const idxB = standardSizes.indexOf(b.size);
-                                if (idxA !== -1 && idxB !== -1) return idxA - idxB;
-                                if (idxA !== -1) return -1;
-                                if (idxB !== -1) return 1;
-                                return a.size.localeCompare(b.size);
-                              });
-                              return sortedVariants.map((v: any) => (
-                                <span
-                                  key={v.id || v.size}
-                                  className={`px-2 py-0.5 rounded border ${
-                                    v.stockQuantity > 0
-                                      ? 'bg-zinc-900 border-zinc-800 text-zinc-300'
-                                      : 'bg-rose-950/40 border-rose-900/50 text-rose-400'
-                                  }`}
-                                >
-                                  {v.size}: <strong className="text-white">{v.stockQuantity}</strong>
+                    filteredProducts.map((p) => {
+                      const preSaleInfo = getProductPreSaleInfo(p);
+                      return (
+                        <tr key={p.id} className="hover:bg-zinc-800/40 transition-colors">
+                          <td className="py-3.5 px-4">
+                            {p.imageUrl ? (
+                              <img
+                                src={p.imageUrl}
+                                alt={p.name}
+                                className="w-11 h-11 object-cover rounded-xl bg-zinc-900 border border-zinc-700/80 shadow-sm"
+                              />
+                            ) : (
+                              <div className="w-11 h-11 rounded-xl bg-zinc-900 flex items-center justify-center text-zinc-500 border border-zinc-800">
+                                <ImageIcon className="w-5 h-5" />
+                              </div>
+                            )}
+                          </td>
+                          <td className="py-3.5 px-4 font-bold text-white">
+                            <div className="flex flex-wrap items-center gap-1.5">
+                              <a
+                                href={`/produto/${p.slug}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-sm font-extrabold hover:text-rose-400 transition-colors inline-flex items-center gap-1.5 group/link"
+                                title="Abrir página desta camisa em nova aba"
+                              >
+                                <span>{p.name}</span>
+                                <ExternalLink className="w-3 h-3 text-zinc-500 group-hover/link:text-rose-400 opacity-60 group-hover/link:opacity-100 transition-opacity" />
+                              </a>
+                              {preSaleInfo.isPreSale && (
+                                <span className="bg-amber-500/20 text-amber-300 border border-amber-500/40 px-2 py-0.5 rounded-md text-[10px] font-black uppercase inline-flex items-center gap-1">
+                                  <Clock className="w-2.5 h-2.5" />
+                                  Pré-Venda
                                 </span>
-                              ));
-                            })()}
-                          </div>
-                        </td>
-                        <td className="py-3.5 px-3 text-center">
-                          <button
-                            onClick={() => handleToggleActive(p)}
-                            className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full font-bold text-[10px] border transition-all ${
-                              p.isActive
-                                ? 'bg-emerald-500/15 border-emerald-500/40 text-emerald-400 hover:bg-emerald-500/25'
-                                : 'bg-zinc-800/80 border-zinc-700 text-zinc-400 hover:bg-zinc-700'
-                            }`}
-                            title={p.isActive ? 'Clique para pausar esta camisa' : 'Clique para reativar'}
-                          >
-                            {p.isActive ? <Eye className="w-3 h-3" /> : <EyeOff className="w-3 h-3" />}
-                            {p.isActive ? 'Ativo' : 'Pausado'}
-                          </button>
-                        </td>
-                        <td className="py-3.5 px-4 text-right">
-                          <div className="flex items-center justify-end gap-1.5">
-                            <button
-                              type="button"
-                              onClick={() => {
-                                if (typeof window !== 'undefined') {
-                                  const url = `${window.location.origin}/produto/${p.slug}`;
-                                  navigator.clipboard.writeText(url);
-                                  alert(`✓ Link copiado com sucesso para a área de transferência:\n${url}`);
+                              )}
+                            </div>
+                            <span className="text-[11px] font-normal text-zinc-400 block mt-0.5">
+                              {p.club} • {p.season}
+                              {preSaleInfo.isPreSale && preSaleInfo.preSaleEta && (
+                                <span className="text-amber-300 font-semibold ml-1.5">
+                                  ({preSaleInfo.preSaleEta})
+                                </span>
+                              )}
+                            </span>
+                          </td>
+                          <td className="py-3.5 px-3">
+                            <span className="bg-zinc-800 px-2 py-0.5 rounded text-[10px] font-bold text-zinc-200 mr-1 border border-zinc-700">
+                              {p.league}
+                            </span>
+                            <span className="text-zinc-400 text-[10px] block mt-1 font-mono">
+                              {p.type}
+                            </span>
+                          </td>
+                          <td className="py-3.5 px-3 font-mono font-black text-amber-400 text-sm">
+                            {formatCurrency(p.retailPrice)}
+                          </td>
+                          <td className="py-3.5 px-3">
+                            <div className="flex flex-wrap items-center gap-1 font-mono text-[10px]">
+                              {(() => {
+                                const standardSizes = getStandardSizesForProduct(p);
+                                const relevantVariants = (p.variants || []).filter((v: any) => {
+                                  if (standardSizes.includes(v.size)) return true;
+                                  return v.stockQuantity > 0;
+                                });
+                                const sortedVariants = [...relevantVariants].sort((a: any, b: any) => {
+                                  const idxA = standardSizes.indexOf(a.size);
+                                  const idxB = standardSizes.indexOf(b.size);
+                                  if (idxA !== -1 && idxB !== -1) return idxA - idxB;
+                                  if (idxA !== -1) return -1;
+                                  if (idxB !== -1) return 1;
+                                  return a.size.localeCompare(b.size);
+                                });
+                                return sortedVariants.map((v: any) => (
+                                  <span
+                                    key={v.id || v.size}
+                                    className={`px-2 py-0.5 rounded border ${
+                                      v.stockQuantity > 0
+                                        ? 'bg-zinc-900 border-zinc-800 text-zinc-300'
+                                        : 'bg-rose-950/40 border-rose-900/50 text-rose-400'
+                                    }`}
+                                  >
+                                    {v.size}: <strong className="text-white">{v.stockQuantity}</strong>
+                                  </span>
+                                ));
+                              })()}
+                            </div>
+                          </td>
+                          <td className="py-3.5 px-3 text-center">
+                            <div className="flex flex-col items-center gap-1.5">
+                              <button
+                                onClick={() => handleToggleActive(p)}
+                                className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full font-bold text-[10px] border transition-all ${
+                                  p.isActive
+                                    ? 'bg-emerald-500/15 border-emerald-500/40 text-emerald-400 hover:bg-emerald-500/25'
+                                    : 'bg-zinc-800/80 border-zinc-700 text-zinc-400 hover:bg-zinc-700'
+                                }`}
+                                title={p.isActive ? 'Clique para pausar esta camisa' : 'Clique para reativar'}
+                              >
+                                {p.isActive ? <Eye className="w-3 h-3" /> : <EyeOff className="w-3 h-3" />}
+                                {p.isActive ? 'Ativo' : 'Pausado'}
+                              </button>
+
+                              <button
+                                onClick={() => handleTogglePreSale(p)}
+                                className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full font-bold text-[10px] border transition-all ${
+                                  preSaleInfo.isPreSale
+                                    ? 'bg-amber-500/20 border-amber-500/40 text-amber-300 hover:bg-amber-500/30'
+                                    : 'bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-white hover:border-zinc-700'
+                                }`}
+                                title={
+                                  preSaleInfo.isPreSale
+                                    ? 'Clique para mudar para Pronta Entrega (Lote chegou)'
+                                    : 'Clique para colocar em Pré-Venda (Modelo que irá chegar)'
                                 }
-                              }}
-                              className="p-2 rounded-xl bg-zinc-800 hover:bg-emerald-950/70 border border-transparent hover:border-emerald-500/40 text-zinc-300 hover:text-emerald-400 transition-colors"
-                              title="Copiar link desta camisa para enviar ao cliente"
-                            >
-                              <Copy className="w-4 h-4" />
-                            </button>
-                            <a
-                              href={`/produto/${p.slug}`}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="p-2 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-300 hover:text-white transition-colors flex items-center justify-center"
-                              title="Abrir página desta camisa em uma nova aba"
-                            >
-                              <ExternalLink className="w-4 h-4" />
-                            </a>
-                            <button
-                              onClick={() => handleOpenEditModal(p)}
-                              className="p-2 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-200 hover:text-white transition-colors"
-                              title="Editar peça"
-                            >
-                              <Edit2 className="w-4 h-4" />
-                            </button>
-                            <button
-                              onClick={() => handleDeleteProduct(p.id, p.name)}
-                              className="p-2 rounded-xl bg-zinc-800 hover:bg-rose-950/70 border border-transparent hover:border-rose-500/40 text-zinc-400 hover:text-rose-300 transition-colors"
-                              title="Excluir peça"
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    ))
+                              >
+                                <Clock className="w-2.5 h-2.5" />
+                                {preSaleInfo.isPreSale ? 'Pré-Venda' : 'Pronta Entrega'}
+                              </button>
+                            </div>
+                          </td>
+                          <td className="py-3.5 px-4 text-right">
+                            <div className="flex items-center justify-end gap-1.5">
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  if (typeof window !== 'undefined') {
+                                    const url = `${window.location.origin}/produto/${p.slug}`;
+                                    navigator.clipboard.writeText(url);
+                                    alert(`✓ Link copiado com sucesso para a área de transferência:\n${url}`);
+                                  }
+                                }}
+                                className="p-2 rounded-xl bg-zinc-800 hover:bg-emerald-950/70 border border-transparent hover:border-emerald-500/40 text-zinc-300 hover:text-emerald-400 transition-colors"
+                                title="Copiar link desta camisa para enviar ao cliente"
+                              >
+                                <Copy className="w-4 h-4" />
+                              </button>
+                              <a
+                                href={`/produto/${p.slug}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="p-2 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-300 hover:text-white transition-colors flex items-center justify-center"
+                                title="Abrir página desta camisa em uma nova aba"
+                              >
+                                <ExternalLink className="w-4 h-4" />
+                              </a>
+                              <button
+                                onClick={() => handleOpenEditModal(p)}
+                                className="p-2 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-200 hover:text-white transition-colors"
+                                title="Editar peça"
+                              >
+                                <Edit2 className="w-4 h-4" />
+                              </button>
+                              <button
+                                onClick={() => handleDeleteProduct(p.id, p.name)}
+                                className="p-2 rounded-xl bg-zinc-800 hover:bg-rose-950/70 border border-transparent hover:border-rose-500/40 text-zinc-400 hover:text-rose-300 transition-colors"
+                                title="Excluir peça"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })
                   )}
                 </tbody>
               </table>
@@ -1117,7 +1254,7 @@ export default function AdminDashboardClient({
                 <button
                   onClick={() => handleUpdateBatch()}
                   disabled={isUpdatingBatch}
-                  className="px-6 py-3 rounded-2xl bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-500 hover:to-emerald-400 text-white font-extrabold text-xs sm:text-sm flex items-center gap-2 shadow-lg shadow-emerald-950/60 transition-all"
+                  className="px-6 py-3 rounded-2xl bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold text-xs sm:text-sm flex items-center gap-2 shadow-lg shadow-emerald-950/60 transition-all"
                 >
                   <Save className="w-4 h-4" />
                   {isUpdatingBatch ? 'Salvando...' : 'Salvar Alterações do Lote'}
@@ -1217,7 +1354,7 @@ export default function AdminDashboardClient({
                   <button
                     type="button"
                     onClick={() => setIsGeneralReportModalOpen(true)}
-                    className="px-4 py-2 rounded-xl bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-500 hover:to-emerald-400 text-white font-bold text-xs sm:text-sm flex items-center gap-2 shadow-lg shadow-emerald-950/60 transition-all hover:scale-[1.02]"
+                    className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs sm:text-sm flex items-center gap-2 shadow-lg shadow-emerald-950/60 transition-all hover:scale-[1.02]"
                   >
                     <MessageCircle className="w-4 h-4" />
                     Relatório Geral (WhatsApp)
@@ -1236,7 +1373,7 @@ export default function AdminDashboardClient({
                 </div>
               </div>
 
-              {/* FILTROS POR STATUS (PILLS / TABS) */}
+              {/* FILTROS POR STATUS */}
               <div className="flex items-center gap-2 overflow-x-auto pb-3 mb-4 scrollbar-none">
                 <button
                   type="button"
@@ -1556,14 +1693,79 @@ export default function AdminDashboardClient({
             </button>
 
             <h3 className="text-xl font-black text-white flex items-center gap-2 mb-1">
-              <Package className="w-6 h-6 text-rose-500" />
-              {isEditing ? 'Editar Peça' : 'Adicionar Nova Camisa ao Catálogo'}
+              {formData.isPreSale ? (
+                <CalendarClock className="w-6 h-6 text-amber-400" />
+              ) : (
+                <Package className="w-6 h-6 text-rose-500" />
+              )}
+              {isEditing
+                ? 'Editar Peça'
+                : formData.isPreSale
+                ? 'Adicionar Modelo em Pré-Venda (Irá Chegar)'
+                : 'Adicionar Nova Camisa ao Catálogo'}
             </h3>
-            <p className="text-xs text-zinc-400 mb-6">
-              Preencha os dados da camisa para gravar diretamente no banco Neon.
+            <p className="text-xs text-zinc-400 mb-5">
+              {formData.isPreSale
+                ? 'Cadastre um lançamento ou reposição que irá chegar para liberar reservas antecipadas na loja.'
+                : 'Preencha os dados da camisa para disponibilizar no catálogo oficial.'}
             </p>
 
             <form onSubmit={handleSaveProduct} className="space-y-4">
+              {/* SELETOR DE MODO: PRONTA ENTREGA vs PRÉ-VENDA */}
+              <div className="p-3.5 rounded-2xl bg-zinc-950 border border-zinc-800 space-y-3">
+                <label className="block text-xs font-bold text-zinc-300">
+                  Disponibilidade do Modelo:
+                </label>
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setFormData({ ...formData, isPreSale: false })}
+                    className={`py-2.5 px-3 rounded-xl text-xs font-extrabold flex items-center justify-center gap-2 border transition-all ${
+                      !formData.isPreSale
+                        ? 'bg-emerald-600 text-white border-emerald-500 shadow-md shadow-emerald-950/50'
+                        : 'bg-zinc-900 text-zinc-400 border-zinc-800 hover:text-white'
+                    }`}
+                  >
+                    <CheckCircle className="w-4 h-4" />
+                    Pronta Entrega (Em Estoque)
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setFormData({
+                        ...formData,
+                        isPreSale: true,
+                        preSaleEta: formData.preSaleEta || 'Chega em 15 dias',
+                      })
+                    }
+                    className={`py-2.5 px-3 rounded-xl text-xs font-extrabold flex items-center justify-center gap-2 border transition-all ${
+                      formData.isPreSale
+                        ? 'bg-amber-500 text-zinc-950 border-amber-400 shadow-md shadow-amber-950/50'
+                        : 'bg-zinc-900 text-zinc-400 border-zinc-800 hover:text-amber-300'
+                    }`}
+                  >
+                    <CalendarClock className="w-4 h-4" />
+                    ⏳ Pré-Venda (Irá Chegar)
+                  </button>
+                </div>
+
+                {formData.isPreSale && (
+                  <div className="pt-2 border-t border-zinc-800/80">
+                    <label className="block text-xs font-bold text-amber-300 mb-1">
+                      Previsão de Chegada / Aviso da Pré-Venda (Exibido para o cliente)
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="Ex: Chega em 15 dias, Lote de Novembro, Em trânsito..."
+                      value={formData.preSaleEta}
+                      onChange={(e) => setFormData({ ...formData, preSaleEta: e.target.value })}
+                      className="w-full bg-zinc-900 border border-amber-500/40 rounded-xl px-3.5 py-2 text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-amber-400"
+                    />
+                  </div>
+                )}
+              </div>
+
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="sm:col-span-2">
                   <label className="block text-xs font-bold text-zinc-300 mb-1">
@@ -1572,7 +1774,7 @@ export default function AdminDashboardClient({
                   <input
                     type="text"
                     required
-                    placeholder="Ex: Camisa Real Madrid I 24/25 - Torcedor"
+                    placeholder="Ex: Camisa Real Madrid I 25/26 - Torcedor"
                     value={formData.name}
                     onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                     className="w-full bg-zinc-950 border border-zinc-700/80 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-rose-500"
@@ -1614,7 +1816,7 @@ export default function AdminDashboardClient({
                   <input
                     type="text"
                     required
-                    placeholder="Ex: 24/25 ou 1998"
+                    placeholder="Ex: 25/26 ou 1998"
                     value={formData.season}
                     onChange={(e) => setFormData({ ...formData, season: e.target.value })}
                     className="w-full bg-zinc-950 border border-zinc-700/80 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-rose-500"
@@ -1755,7 +1957,7 @@ export default function AdminDashboardClient({
                                   Clique ou solte outro arquivo para trocar a foto
                                 </span>
                                 <span className="text-[10px] text-zinc-500 font-mono">
-                                  {formData.imageUrl.startsWith('data:') ? '✓ Formato WebP otimizado (salvo localmente)' : '✓ Imagem vinculada'}
+                                  {formData.imageUrl.startsWith('data:') ? '✓ Formato WebP otimizado' : '✓ Imagem vinculada'}
                                 </span>
                               </div>
                             </div>
@@ -1824,7 +2026,9 @@ export default function AdminDashboardClient({
               {/* GRADE DE ESTOQUE POR TAMANHO */}
               <div className="pt-2">
                 <label className="block text-xs font-bold text-zinc-300 mb-2">
-                  Grade de Estoque por Tamanho (Unidades):
+                  {formData.isPreSale
+                    ? 'Grade de Vagas / Unidades p/ Reserva na Pré-Venda:'
+                    : 'Grade de Estoque por Tamanho (Unidades):'}
                 </label>
                 <div className={`grid ${formData.variants.length > 5 ? 'grid-cols-4 sm:grid-cols-7' : 'grid-cols-5'} gap-2`}>
                   {formData.variants.map((v, idx) => (
@@ -1884,7 +2088,11 @@ export default function AdminDashboardClient({
                 <button
                   type="submit"
                   disabled={isSavingProduct || isProcessingImage}
-                  className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-500 hover:to-emerald-400 text-white font-bold text-xs sm:text-sm flex items-center gap-2 shadow-lg shadow-emerald-950/60 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                  className={`px-6 py-2.5 rounded-xl font-bold text-xs sm:text-sm flex items-center gap-2 shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed ${
+                    formData.isPreSale
+                      ? 'bg-amber-500 hover:bg-amber-400 text-zinc-950 shadow-amber-950/50'
+                      : 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-emerald-950/60'
+                  }`}
                 >
                   {isProcessingImage ? (
                     <>
@@ -1894,7 +2102,13 @@ export default function AdminDashboardClient({
                   ) : (
                     <>
                       <Save className="w-4 h-4" />
-                      {isSavingProduct ? 'Salvando no Neon...' : isEditing ? 'Salvar Alterações' : 'Cadastrar Peça'}
+                      {isSavingProduct
+                        ? 'Salvando...'
+                        : isEditing
+                        ? 'Salvar Alterações'
+                        : formData.isPreSale
+                        ? 'Cadastrar na Pré-Venda'
+                        : 'Cadastrar Peça'}
                     </>
                   )}
                 </button>
@@ -1904,7 +2118,7 @@ export default function AdminDashboardClient({
         </div>
       )}
 
-      {/* MODAL DETALHES DO PEDIDO (VISUALIZAÇÃO, STATUS & WHATSAPP) */}
+      {/* MODAL DETALHES DO PEDIDO */}
       {selectedOrder && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md overflow-y-auto">
           <div className="bg-zinc-900 border border-zinc-800 rounded-3xl max-w-3xl w-full p-6 sm:p-8 shadow-2xl relative my-8 text-zinc-100 max-h-[90vh] overflow-y-auto">
@@ -1989,7 +2203,6 @@ export default function AdminDashboardClient({
 
             {/* DADOS DO CLIENTE E ENTREGA */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-              {/* CLIENTE */}
               <div className="bg-zinc-950/70 p-4 rounded-2xl border border-zinc-800/80">
                 <span className="text-[11px] font-black uppercase text-rose-400 tracking-wider block mb-2.5">
                   Dados do Cliente
@@ -2026,7 +2239,6 @@ export default function AdminDashboardClient({
                 </div>
               </div>
 
-              {/* ENTREGA */}
               <div className="bg-zinc-950/70 p-4 rounded-2xl border border-zinc-800/80">
                 <span className="text-[11px] font-black uppercase text-amber-400 tracking-wider block mb-2.5">
                   Endereço de Entrega
@@ -2062,32 +2274,42 @@ export default function AdminDashboardClient({
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-zinc-800 text-zinc-300">
-                    {(selectedOrder.items || []).map((item: any, idx: number) => (
-                      <tr key={idx} className="hover:bg-zinc-900/50">
-                        <td className="py-2.5 px-3">
-                          <strong className="text-white block font-bold">
-                            {item.product?.name || 'Camisa de Futebol'}
-                          </strong>
-                          {item.customName && (
-                            <span className="text-[10px] text-amber-300 font-mono block">
-                              Personalizada: {item.customName} #{item.customNumber || 'S/N'} (+R$ 15,00)
-                            </span>
-                          )}
-                        </td>
-                        <td className="py-2.5 px-2 text-center font-bold text-zinc-200">
-                          {item.size}
-                        </td>
-                        <td className="py-2.5 px-2 text-center font-bold text-white">
-                          {item.quantity}
-                        </td>
-                        <td className="py-2.5 px-3 text-right font-mono text-zinc-400">
-                          {formatCurrency(item.unitPriceApplied)}
-                        </td>
-                        <td className="py-2.5 px-3 text-right font-mono font-bold text-emerald-400">
-                          {formatCurrency(item.totalItemPrice)}
-                        </td>
-                      </tr>
-                    ))}
+                    {(selectedOrder.items || []).map((item: any, idx: number) => {
+                      const preSaleInfo = getProductPreSaleInfo(item.product);
+                      return (
+                        <tr key={idx} className="hover:bg-zinc-900/50">
+                          <td className="py-2.5 px-3">
+                            <div className="flex flex-wrap items-center gap-1.5">
+                              <strong className="text-white font-bold">
+                                {item.product?.name || 'Camisa de Futebol'}
+                              </strong>
+                              {preSaleInfo.isPreSale && (
+                                <span className="bg-amber-500/20 text-amber-300 border border-amber-500/40 px-1.5 py-0.5 rounded text-[9px] font-black uppercase">
+                                  ⏳ Pré-Venda
+                                </span>
+                              )}
+                            </div>
+                            {item.customName && (
+                              <span className="text-[10px] text-amber-300 font-mono block">
+                                Personalizada: {item.customName} #{item.customNumber || 'S/N'} (+R$ 15,00)
+                              </span>
+                            )}
+                          </td>
+                          <td className="py-2.5 px-2 text-center font-bold text-zinc-200">
+                            {item.size}
+                          </td>
+                          <td className="py-2.5 px-2 text-center font-bold text-white">
+                            {item.quantity}
+                          </td>
+                          <td className="py-2.5 px-3 text-right font-mono text-zinc-400">
+                            {formatCurrency(item.unitPriceApplied)}
+                          </td>
+                          <td className="py-2.5 px-3 text-right font-mono font-bold text-emerald-400">
+                            {formatCurrency(item.totalItemPrice)}
+                          </td>
+                        </tr>
+                      );
+                    })}
                   </tbody>
                 </table>
               </div>
@@ -2201,7 +2423,6 @@ export default function AdminDashboardClient({
               </div>
             </div>
 
-            {/* PREVIEW DO TEXTO */}
             <div className="bg-zinc-950 border border-zinc-800 rounded-2xl p-4 my-4 font-mono text-xs text-zinc-300 max-h-80 overflow-y-auto whitespace-pre-wrap leading-relaxed shadow-inner">
               {buildGeneralOrdersReport(orders)}
             </div>
@@ -2249,7 +2470,6 @@ export default function AdminDashboardClient({
           </div>
         </div>
       )}
-
     </div>
   );
 }

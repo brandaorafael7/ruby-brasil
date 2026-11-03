@@ -34,6 +34,9 @@ export async function GET(req: Request) {
                 name: true,
                 club: true,
                 season: true,
+                league: true,
+                type: true,
+                gallery: true,
               },
             },
           },
@@ -164,7 +167,17 @@ export async function PUT(req: Request) {
       include: {
         items: {
           include: {
-            product: true,
+            product: {
+              select: {
+                id: true,
+                name: true,
+                club: true,
+                season: true,
+                league: true,
+                type: true,
+                gallery: true,
+              },
+            },
           },
         },
       },

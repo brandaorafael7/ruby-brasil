@@ -9,13 +9,13 @@ import {
   Minus,
   Trash2,
   Truck,
-  Flame,
   ArrowRight,
   ArrowLeft,
   ShieldCheck,
   ShoppingBag,
   Sparkles,
   MessageCircle,
+  Clock,
 } from 'lucide-react';
 import { useCartStore } from '@/store';
 import { formatCurrency, buildWhatsAppOrderMessage, getSizeSurcharge } from '@/lib/utils';
@@ -33,10 +33,8 @@ export default function CartDrawer() {
     getItemUnitPrice,
     getSubtotal,
     getSavings,
-    isFreeShippingEligible,
     getShippingFee,
     getFinalTotal,
-    promotionalBatch,
     selectedShippingOption,
   } = useCartStore();
 
@@ -56,13 +54,9 @@ export default function CartDrawer() {
   const shippingFee = getShippingFee();
   const finalTotal = getFinalTotal();
 
-  const percentToWholesale = Math.min(100, (totalPieces / 50) * 100);
-
   const whatsappNumber = process.env.NEXT_PUBLIC_WHATSAPP_NUMBER || '5579988542410';
-  const whatsappDisplay = '(79) 98854-2410';
 
   const handleWhatsAppQuickQuote = () => {
-    // Endereço de entrega obrigatório no momento da compra
     if (!wholesaleActive) {
       alert('É obrigatório informar o endereço de entrega no checkout para calcular o frete e despachar o pedido.');
       closeCart();
@@ -102,7 +96,6 @@ export default function CartDrawer() {
 
       <div className="fixed inset-y-0 right-0 max-w-full flex pl-10">
         <div className="w-screen max-w-md bg-zinc-950 border-l border-zinc-800 text-white shadow-2xl flex flex-col">
-          
           {/* TOPO DO CARRINHO */}
           <div className="p-4 sm:p-5 border-b border-zinc-800/80 flex items-center justify-between bg-zinc-900/60">
             <div className="flex items-center gap-2.5">
@@ -185,7 +178,9 @@ export default function CartDrawer() {
                 return (
                   <div
                     key={item.cartItemId}
-                    className="flex gap-3 bg-zinc-900/80 border border-zinc-800/80 rounded-xl p-3 relative group"
+                    className={`flex gap-3 bg-zinc-900/80 border rounded-xl p-3 relative group ${
+                      item.isPreSale ? 'border-amber-500/40' : 'border-zinc-800/80'
+                    }`}
                   >
                     <div className="relative w-16 h-16 rounded-lg bg-zinc-950 overflow-hidden shrink-0 border border-zinc-800">
                       <Image
@@ -211,10 +206,16 @@ export default function CartDrawer() {
                         </button>
                       </div>
 
-                      <div className="flex items-center gap-2 mt-0.5 text-[11px] text-zinc-400">
+                      <div className="flex flex-wrap items-center gap-1.5 mt-1 text-[11px] text-zinc-400">
                         <span className="bg-zinc-800 px-1.5 py-0.5 rounded text-zinc-200 font-bold">
                           Tam: {item.size}
                         </span>
+                        {item.isPreSale && (
+                          <span className="bg-amber-500/20 text-amber-300 border border-amber-500/30 px-1.5 py-0.5 rounded font-bold text-[10px] inline-flex items-center gap-1">
+                            <Clock className="w-2.5 h-2.5" />
+                            Pré-Venda{item.preSaleEta ? ` • ${item.preSaleEta}` : ''}
+                          </span>
+                        )}
                         {getSizeSurcharge(item.size) > 0 && (
                           <span className="bg-amber-500/20 text-amber-300 border border-amber-500/30 px-1.5 py-0.5 rounded font-bold text-[10px]">
                             +{formatCurrency(getSizeSurcharge(item.size))} Especial
@@ -256,7 +257,7 @@ export default function CartDrawer() {
                       </div>
                       {isAtMaxStock && maxStock < 999 && (
                         <span className="text-[10px] text-amber-400 font-semibold block mt-1">
-                          Limite máximo do estoque ({maxStock} un)
+                          Limite máximo disponível ({maxStock} un)
                         </span>
                       )}
                     </div>
@@ -341,7 +342,6 @@ export default function CartDrawer() {
               </div>
             </div>
           )}
-
         </div>
       </div>
     </div>

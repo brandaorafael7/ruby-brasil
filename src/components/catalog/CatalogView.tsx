@@ -15,15 +15,12 @@ import {
   PackageCheck,
   Zap,
   Award,
-  Users,
   ShoppingCart,
-  CheckCircle2,
-  HelpCircle,
   Clock,
-  Phone,
-  Layers,
+  CalendarClock,
 } from 'lucide-react';
 import { Product } from '@/types';
+import { getProductPreSaleInfo } from '@/lib/utils';
 import ProductCard from '@/components/product/ProductCard';
 
 interface Props {
@@ -32,6 +29,7 @@ interface Props {
 
 const CATEGORIES = [
   'Todas as Categorias',
+  'Pré-Venda',
   'Infantil',
   'Brasileirão',
   'Premier League',
@@ -47,6 +45,11 @@ const FAQS = [
     question: 'Qual o valor unitário das camisas?',
     answer:
       'Trabalhamos com preço justo direto de fábrica a partir de R$ 60,00 por camisa para o padrão Tailandês 1:1 oficial.',
+  },
+  {
+    question: 'Como funciona a Pré-Venda de modelos que irão chegar?',
+    answer:
+      'Na seção de Pré-Venda você encontra os lançamentos e reposições que já estão em trânsito para o nosso estoque. Você pode reservar seus tamanhos antecipadamente pelo site e garantir prioridade total no envio assim que o lote chegar.',
   },
   {
     question: 'Como funciona o cálculo do frete?',
@@ -107,6 +110,10 @@ export default function CatalogView({ initialProducts }: Props) {
   const [selectedCategory, setSelectedCategory] = useState('Todas as Categorias');
   const [openFaq, setOpenFaq] = useState<number | null>(0);
 
+  const preSaleProducts = useMemo(() => {
+    return initialProducts.filter((p) => getProductPreSaleInfo(p).isPreSale);
+  }, [initialProducts]);
+
   const kidsProducts = useMemo(() => {
     return initialProducts.filter(
       (p) =>
@@ -120,27 +127,30 @@ export default function CatalogView({ initialProducts }: Props) {
 
   const filteredProducts = useMemo(() => {
     return initialProducts.filter((product) => {
+      const preSaleInfo = getProductPreSaleInfo(product);
       const query = searchTerm.toLowerCase().trim();
       const matchesSearch =
         !query ||
         product.name.toLowerCase().includes(query) ||
         (product.club && product.club.toLowerCase().includes(query)) ||
         (product.league && product.league.toLowerCase().includes(query)) ||
-        (product.description && product.description.toLowerCase().includes(query));
+        (product.description && product.description.toLowerCase().includes(query)) ||
+        (preSaleInfo.isPreSale && 'pré-venda pre-venda lançamento chegando'.includes(query));
 
       const matchesCategory =
         selectedCategory === 'Todas as Categorias' ||
-        (selectedCategory === 'Infantil' && (
-          product.type === 'INFANTIL' ||
-          product.league.toLowerCase().includes('infantil') ||
-          product.name.toLowerCase().includes('infantil') ||
-          product.name.toLowerCase().includes('kids') ||
-          product.description?.toLowerCase().includes('infantil')
-        )) ||
+        (selectedCategory === 'Pré-Venda' && preSaleInfo.isPreSale) ||
+        (selectedCategory === 'Infantil' &&
+          (product.type === 'INFANTIL' ||
+            product.league.toLowerCase().includes('infantil') ||
+            product.name.toLowerCase().includes('infantil') ||
+            product.name.toLowerCase().includes('kids') ||
+            product.description?.toLowerCase().includes('infantil'))) ||
         product.league.toLowerCase().includes(selectedCategory.toLowerCase()) ||
         product.type.toLowerCase().includes(selectedCategory.toLowerCase()) ||
         (selectedCategory === 'Feminina' && product.type === 'FEMININA') ||
-        (selectedCategory === 'Retrô' && (product.type === 'RETRO' || product.league.toLowerCase().includes('retrô')));
+        (selectedCategory === 'Retrô' &&
+          (product.type === 'RETRO' || product.league.toLowerCase().includes('retrô')));
 
       return matchesSearch && matchesCategory;
     });
@@ -152,16 +162,10 @@ export default function CatalogView({ initialProducts }: Props) {
 
   return (
     <div className="min-h-screen bg-zinc-950 text-zinc-100 flex flex-col">
-      
-      {/* 1. HERO SECTION (ESTILO MOBIRISE MODERNO) */}
-      <section className="relative overflow-hidden pt-8 pb-16 sm:pt-14 sm:pb-20 border-b border-zinc-900 bg-gradient-to-b from-zinc-950 via-zinc-900/40 to-zinc-950">
-        
-        {/* Glow de fundo */}
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-6xl h-80 bg-rose-600/10 blur-[120px] pointer-events-none rounded-full" />
-        
+      {/* 1. HERO SECTION */}
+      <section className="relative overflow-hidden pt-8 pb-16 sm:pt-14 sm:pb-20 border-b border-zinc-900 bg-zinc-950">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
           <div className="text-center max-w-3xl mx-auto">
-            
             {/* Badge de Destaque */}
             <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-rose-500/10 border border-rose-500/30 text-rose-400 text-xs font-black tracking-wider uppercase mb-6 shadow-sm">
               <Sparkles className="w-3.5 h-3.5" />
@@ -171,14 +175,12 @@ export default function CatalogView({ initialProducts }: Props) {
             {/* Título Principal */}
             <h1 className="text-3xl sm:text-5xl lg:text-6xl font-black text-white tracking-tight leading-[1.1] uppercase">
               Camisas de Futebol <br />
-              <span className="bg-gradient-to-r from-rose-500 via-amber-400 to-rose-400 bg-clip-text text-transparent">
-                Direto de Fábrica
-              </span>
+              <span className="text-rose-500">Direto de Fábrica</span>
             </h1>
 
             {/* Subtítulo */}
             <p className="mt-4 sm:mt-5 text-sm sm:text-base text-zinc-300 leading-relaxed max-w-2xl mx-auto font-medium">
-              Padrão oficial Tailandês 1:1 com tecido tecnológico Dri-Fit, bordados impecáveis e etiquetas autênticas. Compre para sua coleção ou para revender.
+              Padrão oficial Tailandês 1:1 com tecido tecnológico Dri-Fit, bordados impecáveis e etiquetas autênticas. Compre pronta entrega ou reserve modelos exclusivos na pré-venda.
             </p>
 
             {/* FAIXA DE CONDIÇÕES COMERCIAIS */}
@@ -191,8 +193,7 @@ export default function CatalogView({ initialProducts }: Props) {
                 </div>
               </div>
 
-
-              <div className="flex items-center gap-3 p-2.5 rounded-xl bg-zinc-950/80 border border-amber-500/30 shadow-sm shadow-amber-950/30">
+              <div className="flex items-center gap-3 p-2.5 rounded-xl bg-zinc-950/80 border border-amber-500/30 shadow-sm">
                 <Truck className="w-5 h-5 text-amber-400 shrink-0" />
                 <div className="text-left text-xs">
                   <span className="text-zinc-400 block text-[10px]">Envio para todo o Brasil</span>
@@ -205,17 +206,17 @@ export default function CatalogView({ initialProducts }: Props) {
             <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-4">
               <a
                 href="#catalogo"
-                className="w-full sm:w-auto px-8 py-3.5 rounded-xl bg-gradient-to-r from-rose-600 to-rose-500 hover:from-rose-500 hover:to-rose-400 text-white font-extrabold text-sm sm:text-base flex items-center justify-center gap-2 shadow-lg shadow-rose-950/50 transition-all hover:scale-[1.02]"
+                className="w-full sm:w-auto px-8 py-3.5 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-extrabold text-sm sm:text-base flex items-center justify-center gap-2 shadow-lg shadow-rose-950/50 transition-all hover:scale-[1.02]"
               >
                 <ShoppingCart className="w-5 h-5" />
                 Explorar Catálogo de Peças
               </a>
               <a
-                href="#como-funciona"
-                className="w-full sm:w-auto px-7 py-3.5 rounded-xl bg-zinc-900 hover:bg-zinc-800 border border-zinc-700 text-white font-bold text-sm sm:text-base flex items-center justify-center gap-2 transition-all hover:border-zinc-500"
+                href="#pre-venda"
+                className="w-full sm:w-auto px-7 py-3.5 rounded-xl bg-zinc-900 hover:bg-zinc-800 border border-amber-500/40 text-amber-300 hover:text-amber-200 font-bold text-sm sm:text-base flex items-center justify-center gap-2 transition-all"
               >
-                <Sparkles className="w-5 h-5 text-emerald-400" />
-                Como Funciona a Compra
+                <Clock className="w-5 h-5 text-amber-400" />
+                Ver Pré-Venda (Modelos Chegando)
               </a>
             </div>
 
@@ -238,16 +239,14 @@ export default function CatalogView({ initialProducts }: Props) {
                 <span className="text-[11px] text-zinc-400 font-medium">Envio com Rastreio</span>
               </div>
             </div>
-
           </div>
         </div>
       </section>
 
-      {/* 2. BARRA DE BENEFÍCIOS (MOBIRISE FEATURES BLOCK) */}
+      {/* 2. BARRA DE BENEFÍCIOS */}
       <section className="py-12 bg-zinc-950 border-b border-zinc-900">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            
             <div className="bg-zinc-900/60 border border-zinc-800/80 rounded-2xl p-5 hover:border-rose-500/40 transition-colors">
               <div className="w-10 h-10 rounded-xl bg-rose-500/10 border border-rose-500/20 flex items-center justify-center text-rose-400 mb-3">
                 <Truck className="w-5 h-5" />
@@ -260,11 +259,11 @@ export default function CatalogView({ initialProducts }: Props) {
 
             <div className="bg-zinc-900/60 border border-zinc-800/80 rounded-2xl p-5 hover:border-amber-500/40 transition-colors">
               <div className="w-10 h-10 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-400 mb-3">
-                <Flame className="w-5 h-5" />
+                <CalendarClock className="w-5 h-5" />
               </div>
-              <h3 className="text-sm font-black text-white">Preço Direto de Fábrica</h3>
+              <h3 className="text-sm font-black text-white">Pré-Venda Exclusiva</h3>
               <p className="text-xs text-zinc-400 mt-1 leading-relaxed">
-                Valores imbatíveis com padrão oficial Tailandês 1:1 e envio rápido para todo o país.
+                Reserve antecipadamente os lançamentos e modelos que estão chegando antes que esgotem no lote.
               </p>
             </div>
 
@@ -287,44 +286,62 @@ export default function CatalogView({ initialProducts }: Props) {
                 Tire dúvidas, personalize peças e finalize seu pedido com nossa equipe de atendimento no carrinho.
               </p>
             </div>
-
           </div>
         </div>
       </section>
 
       {/* 3. SEÇÃO PRINCIPAL DE CATÁLOGO E BUSCA */}
       <section id="catalogo" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-10 pb-16 flex-1 w-full">
-        
         {/* Cabeçalho do Catálogo */}
         <div className="mb-6">
           <span className="text-[11px] font-black uppercase tracking-wider text-rose-400 block mb-1">
-            Pronta Entrega • Despacho Rápido
+            Pronta Entrega & Pré-Venda • Despacho Rápido
           </span>
           <h2 className="text-2xl sm:text-3xl font-black text-white">
             Catálogo Completo de Peças
           </h2>
           <p className="text-xs sm:text-sm text-zinc-400 mt-1">
-            Escolha seus modelos, selecione os tamanhos desejados e adicione ao carrinho.
+            Escolha seus modelos em pronta entrega ou reserve lançamentos que irão chegar na aba Pré-Venda.
           </p>
         </div>
 
         {/* BARRA DE CATEGORIAS ACIMA */}
         <div className="mb-4">
           <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-none">
-            {CATEGORIES.map((cat) => (
-              <button
-                key={cat}
-                type="button"
-                onClick={() => setSelectedCategory(cat)}
-                className={`px-4 py-2 rounded-xl text-xs sm:text-sm font-bold whitespace-nowrap transition-all duration-200 border ${
-                  selectedCategory === cat
-                    ? 'bg-rose-600 text-white border-rose-500 shadow-lg shadow-rose-950/60 scale-[1.02]'
-                    : 'bg-zinc-900/90 text-zinc-400 hover:text-white border-zinc-800 hover:border-zinc-700'
-                }`}
-              >
-                {cat}
-              </button>
-            ))}
+            {CATEGORIES.map((cat) => {
+              const isPreSaleTab = cat === 'Pré-Venda';
+              const isSelected = selectedCategory === cat;
+              return (
+                <button
+                  key={cat}
+                  type="button"
+                  onClick={() => setSelectedCategory(cat)}
+                  className={`px-4 py-2 rounded-xl text-xs sm:text-sm font-bold whitespace-nowrap transition-all duration-200 border inline-flex items-center gap-1.5 ${
+                    isSelected
+                      ? isPreSaleTab
+                        ? 'bg-amber-500 text-zinc-950 border-amber-400 shadow-lg shadow-amber-950/60 scale-[1.02]'
+                        : 'bg-rose-600 text-white border-rose-500 shadow-lg shadow-rose-950/60 scale-[1.02]'
+                      : isPreSaleTab
+                      ? 'bg-amber-500/10 text-amber-300 hover:bg-amber-500/20 border-amber-500/30'
+                      : 'bg-zinc-900/90 text-zinc-400 hover:text-white border-zinc-800 hover:border-zinc-700'
+                  }`}
+                >
+                  {isPreSaleTab && <Clock className="w-3.5 h-3.5" />}
+                  <span>{cat}</span>
+                  {isPreSaleTab && preSaleProducts.length > 0 && (
+                    <span
+                      className={`text-[10px] font-black px-1.5 py-0.5 rounded-full ${
+                        isSelected
+                          ? 'bg-zinc-950 text-amber-400'
+                          : 'bg-amber-500/20 text-amber-300'
+                      }`}
+                    >
+                      {preSaleProducts.length}
+                    </span>
+                  )}
+                </button>
+              );
+            })}
           </div>
         </div>
 
@@ -336,7 +353,7 @@ export default function CatalogView({ initialProducts }: Props) {
               type="text"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              placeholder="Buscar camisa por nome, clube, seleção ou edição..."
+              placeholder="Buscar camisa por nome, clube, seleção, pré-venda ou edição..."
               className="w-full bg-zinc-950 border border-zinc-700/80 rounded-xl pl-12 pr-4 py-3 sm:py-3.5 text-xs sm:text-base text-white placeholder-zinc-500 focus:outline-none focus:border-rose-500 transition-colors shadow-inner"
             />
             {searchTerm && (
@@ -363,9 +380,15 @@ export default function CatalogView({ initialProducts }: Props) {
         {/* LISTAGEM DE PRODUTOS */}
         {filteredProducts.length === 0 ? (
           <div className="bg-zinc-900/40 border border-zinc-800 rounded-2xl p-12 text-center text-zinc-500">
-            <p className="font-bold text-lg text-zinc-300">Nenhuma camisa encontrada</p>
+            <p className="font-bold text-lg text-zinc-300">
+              {selectedCategory === 'Pré-Venda'
+                ? 'Nenhum modelo em pré-venda no momento'
+                : 'Nenhuma camisa encontrada'}
+            </p>
             <p className="text-xs text-zinc-500 mt-1">
-              Tente buscar por outro termo ou selecione &ldquo;Todas as Categorias&rdquo;.
+              {selectedCategory === 'Pré-Venda'
+                ? 'Novos modelos que irão chegar serão listados aqui em breve. Enquanto isso, confira nosso catálogo a pronta entrega!'
+                : 'Tente buscar por outro termo ou selecione "Todas as Categorias".'}
             </p>
             <button
               type="button"
@@ -375,7 +398,7 @@ export default function CatalogView({ initialProducts }: Props) {
               }}
               className="mt-4 px-4 py-2 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-xs font-bold text-white transition-colors"
             >
-              Limpar Filtros
+              Ver Todo o Catálogo
             </button>
           </div>
         ) : (
@@ -385,16 +408,113 @@ export default function CatalogView({ initialProducts }: Props) {
             ))}
           </div>
         )}
+      </section>
 
+      {/* SEÇÃO EXCLUSIVA: PRÉ-VENDA (MODELOS QUE IRÃO CHEGAR) */}
+      <section
+        id="pre-venda"
+        className="py-16 bg-zinc-900/40 border-t border-b border-zinc-900 relative overflow-hidden"
+      >
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+          <div className="flex flex-col md:flex-row items-start md:items-end justify-between gap-6 mb-10">
+            <div>
+              <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-400 text-xs font-black tracking-wider uppercase mb-3 shadow-sm">
+                <Clock className="w-3.5 h-3.5" />
+                <span>Pré-Venda Oficial</span>
+                <span className="text-zinc-500">•</span>
+                <span className="text-white">Modelos que Irão Chegar</span>
+              </div>
+              <h2 className="text-2xl sm:text-4xl font-black text-white tracking-tight">
+                Lançamentos & Reposições em Pré-Venda
+              </h2>
+              <p className="text-xs sm:text-sm text-zinc-400 mt-2 max-w-2xl leading-relaxed">
+                Garanta antecipadamente os modelos mais aguardados que já estão a caminho do nosso estoque. Ao reservar na pré-venda, suas peças ficam separadas com prioridade de envio assim que o lote chegar.
+              </p>
+            </div>
+
+            <div className="flex items-center gap-3">
+              <button
+                type="button"
+                onClick={() => {
+                  setSelectedCategory('Pré-Venda');
+                  document.getElementById('catalogo')?.scrollIntoView({ behavior: 'smooth' });
+                }}
+                className="px-5 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-zinc-950 font-extrabold text-xs sm:text-sm flex items-center gap-2 shadow-lg shadow-amber-950/40 transition-all hover:scale-[1.02]"
+              >
+                <span>Filtrar Pré-Venda no Catálogo</span>
+                <ArrowRight className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+
+          {/* CARDS DE VANTAGENS DA PRÉ-VENDA */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-10">
+            <div className="bg-zinc-950/80 border border-zinc-800/80 rounded-2xl p-4 flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-400 shrink-0">
+                <CalendarClock className="w-5 h-5" />
+              </div>
+              <div>
+                <strong className="text-xs font-black text-white block">Reserva Garantida</strong>
+                <span className="text-[11px] text-zinc-400">Garanta seus tamanhos antes do lote esgotar</span>
+              </div>
+            </div>
+
+            <div className="bg-zinc-950/80 border border-zinc-800/80 rounded-2xl p-4 flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-rose-500/10 border border-rose-500/20 flex items-center justify-center text-rose-400 shrink-0">
+                <Sparkles className="w-5 h-5" />
+              </div>
+              <div>
+                <strong className="text-xs font-black text-white block">Lançamentos Exclusivos</strong>
+                <span className="text-[11px] text-zinc-400">Modelos novos que estão chegando da fábrica</span>
+              </div>
+            </div>
+
+            <div className="bg-zinc-950/80 border border-zinc-800/80 rounded-2xl p-4 flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400 shrink-0">
+                <Truck className="w-5 h-5" />
+              </div>
+              <div>
+                <strong className="text-xs font-black text-white block">Prioridade no Despacho</strong>
+                <span className="text-[11px] text-zinc-400">Envio imediato assim que o lote der entrada</span>
+              </div>
+            </div>
+          </div>
+
+          {/* VITRINE DE PRODUTOS EM PRÉ-VENDA */}
+          {preSaleProducts.length > 0 ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
+              {preSaleProducts.map((product) => (
+                <ProductCard key={product.id} product={product} />
+              ))}
+            </div>
+          ) : (
+            <div className="bg-zinc-950/80 border border-zinc-800 rounded-3xl p-8 text-center max-w-3xl mx-auto shadow-xl">
+              <div className="w-14 h-14 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-amber-400 flex items-center justify-center mx-auto mb-3">
+                <CalendarClock className="w-7 h-7" />
+              </div>
+              <h3 className="text-lg font-black text-white">
+                Próximo Lote de Lançamentos em Preparação
+              </h3>
+              <p className="text-xs text-zinc-300 mt-2 max-w-lg mx-auto leading-relaxed">
+                Fique de olho! Sempre que novos modelos estiverem em trânsito para o Brasil, eles aparecerão aqui para você reservar antecipadamente.
+              </p>
+              <div className="mt-5 flex items-center justify-center">
+                <a
+                  href="#catalogo"
+                  className="px-6 py-3 rounded-xl bg-zinc-900 hover:bg-zinc-800 border border-zinc-700 text-white font-bold text-xs sm:text-sm flex items-center gap-2 transition-all"
+                >
+                  <ShoppingCart className="w-4 h-4 text-rose-400" />
+                  <span>Ver Modelos a Pronta Entrega</span>
+                </a>
+              </div>
+            </div>
+          )}
+        </div>
       </section>
 
       {/* SEÇÃO EXCLUSIVA: CAMISAS & KITS INFANTIS */}
-      <section id="infantil" className="py-16 bg-gradient-to-b from-zinc-950 via-zinc-900/60 to-zinc-950 border-t border-b border-zinc-900 relative overflow-hidden">
-        <div className="absolute top-1/2 left-0 w-80 h-80 bg-amber-500/10 blur-[120px] pointer-events-none rounded-full" />
-        <div className="absolute bottom-0 right-0 w-80 h-80 bg-rose-600/10 blur-[120px] pointer-events-none rounded-full" />
-
+      <section id="infantil" className="py-16 bg-zinc-950 border-b border-zinc-900 relative overflow-hidden">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-          
           <div className="flex flex-col md:flex-row items-start md:items-end justify-between gap-6 mb-10">
             <div>
               <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-400 text-xs font-black tracking-wider uppercase mb-3 shadow-sm">
@@ -438,7 +558,7 @@ export default function CatalogView({ initialProducts }: Props) {
 
           {/* CARDS DE DESTAQUE DA LINHA INFANTIL */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-10">
-            <div className="bg-zinc-950/80 border border-zinc-800/80 rounded-2xl p-4 flex items-center gap-3">
+            <div className="bg-zinc-900/60 border border-zinc-800/80 rounded-2xl p-4 flex items-center gap-3">
               <div className="w-10 h-10 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-400 shrink-0">
                 <PackageCheck className="w-5 h-5" />
               </div>
@@ -448,7 +568,7 @@ export default function CatalogView({ initialProducts }: Props) {
               </div>
             </div>
 
-            <div className="bg-zinc-950/80 border border-zinc-800/80 rounded-2xl p-4 flex items-center gap-3">
+            <div className="bg-zinc-900/60 border border-zinc-800/80 rounded-2xl p-4 flex items-center gap-3">
               <div className="w-10 h-10 rounded-xl bg-rose-500/10 border border-rose-500/20 flex items-center justify-center text-rose-400 shrink-0">
                 <Sparkles className="w-5 h-5" />
               </div>
@@ -458,7 +578,7 @@ export default function CatalogView({ initialProducts }: Props) {
               </div>
             </div>
 
-            <div className="bg-zinc-950/80 border border-zinc-800/80 rounded-2xl p-4 flex items-center gap-3">
+            <div className="bg-zinc-900/60 border border-zinc-800/80 rounded-2xl p-4 flex items-center gap-3">
               <div className="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400 shrink-0">
                 <Truck className="w-5 h-5" />
               </div>
@@ -502,14 +622,12 @@ export default function CatalogView({ initialProducts }: Props) {
               </div>
             </div>
           )}
-
         </div>
       </section>
 
-      {/* 4. COMO FUNCIONA O PEDIDO (MOBIRISE STEP-BY-STEP) */}
-      <section id="como-funciona" className="py-14 bg-zinc-900/40 border-t border-b border-zinc-900">
+      {/* 4. COMO FUNCIONA O PEDIDO */}
+      <section id="como-funciona" className="py-14 bg-zinc-900/40 border-b border-zinc-900">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          
           <div className="text-center max-w-2xl mx-auto mb-12">
             <span className="text-[11px] font-black uppercase tracking-wider text-rose-400 block mb-1">
               Passo a Passo Simples
@@ -523,7 +641,6 @@ export default function CatalogView({ initialProducts }: Props) {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            
             <div className="bg-zinc-950 p-6 rounded-2xl border border-zinc-800 relative group hover:border-zinc-700 transition-all">
               <div className="w-12 h-12 rounded-xl bg-rose-600/10 border border-rose-600/30 flex items-center justify-center text-rose-400 font-black text-lg mb-4">
                 01
@@ -532,7 +649,7 @@ export default function CatalogView({ initialProducts }: Props) {
                 1. Monte seu Carrinho
               </h3>
               <p className="text-xs text-zinc-400 leading-relaxed">
-                Navegue pelas camisas nacionais, europeias e retrôs. Selecione os tamanhos (P ao XG) e adicione tudo ao seu carrinho com total flexibilidade.
+                Navegue pelas camisas a pronta entrega ou modelos em pré-venda. Selecione os tamanhos e adicione tudo ao seu carrinho com total flexibilidade.
               </p>
             </div>
 
@@ -556,19 +673,16 @@ export default function CatalogView({ initialProducts }: Props) {
                 3. Finalize no WhatsApp
               </h3>
               <p className="text-xs text-zinc-400 leading-relaxed">
-                Clique em &ldquo;Finalizar no WhatsApp&rdquo; no seu carrinho para enviar seu pedido pronto diretamente para nossa equipe de atendimento. Confirmamos tudo e despachamos com código de rastreio!
+                Clique em &ldquo;Finalizar no WhatsApp&rdquo; para enviar seu pedido pronto diretamente para nossa equipe de atendimento. Confirmamos tudo e despachamos com código de rastreio!
               </p>
             </div>
-
           </div>
-
         </div>
       </section>
 
-      {/* 5. DIFERENCIAIS DA QUALIDADE TAILANDESA 1:1 (MOBIRISE QUALITY BLOCK) */}
+      {/* 5. DIFERENCIAIS DA QUALIDADE TAILANDESA 1:1 */}
       <section className="py-14 bg-zinc-950 border-b border-zinc-900">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          
           <div className="text-center max-w-2xl mx-auto mb-12">
             <span className="text-[11px] font-black uppercase tracking-wider text-rose-400 block mb-1">
               Garantia de Qualidade
@@ -582,7 +696,6 @@ export default function CatalogView({ initialProducts }: Props) {
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            
             <div className="p-5 rounded-2xl bg-zinc-900/50 border border-zinc-800">
               <ShieldCheck className="w-8 h-8 text-rose-500 mb-3" />
               <h4 className="text-sm font-extrabold text-white">Tecido Dri-Fit Tecnológico</h4>
@@ -614,16 +727,13 @@ export default function CatalogView({ initialProducts }: Props) {
                 Postagem rápida para todo o território nacional com código de rastreio direto no seu WhatsApp.
               </p>
             </div>
-
           </div>
-
         </div>
       </section>
 
-      {/* 6. DEPOIMENTOS (MOBIRISE TESTIMONIALS BLOCK) */}
+      {/* 6. DEPOIMENTOS */}
       <section className="py-14 bg-zinc-900/30 border-b border-zinc-900">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          
           <div className="text-center max-w-2xl mx-auto mb-12">
             <span className="text-[11px] font-black uppercase tracking-wider text-rose-400 block mb-1">
               Prova Social
@@ -666,14 +776,12 @@ export default function CatalogView({ initialProducts }: Props) {
               </div>
             ))}
           </div>
-
         </div>
       </section>
 
-      {/* 7. PERGUNTAS FREQUENTES (MOBIRISE ACCORDION FAQ BLOCK) */}
+      {/* 7. PERGUNTAS FREQUENTES */}
       <section className="py-14 bg-zinc-950 border-b border-zinc-900">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-          
           <div className="text-center mb-10">
             <span className="text-[11px] font-black uppercase tracking-wider text-rose-400 block mb-1">
               Dúvidas Comuns
@@ -716,14 +824,12 @@ export default function CatalogView({ initialProducts }: Props) {
               );
             })}
           </div>
-
         </div>
       </section>
 
-      {/* 8. BANNER FINAL CALL-TO-ACTION (MOBIRISE CTA BLOCK) */}
-      <section className="py-16 bg-gradient-to-t from-zinc-950 via-zinc-900 to-zinc-950 relative overflow-hidden">
+      {/* 8. BANNER FINAL CALL-TO-ACTION */}
+      <section className="py-16 bg-zinc-950 relative overflow-hidden">
         <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 text-center relative z-10">
-          
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs font-bold mb-4">
             <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
             Lote de Fábrica Ativo com Condições Promocionais
@@ -739,23 +845,21 @@ export default function CatalogView({ initialProducts }: Props) {
           <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-3">
             <a
               href="#catalogo"
-              className="w-full sm:w-auto px-8 py-3.5 rounded-xl bg-gradient-to-r from-rose-600 to-rose-500 hover:from-rose-500 hover:to-rose-400 text-white font-extrabold text-sm sm:text-base flex items-center justify-center gap-2 shadow-lg shadow-rose-950/50 transition-all hover:scale-[1.02]"
+              className="w-full sm:w-auto px-8 py-3.5 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-extrabold text-sm sm:text-base flex items-center justify-center gap-2 shadow-lg shadow-rose-950/50 transition-all hover:scale-[1.02]"
             >
               <ShoppingCart className="w-5 h-5" />
               Escolher Peças no Catálogo
             </a>
             <a
-              href="#como-funciona"
+              href="#pre-venda"
               className="w-full sm:w-auto px-7 py-3.5 rounded-xl bg-zinc-900 hover:bg-zinc-800 border border-zinc-700 text-white font-bold text-sm sm:text-base flex items-center justify-center gap-2 transition-all hover:border-zinc-500"
             >
-              <Sparkles className="w-5 h-5 text-amber-400" />
-              Ver Como Funciona a Compra
+              <Clock className="w-5 h-5 text-amber-400" />
+              Ver Modelos em Pré-Venda
             </a>
           </div>
-
         </div>
       </section>
-
     </div>
   );
 }

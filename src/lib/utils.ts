@@ -17,6 +17,87 @@ export const ADULT_SIZES = ['P', 'M', 'G', 'GG', 'XG', '3XL', '4XL'];
 export const FEMALE_SIZES = ['P', 'M', 'G', 'GG', 'XG'];
 export const KIDS_SIZES = ['16', '18', '20', '22', '24', '26', '28'];
 
+export interface PreSaleMetadata {
+  isPreSale: boolean;
+  preSaleEta: string;
+}
+
+export function getProductPreSaleInfo(
+  product?: {
+    isPreSale?: boolean;
+    preSaleEta?: string | null;
+    gallery?: string | null;
+    league?: string | null;
+    type?: string | null;
+    name?: string | null;
+  } | null
+): PreSaleMetadata {
+  if (!product) {
+    return { isPreSale: false, preSaleEta: '' };
+  }
+
+  if (typeof product.isPreSale === 'boolean') {
+    return {
+      isPreSale: product.isPreSale,
+      preSaleEta: product.preSaleEta || '',
+    };
+  }
+
+  if (product.gallery) {
+    try {
+      const parsed = JSON.parse(product.gallery);
+      if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+        if (typeof parsed.isPreSale === 'boolean') {
+          return {
+            isPreSale: parsed.isPreSale,
+            preSaleEta: typeof parsed.preSaleEta === 'string' ? parsed.preSaleEta : '',
+          };
+        }
+      }
+    } catch {
+      // ignore invalid JSON in gallery
+    }
+  }
+
+  const lowerLeague = (product.league || '').toLowerCase();
+  const lowerType = (product.type || '').toLowerCase();
+  const isFromText =
+    lowerLeague.includes('pré-venda') ||
+    lowerLeague.includes('pre-venda') ||
+    lowerLeague.includes('prevenda') ||
+    lowerType === 'pre_venda' ||
+    lowerType === 'pré-venda';
+
+  return {
+    isPreSale: isFromText,
+    preSaleEta: product.preSaleEta || '',
+  };
+}
+
+export function serializeProductPreSaleGallery(
+  existingGallery: string | null | undefined,
+  meta: { isPreSale: boolean; preSaleEta?: string | null }
+): string {
+  let baseObj: Record<string, any> = {};
+  if (existingGallery) {
+    try {
+      const parsed = JSON.parse(existingGallery);
+      if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+        baseObj = { ...parsed };
+      } else if (Array.isArray(parsed)) {
+        baseObj = { images: parsed };
+      }
+    } catch {
+      // ignore
+    }
+  }
+
+  baseObj.isPreSale = Boolean(meta.isPreSale);
+  baseObj.preSaleEta = meta.preSaleEta ? String(meta.preSaleEta).trim() : '';
+
+  return JSON.stringify(baseObj);
+}
+
 export function getStandardSizesForProduct(
   productOrType?: { type?: string; league?: string; name?: string } | string | null
 ): string[] {
@@ -86,7 +167,6 @@ export function isValidCPF(cpf: string): boolean {
   return true;
 }
 
-
 export function buildWhatsAppOrderMessage({
   items,
   form,
@@ -138,7 +218,10 @@ export function buildWhatsAppOrderMessage({
     const customTxt = item.customName
       ? ` [Personalizada: ${item.customName} #${item.customNumber || 'S/N'}]`
       : '';
-    text += `${index + 1}. *${item.name}*\n`;
+    const preSaleTxt = item.isPreSale
+      ? ` [⏳ PRÉ-VENDA${item.preSaleEta ? `: ${item.preSaleEta}` : ''}]`
+      : '';
+    text += `${index + 1}. *${item.name}*${preSaleTxt}\n`;
     text += `   ↳ Tamanho: *${item.size}* | Qtd: *${item.quantity} un*${customTxt}\n`;
   });
 

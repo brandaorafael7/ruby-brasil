@@ -3,10 +3,25 @@
 import React, { useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { ShoppingBag, Shirt, Check, Sparkles, ExternalLink, Copy, CheckCircle2 } from 'lucide-react';
+import {
+  ShoppingBag,
+  Shirt,
+  Check,
+  Sparkles,
+  ExternalLink,
+  Copy,
+  CheckCircle2,
+  Clock,
+  CalendarClock,
+} from 'lucide-react';
 import { Product } from '@/types';
 import { useCartStore } from '@/store';
-import { formatCurrency, getSizeSurcharge, getStandardSizesForProduct } from '@/lib/utils';
+import {
+  formatCurrency,
+  getSizeSurcharge,
+  getStandardSizesForProduct,
+  getProductPreSaleInfo,
+} from '@/lib/utils';
 import CustomizationModal from './CustomizationModal';
 
 interface Props {
@@ -22,11 +37,12 @@ export default function ProductCard({ product }: Props) {
     product.name?.toLowerCase().includes('infantil') ||
     product.name?.toLowerCase().includes('kids');
 
+  const { isPreSale, preSaleEta } = getProductPreSaleInfo(product);
+
   const standardSizes = getStandardSizesForProduct(product);
 
   const sizeInfoList = standardSizes.map((size) => {
     const variant = product.variants?.find((v) => v.size === size);
-    // Respect stockQuantity from product.variants if loaded; fallback to available if product has no variants defined
     const stock = variant !== undefined ? variant.stockQuantity : (product.variants?.length ? 0 : 50);
     const inStock = stock > 0;
     const surcharge = getSizeSurcharge(size);
@@ -99,8 +115,13 @@ export default function ProductCard({ product }: Props) {
 
   return (
     <>
-      <div className="bg-zinc-900/90 border border-zinc-800 rounded-2xl overflow-hidden hover:border-rose-500/50 transition-all duration-300 flex flex-col group shadow-lg shadow-black/40 hover:shadow-rose-950/20">
-        
+      <div
+        className={`bg-zinc-900/90 border rounded-2xl overflow-hidden transition-all duration-300 flex flex-col group shadow-lg shadow-black/40 ${
+          isPreSale
+            ? 'border-amber-500/40 hover:border-amber-400/70'
+            : 'border-zinc-800 hover:border-rose-500/50'
+        }`}
+      >
         {/* IMAGEM E TAGS */}
         <div className="relative aspect-[4/3] bg-zinc-950 overflow-hidden">
           <Link
@@ -121,7 +142,7 @@ export default function ProductCard({ product }: Props) {
             <div className="absolute inset-0 bg-gradient-to-t from-zinc-950 via-transparent to-black/40" />
           </Link>
 
-          {/* BADGES NO TOPO */}
+          {/* BADGES NO TOPO ESQUERDO */}
           <div className="absolute top-2.5 left-2.5 flex flex-wrap gap-1.5 z-10">
             {isKids ? (
               <span className="bg-amber-500 text-black text-[10px] font-black uppercase px-2 py-0.5 rounded-md shadow backdrop-blur-sm">
@@ -139,25 +160,35 @@ export default function ProductCard({ product }: Props) {
             )}
           </div>
 
+          {/* BADGE TOPO DIREITO: PRÉ-VENDA OU PRONTA ENTREGA */}
           <div className="absolute top-2.5 right-2.5 z-10 flex items-center gap-1.5">
-            <span className="bg-black/80 text-emerald-400 text-[10px] font-bold px-2 py-0.5 rounded-md border border-emerald-500/30">
-              Pronta Entrega
-            </span>
+            {isPreSale ? (
+              <span className="bg-amber-500 text-zinc-950 text-[10px] font-black uppercase px-2.5 py-0.5 rounded-md border border-amber-300 shadow-md inline-flex items-center gap-1">
+                <Clock className="w-3 h-3 stroke-[2.5]" />
+                Pré-Venda
+              </span>
+            ) : (
+              <span className="bg-zinc-950/90 text-emerald-400 text-[10px] font-bold px-2 py-0.5 rounded-md border border-emerald-500/30">
+                Pronta Entrega
+              </span>
+            )}
             <Link
               href={`/produto/${product.slug}`}
               target="_blank"
               rel="noopener noreferrer"
               title="Abrir em nova aba"
-              className="p-1 rounded-md bg-black/80 hover:bg-rose-600 text-zinc-300 hover:text-white border border-zinc-700/80 transition-all flex items-center justify-center shadow-md"
+              className="p-1 rounded-md bg-zinc-950/90 hover:bg-rose-600 text-zinc-300 hover:text-white border border-zinc-700/80 transition-all flex items-center justify-center shadow-md"
             >
               <ExternalLink className="w-3 h-3" />
             </Link>
           </div>
 
           {/* FAIXA DE PREÇO */}
-          <div className="absolute bottom-2.5 left-2.5 right-2.5 z-10 bg-zinc-950/90 backdrop-blur-md rounded-xl p-2.5 border border-zinc-800 flex items-center justify-between">
+          <div className="absolute bottom-2.5 left-2.5 right-2.5 z-10 bg-zinc-950/95 backdrop-blur-md rounded-xl p-2.5 border border-zinc-800 flex items-center justify-between">
             <div>
-              <span className="text-[10px] text-zinc-400 uppercase font-semibold block">Valor Unitário</span>
+              <span className="text-[10px] text-zinc-400 uppercase font-semibold block">
+                {isPreSale ? 'Valor de Pré-Venda' : 'Valor Unitário'}
+              </span>
               <div className="flex items-baseline gap-2">
                 <span className="text-xl font-black text-white">
                   {formatCurrency(currentPrice)}
@@ -170,10 +201,17 @@ export default function ProductCard({ product }: Props) {
               </div>
             </div>
             <div className="text-right">
-              <span className="bg-zinc-800 text-zinc-300 border border-zinc-700 text-[10px] font-semibold px-2 py-0.5 rounded-full inline-flex items-center gap-1">
-                <Sparkles className="w-3 h-3 text-amber-400" />
-                Tailandesa 1:1
-              </span>
+              {isPreSale ? (
+                <span className="bg-amber-500/15 text-amber-300 border border-amber-500/30 text-[10px] font-bold px-2 py-0.5 rounded-full inline-flex items-center gap-1">
+                  <CalendarClock className="w-3 h-3 text-amber-400" />
+                  {preSaleEta || 'Chegando em Breve'}
+                </span>
+              ) : (
+                <span className="bg-zinc-800 text-zinc-300 border border-zinc-700 text-[10px] font-semibold px-2 py-0.5 rounded-full inline-flex items-center gap-1">
+                  <Sparkles className="w-3 h-3 text-amber-400" />
+                  Tailandesa 1:1
+                </span>
+              )}
             </div>
           </div>
         </div>
@@ -181,6 +219,18 @@ export default function ProductCard({ product }: Props) {
         {/* CORPO DO CARD */}
         <div className="p-4 flex-1 flex flex-col justify-between">
           <div>
+            {isPreSale && (
+              <div className="mb-2 px-2.5 py-1.5 rounded-lg bg-amber-500/10 border border-amber-500/25 flex items-center justify-between gap-2 text-[11px]">
+                <span className="font-bold text-amber-300 flex items-center gap-1.5">
+                  <Clock className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                  Modelo que irá chegar
+                </span>
+                <span className="text-zinc-300 font-medium truncate">
+                  {preSaleEta || 'Reserve sua grade antecipada'}
+                </span>
+              </div>
+            )}
+
             <div className="flex items-start justify-between gap-1.5">
               <Link
                 href={`/produto/${product.slug}`}
@@ -205,7 +255,12 @@ export default function ProductCard({ product }: Props) {
               </button>
             </div>
             <p className="text-xs text-zinc-400 mt-1 line-clamp-1">
-              {product.description || (isKids ? 'Kit infantil com camisa oficial e calção com cordão elástico.' : 'Padrão torcedor oficial com detalhes bordados e tecnologia de secagem rápida.')}
+              {product.description ||
+                (isPreSale
+                  ? 'Lançamento em pré-venda! Garanta sua peça antecipadamente antes do lote esgotar.'
+                  : isKids
+                  ? 'Kit infantil com camisa oficial e calção com cordão elástico.'
+                  : 'Padrão torcedor oficial com detalhes bordados e tecnologia de secagem rápida.')}
             </p>
 
             {/* SELETOR DE TAMANHO */}
@@ -223,6 +278,11 @@ export default function ProductCard({ product }: Props) {
                   <span className="text-[11px] text-amber-400 font-bold flex items-center gap-1">
                     <span className="w-1.5 h-1.5 rounded-full bg-amber-400" />
                     Máximo no Carrinho
+                  </span>
+                ) : isPreSale ? (
+                  <span className="text-[11px] text-amber-400 font-semibold flex items-center gap-1">
+                    <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
+                    Reserva Aberta ({remainingStock} un)
                   </span>
                 ) : (
                   <span className="text-[11px] text-emerald-400 font-semibold flex items-center gap-1">
@@ -249,7 +309,9 @@ export default function ProductCard({ product }: Props) {
                       className={`py-1.5 px-0.5 rounded-lg text-xs font-bold border transition-all flex flex-col items-center justify-center relative ${
                         isSelected
                           ? !isSoldOut && !isMaxInCart
-                            ? 'bg-rose-600 border-rose-500 text-white shadow-md shadow-rose-950/50'
+                            ? isPreSale
+                              ? 'bg-amber-500 border-amber-400 text-zinc-950 shadow-md shadow-amber-950/50'
+                              : 'bg-rose-600 border-rose-500 text-white shadow-md shadow-rose-950/50'
                             : 'bg-zinc-800 border-rose-500/80 text-rose-300'
                           : isSoldOut || isMaxInCart
                           ? 'bg-zinc-950/40 border-zinc-800/60 text-zinc-600 hover:border-zinc-700'
@@ -262,7 +324,11 @@ export default function ProductCard({ product }: Props) {
                       {info.surcharge > 0 && !isSoldOut && (
                         <span
                           className={`text-[8px] font-semibold leading-none mt-0.5 ${
-                            isSelected ? 'text-rose-200' : 'text-amber-400'
+                            isSelected
+                              ? isPreSale
+                                ? 'text-zinc-900'
+                                : 'text-rose-200'
+                              : 'text-amber-400'
                           }`}
                         >
                           +{info.surcharge}
@@ -295,18 +361,25 @@ export default function ProductCard({ product }: Props) {
                   ? 'bg-emerald-600 text-white'
                   : !isAvailableToAdd
                   ? 'bg-zinc-800/80 text-zinc-500 border border-zinc-700/50 cursor-not-allowed'
-                  : 'bg-gradient-to-r from-rose-600 to-rose-500 hover:from-rose-500 hover:to-rose-400 text-white shadow-lg shadow-rose-950/60 active:scale-95'
+                  : isPreSale
+                  ? 'bg-amber-500 hover:bg-amber-400 text-zinc-950 shadow-lg shadow-amber-950/50 active:scale-95'
+                  : 'bg-rose-600 hover:bg-rose-500 text-white shadow-lg shadow-rose-950/60 active:scale-95'
               }`}
             >
               {justAdded ? (
                 <>
-                  <Check className="w-4 h-4 text-white" />
-                  Adicionado ao Carrinho!
+                  <Check className="w-4 h-4" />
+                  {isPreSale ? 'Reserva Adicionada!' : 'Adicionado ao Carrinho!'}
                 </>
               ) : !selectedInfo?.inStock ? (
                 <>Tamanho {selectedSize} Esgotado</>
               ) : remainingStock === 0 ? (
                 <>Limite no Carrinho ({selectedInfo?.stock} un)</>
+              ) : isPreSale ? (
+                <>
+                  <Clock className="w-4 h-4 stroke-[2.5]" />
+                  Reservar na Pré-Venda ({selectedSize})
+                </>
               ) : (
                 <>
                   <ShoppingBag className="w-4 h-4" />
@@ -332,7 +405,6 @@ export default function ProductCard({ product }: Props) {
             )}
           </div>
         </div>
-
       </div>
 
       {product.allowCustom && (

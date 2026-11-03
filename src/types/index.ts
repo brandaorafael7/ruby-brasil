@@ -28,6 +28,8 @@ export interface Product {
   isActive: boolean;
   allowCustom: boolean;
   customPrice: number;
+  isPreSale?: boolean;
+  preSaleEta?: string | null;
   variants: ProductVariant[];
   priceTiers?: WholesaleTier[];
 }
@@ -58,6 +60,8 @@ export interface CartItem {
   customName?: string;
   customNumber?: string;
   stockQuantity?: number;
+  isPreSale?: boolean;
+  preSaleEta?: string | null;
 }
 
 export type CustomerType = 'PF' | 'PJ';

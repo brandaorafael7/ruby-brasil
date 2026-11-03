@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getAdminSessionFromRequest } from '@/lib/auth';
+import { getProductPreSaleInfo, serializeProductPreSaleGallery } from '@/lib/utils';
 
 // Revalida a cada 1 minuto para reduzir egress no Supabase
 export const revalidate = 60;
@@ -66,6 +67,8 @@ export async function POST(request: Request) {
       isActive = true,
       allowCustom = true,
       customPrice = 15.0,
+      isPreSale = false,
+      preSaleEta = '',
       variants = [
         { size: 'P', stockQuantity: 100 },
         { size: 'M', stockQuantity: 100 },
@@ -93,6 +96,11 @@ export async function POST(request: Request) {
       .replace(/(^-|-$)/g, '');
     const slug = `${baseSlug}-${Date.now().toString().slice(-4)}`;
 
+    const gallery = serializeProductPreSaleGallery(null, {
+      isPreSale: Boolean(isPreSale),
+      preSaleEta: preSaleEta ? String(preSaleEta) : '',
+    });
+
     const product = await prisma.product.create({
       data: {
         name,
@@ -102,6 +110,7 @@ export async function POST(request: Request) {
         season,
         type,
         imageUrl,
+        gallery,
         retailPrice: Number(retailPrice),
         description,
         isActive: Boolean(isActive),
@@ -141,14 +150,43 @@ export async function PUT(request: Request) {
     }
 
     const body = await request.json();
-    const { id, name, club, league, season, type, imageUrl, retailPrice, description, isActive, allowCustom, variants } = body;
+    const {
+      id,
+      name,
+      club,
+      league,
+      season,
+      type,
+      imageUrl,
+      retailPrice,
+      description,
+      isActive,
+      allowCustom,
+      customPrice,
+      isPreSale,
+      preSaleEta,
+      variants,
+    } = body;
 
     if (!id) {
       return NextResponse.json({ error: 'ID do produto é obrigatório' }, { status: 400 });
     }
 
+    let updatedGallery: string | undefined = undefined;
+    if (isPreSale !== undefined || preSaleEta !== undefined) {
+      const existing = await prisma.product.findUnique({
+        where: { id },
+        select: { gallery: true, league: true, type: true, name: true },
+      });
+      const currentPreSale = getProductPreSaleInfo(existing);
+      updatedGallery = serializeProductPreSaleGallery(existing?.gallery, {
+        isPreSale: isPreSale !== undefined ? Boolean(isPreSale) : currentPreSale.isPreSale,
+        preSaleEta: preSaleEta !== undefined ? String(preSaleEta || '') : currentPreSale.preSaleEta,
+      });
+    }
+
     // Atualiza dados principais da camisa
-    const updatedProduct = await prisma.product.update({
+    await prisma.product.update({
       where: { id },
       data: {
         ...(name && { name }),
@@ -157,7 +195,9 @@ export async function PUT(request: Request) {
         ...(season && { season }),
         ...(type && { type }),
         ...(imageUrl && { imageUrl }),
+        ...(updatedGallery !== undefined && { gallery: updatedGallery }),
         ...(retailPrice !== undefined && { retailPrice: Number(retailPrice) }),
+        ...(customPrice !== undefined && { customPrice: Number(customPrice) }),
         ...(description !== undefined && { description }),
         ...(isActive !== undefined && { isActive: Boolean(isActive) }),
         ...(allowCustom !== undefined && { allowCustom: Boolean(allowCustom) }),

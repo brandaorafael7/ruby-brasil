@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import { CartItem, Product, PromotionalBatch, WholesaleTier, ShippingOption } from '@/types';
-import { getSizeSurcharge } from '@/lib/utils';
+import { getSizeSurcharge, getProductPreSaleInfo } from '@/lib/utils';
 
 const DEFAULT_TIERS: WholesaleTier[] = [
   { minQuantity: 1, maxQuantity: null, unitPrice: 60.0 },
@@ -115,6 +115,7 @@ export const useCartStore = create<CartStore>()(
         }
 
         const toAdd = Math.min(quantity, available);
+        const preSaleInfo = getProductPreSaleInfo(product);
 
         set((state) => {
           const existingIndex = state.items.findIndex((i) => i.cartItemId === cartItemId);
@@ -122,6 +123,8 @@ export const useCartStore = create<CartStore>()(
             const updated = [...state.items];
             updated[existingIndex].quantity += toAdd;
             updated[existingIndex].stockQuantity = stock;
+            updated[existingIndex].isPreSale = preSaleInfo.isPreSale;
+            updated[existingIndex].preSaleEta = preSaleInfo.preSaleEta;
             return { items: updated, isCartOpen: true };
           }
 
@@ -139,6 +142,8 @@ export const useCartStore = create<CartStore>()(
             customName: normalizedCustomName,
             customNumber: normalizedCustomNumber,
             stockQuantity: stock,
+            isPreSale: preSaleInfo.isPreSale,
+            preSaleEta: preSaleInfo.preSaleEta,
           };
 
           return { items: [...state.items, newItem], isCartOpen: true };
@@ -155,6 +160,7 @@ export const useCartStore = create<CartStore>()(
       },
 
       addGrid: (product, grid) => {
+        const preSaleInfo = getProductPreSaleInfo(product);
         set((state) => {
           const newItems = [...state.items];
 
@@ -176,6 +182,8 @@ export const useCartStore = create<CartStore>()(
                 ...newItems[existingIndex],
                 quantity: newItems[existingIndex].quantity + toAdd,
                 stockQuantity: stock,
+                isPreSale: preSaleInfo.isPreSale,
+                preSaleEta: preSaleInfo.preSaleEta,
               };
             } else {
               newItems.push({
@@ -190,6 +198,8 @@ export const useCartStore = create<CartStore>()(
                 size,
                 quantity: toAdd,
                 stockQuantity: stock,
+                isPreSale: preSaleInfo.isPreSale,
+                preSaleEta: preSaleInfo.preSaleEta,
               });
             }
           });

@@ -11,17 +11,23 @@ import {
   ArrowLeft,
   Truck,
   ShieldCheck,
-  Share2,
   Copy,
   ExternalLink,
   MessageCircle,
   Plus,
   Minus,
   CheckCircle2,
+  Clock,
+  CalendarClock,
 } from 'lucide-react';
 import { Product } from '@/types';
 import { useCartStore } from '@/store';
-import { formatCurrency, getSizeSurcharge, getStandardSizesForProduct } from '@/lib/utils';
+import {
+  formatCurrency,
+  getSizeSurcharge,
+  getStandardSizesForProduct,
+  getProductPreSaleInfo,
+} from '@/lib/utils';
 import CustomizationModal from '@/components/product/CustomizationModal';
 import ProductCard from '@/components/product/ProductCard';
 
@@ -38,6 +44,8 @@ export default function ProductDetailClient({ product, relatedProducts }: Props)
     product.league?.toLowerCase().includes('infantil') ||
     product.name?.toLowerCase().includes('infantil') ||
     product.name?.toLowerCase().includes('kids');
+
+  const { isPreSale, preSaleEta } = getProductPreSaleInfo(product);
 
   const standardSizes = getStandardSizesForProduct(product);
 
@@ -79,7 +87,6 @@ export default function ProductDetailClient({ product, relatedProducts }: Props)
   const maxAvailable = Math.max(0, (selectedInfo?.stock || 0) - inCartForSelectedSize);
   const isAvailableToAdd = (selectedInfo?.inStock || false) && maxAvailable > 0;
 
-  // Ajusta quantidade se exceder o estoque disponível
   React.useEffect(() => {
     if (maxAvailable > 0 && quantity > maxAvailable) {
       setQuantity(maxAvailable);
@@ -135,7 +142,8 @@ export default function ProductDetailClient({ product, relatedProducts }: Props)
   const handleShareWhatsApp = () => {
     if (typeof window !== 'undefined') {
       const pageUrl = window.location.href;
-      const text = `Confira a camisa *${product.name}* na Ruby Brasil:\n${pageUrl}`;
+      const prefix = isPreSale ? `[PRÉ-VENDA] ` : '';
+      const text = `Confira a camisa ${prefix}*${product.name}* na Ruby Brasil:\n${pageUrl}`;
       const waUrl = `https://api.whatsapp.com/send?text=${encodeURIComponent(text)}`;
       window.open(waUrl, '_blank');
     }
@@ -144,7 +152,6 @@ export default function ProductDetailClient({ product, relatedProducts }: Props)
   return (
     <div className="min-h-screen bg-zinc-950 text-zinc-100 py-6 sm:py-10">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        
         {/* NAVEGAÇÃO / BREADCRUMB */}
         <div className="flex flex-wrap items-center justify-between gap-3 mb-6 pb-4 border-b border-zinc-900">
           <Link
@@ -190,7 +197,6 @@ export default function ProductDetailClient({ product, relatedProducts }: Props)
 
         {/* CONTAINER PRINCIPAL DO PRODUTO */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 bg-zinc-900/40 border border-zinc-800/80 rounded-3xl p-4 sm:p-8 backdrop-blur-sm shadow-2xl">
-          
           {/* COLUNA ESQUERDA: FOTO GRANDE DA PEÇA */}
           <div className="lg:col-span-6 flex flex-col gap-4">
             <div className="relative aspect-[4/3] sm:aspect-square w-full rounded-2xl bg-zinc-950 overflow-hidden border border-zinc-800 shadow-inner group">
@@ -223,12 +229,19 @@ export default function ProductDetailClient({ product, relatedProducts }: Props)
               </div>
 
               <div className="absolute top-4 right-4 z-10">
-                <span className="bg-black/85 text-emerald-400 text-xs font-bold px-3 py-1 rounded-lg border border-emerald-500/40 shadow-md">
-                  ✓ Pronta Entrega
-                </span>
+                {isPreSale ? (
+                  <span className="bg-amber-500 text-zinc-950 text-xs font-black uppercase px-3 py-1 rounded-lg border border-amber-300 shadow-md inline-flex items-center gap-1.5">
+                    <Clock className="w-3.5 h-3.5 stroke-[2.5]" />
+                    Pré-Venda Oficial
+                  </span>
+                ) : (
+                  <span className="bg-zinc-950/90 text-emerald-400 text-xs font-bold px-3 py-1 rounded-lg border border-emerald-500/40 shadow-md">
+                    ✓ Pronta Entrega
+                  </span>
+                )}
               </div>
 
-              <div className="absolute bottom-4 left-4 right-4 z-10 flex items-center justify-between text-xs text-zinc-400 bg-zinc-950/80 backdrop-blur-md px-3.5 py-2 rounded-xl border border-zinc-800">
+              <div className="absolute bottom-4 left-4 right-4 z-10 flex items-center justify-between text-xs text-zinc-400 bg-zinc-950/85 backdrop-blur-md px-3.5 py-2 rounded-xl border border-zinc-800">
                 <span className="flex items-center gap-1.5 font-medium">
                   <ShieldCheck className="w-4 h-4 text-emerald-400" />
                   Padrão Oficial 1:1 com etiquetas e bordados
@@ -267,12 +280,18 @@ export default function ProductDetailClient({ product, relatedProducts }: Props)
           <div className="lg:col-span-6 flex flex-col justify-between space-y-6">
             <div>
               {/* CATEGORIA E CLUBE */}
-              <div className="flex items-center gap-2 text-xs font-mono text-zinc-400 uppercase tracking-wider mb-2">
+              <div className="flex flex-wrap items-center gap-2 text-xs font-mono text-zinc-400 uppercase tracking-wider mb-2">
                 <span>{product.league}</span>
                 <span>•</span>
                 <span>{product.club}</span>
                 <span>•</span>
                 <span className="text-rose-400 font-bold">{product.season}</span>
+                {isPreSale && (
+                  <>
+                    <span>•</span>
+                    <span className="text-amber-400 font-bold">PRÉ-VENDA</span>
+                  </>
+                )}
               </div>
 
               {/* TÍTULO */}
@@ -280,10 +299,34 @@ export default function ProductDetailClient({ product, relatedProducts }: Props)
                 {product.name}
               </h1>
 
+              {/* BANNER EXPLICATIVO SE FOR PRÉ-VENDA */}
+              {isPreSale && (
+                <div className="mt-4 p-3.5 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex items-start gap-3">
+                  <CalendarClock className="w-5 h-5 text-amber-400 shrink-0 mt-0.5" />
+                  <div className="text-xs">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <strong className="text-amber-300 font-black uppercase tracking-wide">
+                        Modelo em Pré-Venda (Lote a Caminho)
+                      </strong>
+                      {preSaleEta && (
+                        <span className="bg-amber-500/20 text-amber-200 border border-amber-500/40 px-2 py-0.5 rounded-md font-bold text-[11px]">
+                          {preSaleEta}
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-zinc-300 mt-1 leading-relaxed">
+                      Este modelo está confirmado para chegar no próximo lote. Você já pode reservar os tamanhos desejados agora para garantir prioridade de despacho assim que o lote der entrada!
+                    </p>
+                  </div>
+                </div>
+              )}
+
               {/* DESCRIÇÃO */}
               <p className="text-xs sm:text-sm text-zinc-400 mt-3 leading-relaxed">
                 {product.description ||
-                  (isKids
+                  (isPreSale
+                    ? 'Modelo oficial padrão Tailandês 1:1 disponível para reserva antecipada. Garanta suas unidades antes do esgotamento da grade.'
+                    : isKids
                     ? 'Kit infantil completo oficial acompanha camisa tailandesa 1:1 e calção com elástico regulável. Tecido leve e respirável para total conforto dos pequenos.'
                     : 'Camisa confeccionada em tecido de alta tecnologia dry-fit, acabamento impecável, escudo e logos bordados com perfeição e etiquetas oficiais de fábrica.')}
               </p>
@@ -292,7 +335,7 @@ export default function ProductDetailClient({ product, relatedProducts }: Props)
               <div className="mt-6 p-4 rounded-2xl bg-zinc-950 border border-zinc-800 flex items-center justify-between gap-4">
                 <div>
                   <span className="text-[11px] text-zinc-400 uppercase font-semibold block">
-                    Valor Unitário
+                    {isPreSale ? 'Valor de Pré-Venda' : 'Valor Unitário'}
                   </span>
                   <div className="flex items-baseline gap-2 mt-0.5">
                     <span className="text-3xl font-black text-white">
@@ -307,13 +350,26 @@ export default function ProductDetailClient({ product, relatedProducts }: Props)
                 </div>
 
                 <div className="text-right border-l border-zinc-800 pl-4">
-                  <span className="text-[11px] text-zinc-400 block">Envio Nacional</span>
-                  <span className="text-sm font-bold text-emerald-400 block mt-0.5">
-                    Pronta Entrega
-                  </span>
-                  <span className="text-[10px] text-zinc-400">
-                    Estoque no Brasil
-                  </span>
+                  <span className="text-[11px] text-zinc-400 block">Disponibilidade</span>
+                  {isPreSale ? (
+                    <>
+                      <span className="text-sm font-bold text-amber-400 block mt-0.5">
+                        ⏳ Pré-Venda
+                      </span>
+                      <span className="text-[10px] text-zinc-400">
+                        {preSaleEta || 'Lote a Caminho'}
+                      </span>
+                    </>
+                  ) : (
+                    <>
+                      <span className="text-sm font-bold text-emerald-400 block mt-0.5">
+                        Pronta Entrega
+                      </span>
+                      <span className="text-[10px] text-zinc-400">
+                        Estoque no Brasil
+                      </span>
+                    </>
+                  )}
                 </div>
               </div>
 
@@ -332,6 +388,11 @@ export default function ProductDetailClient({ product, relatedProducts }: Props)
                     <span className="text-xs text-amber-400 font-bold flex items-center gap-1.5">
                       <span className="w-2 h-2 rounded-full bg-amber-400" />
                       Todas as {selectedInfo?.stock} peças já estão no seu carrinho
+                    </span>
+                  ) : isPreSale ? (
+                    <span className="text-xs text-amber-400 font-bold flex items-center gap-1.5">
+                      <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse" />
+                      Disponível p/ Reserva ({maxAvailable} {maxAvailable === 1 ? 'vaga' : 'vagas'})
                     </span>
                   ) : (
                     <span className="text-xs text-emerald-400 font-bold flex items-center gap-1.5">
@@ -359,7 +420,9 @@ export default function ProductDetailClient({ product, relatedProducts }: Props)
                         className={`py-3 px-1 rounded-xl text-xs font-black border transition-all flex flex-col items-center justify-center relative ${
                           isSelected
                             ? !isSoldOut && !isMaxInCart
-                              ? 'bg-rose-600 border-rose-500 text-white shadow-lg shadow-rose-950/60 scale-[1.03]'
+                              ? isPreSale
+                                ? 'bg-amber-500 border-amber-400 text-zinc-950 shadow-lg shadow-amber-950/60 scale-[1.03]'
+                                : 'bg-rose-600 border-rose-500 text-white shadow-lg shadow-rose-950/60 scale-[1.03]'
                               : 'bg-zinc-800 border-rose-500/80 text-rose-300 scale-[1.03]'
                             : isSoldOut || isMaxInCart
                             ? 'bg-zinc-950/40 border-zinc-800/60 text-zinc-600 hover:border-zinc-700'
@@ -372,7 +435,11 @@ export default function ProductDetailClient({ product, relatedProducts }: Props)
                         {info.surcharge > 0 && !isSoldOut && (
                           <span
                             className={`text-[9px] font-semibold leading-none mt-1 ${
-                              isSelected ? 'text-rose-200' : 'text-amber-400'
+                              isSelected
+                                ? isPreSale
+                                  ? 'text-zinc-900'
+                                  : 'text-rose-200'
+                                : 'text-amber-400'
                             }`}
                           >
                             +{info.surcharge}
@@ -400,7 +467,7 @@ export default function ProductDetailClient({ product, relatedProducts }: Props)
                     <span className="text-xs font-bold text-zinc-300 block">Quantidade de Peças:</span>
                     {maxAvailable > 0 && (
                       <span className="text-[10px] text-zinc-500">
-                        Máximo disponível para adicionar: {maxAvailable} un
+                        Máximo disponível para {isPreSale ? 'reservar' : 'adicionar'}: {maxAvailable} un
                       </span>
                     )}
                   </div>
@@ -429,7 +496,7 @@ export default function ProductDetailClient({ product, relatedProducts }: Props)
 
                 {selectedInfo?.inStock && maxAvailable === 0 && (
                   <p className="text-[11px] text-amber-400 font-medium px-1">
-                    ⚠️ Limite do estoque atingido: você já adicionou todas as {selectedInfo.stock} unidades deste tamanho ao seu carrinho.
+                    ⚠️ Limite atingido: você já adicionou todas as {selectedInfo.stock} unidades deste tamanho ao seu carrinho.
                   </p>
                 )}
               </div>
@@ -453,12 +520,17 @@ export default function ProductDetailClient({ product, relatedProducts }: Props)
                   {justAdded ? (
                     <>
                       <Check className="w-4 h-4 text-white" />
-                      Adicionado ao Carrinho!
+                      {isPreSale ? 'Reserva Adicionada!' : 'Adicionado ao Carrinho!'}
                     </>
                   ) : !selectedInfo?.inStock ? (
                     <>Tamanho Esgotado</>
                   ) : maxAvailable === 0 ? (
                     <>Limite no Carrinho ({selectedInfo.stock} un)</>
+                  ) : isPreSale ? (
+                    <>
+                      <Clock className="w-4 h-4 text-amber-400" />
+                      Reservar no Carrinho
+                    </>
                   ) : (
                     <>
                       <ShoppingBag className="w-4 h-4 text-rose-400" />
@@ -474,11 +546,15 @@ export default function ProductDetailClient({ product, relatedProducts }: Props)
                   className={`w-full py-3.5 px-6 rounded-2xl text-xs sm:text-sm font-black flex items-center justify-center gap-2 transition-all ${
                     !isAvailableToAdd
                       ? 'bg-zinc-800/50 text-zinc-600 border border-zinc-800 cursor-not-allowed'
-                      : 'bg-gradient-to-r from-rose-600 to-rose-500 hover:from-rose-500 hover:to-rose-400 text-white shadow-lg shadow-rose-950/60 active:scale-95'
+                      : isPreSale
+                      ? 'bg-amber-500 hover:bg-amber-400 text-zinc-950 shadow-lg shadow-amber-950/60 active:scale-95'
+                      : 'bg-rose-600 hover:bg-rose-500 text-white shadow-lg shadow-rose-950/60 active:scale-95'
                   }`}
                 >
-                  <Sparkles className="w-4 h-4 text-amber-300" />
-                  Comprar Agora ({formatCurrency(totalPrice)})
+                  <Sparkles className={`w-4 h-4 ${isPreSale ? 'text-zinc-950' : 'text-amber-300'}`} />
+                  {isPreSale
+                    ? `Reservar Agora (${formatCurrency(totalPrice)})`
+                    : `Comprar Agora (${formatCurrency(totalPrice)})`}
                 </button>
               </div>
 
@@ -517,7 +593,6 @@ export default function ProductDetailClient({ product, relatedProducts }: Props)
                 )}
               </div>
             </div>
-
           </div>
         </div>
 
@@ -530,7 +605,7 @@ export default function ProductDetailClient({ product, relatedProducts }: Props)
                   Mais Camisas em Destaque
                 </h3>
                 <p className="text-xs text-zinc-400 mt-1">
-                  Confira outros mantos prontos para envio imediato para todo o Brasil.
+                  Confira outros mantos disponíveis em nosso catálogo para todo o Brasil.
                 </p>
               </div>
               <Link
@@ -548,7 +623,6 @@ export default function ProductDetailClient({ product, relatedProducts }: Props)
             </div>
           </div>
         )}
-
       </div>
 
       {product.allowCustom && (
