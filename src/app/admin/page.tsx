@@ -40,7 +40,14 @@ export default async function AdminPage() {
     include: {
       items: {
         include: {
-          product: true,
+          product: {
+            select: {
+              id: true,
+              name: true,
+              club: true,
+              season: true,
+            },
+          },
         },
       },
     },

@@ -2,7 +2,8 @@ import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getAdminSessionFromRequest } from '@/lib/auth';
 
-export const dynamic = 'force-dynamic';
+// Cache de 1 minuto para evitar sobrecarga no banco
+export const revalidate = 60;
 
 export async function GET() {
   try {
@@ -26,7 +27,11 @@ export async function GET() {
       });
     }
 
-    return NextResponse.json(batch);
+    return NextResponse.json(batch, {
+      headers: {
+        'Cache-Control': 'public, s-maxage=60, stale-while-revalidate=300',
+      },
+    });
   } catch (error) {
     console.error('Erro ao buscar lote:', error);
     return NextResponse.json({ error: 'Erro no servidor' }, { status: 500 });

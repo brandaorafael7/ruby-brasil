@@ -1,9 +1,11 @@
 import { Metadata } from 'next';
 import { notFound } from 'next/navigation';
+import { cache } from 'react';
 import { prisma } from '@/lib/prisma';
 import ProductDetailClient from './_components/ProductDetailClient';
 
-export const dynamic = 'force-dynamic';
+// Revalida a cada 2 minutos (ISR) para economizar tráfego no Supabase
+export const revalidate = 120;
 
 interface PageProps {
   params: {
@@ -11,14 +13,15 @@ interface PageProps {
   };
 }
 
-export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
-  const rawSlug = params.slug || '';
+// React cache() compartilha a consulta entre generateMetadata e ProductDetailPage
+const getProduct = cache(async (slug: string) => {
+  const rawSlug = slug || '';
   let decodedSlug = rawSlug;
   try {
     decodedSlug = decodeURIComponent(rawSlug);
   } catch {}
 
-  const product = await prisma.product.findFirst({
+  return prisma.product.findFirst({
     where: {
       OR: [
         { slug: rawSlug },
@@ -27,7 +30,15 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
         { id: decodedSlug },
       ],
     },
+    include: {
+      variants: true,
+      priceTiers: true,
+    },
   });
+});
+
+export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
+  const product = await getProduct(params.slug);
 
   if (!product) {
     return {
@@ -61,26 +72,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 }
 
 export default async function ProductDetailPage({ params }: PageProps) {
-  const rawSlug = params.slug || '';
-  let decodedSlug = rawSlug;
-  try {
-    decodedSlug = decodeURIComponent(rawSlug);
-  } catch {}
-
-  const product = await prisma.product.findFirst({
-    where: {
-      OR: [
-        { slug: rawSlug },
-        { slug: decodedSlug },
-        { id: rawSlug },
-        { id: decodedSlug },
-      ],
-    },
-    include: {
-      variants: true,
-      priceTiers: true,
-    },
-  });
+  const product = await getProduct(params.slug);
 
   if (!product) {
     notFound();

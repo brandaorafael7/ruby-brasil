@@ -22,7 +22,7 @@ export default function PromotionalTopBar() {
       } catch (e) {}
     }
     syncBatch();
-    const interval = setInterval(syncBatch, 30000);
+    const interval = setInterval(syncBatch, 300000); // 5 minutos
     return () => clearInterval(interval);
   }, [setPromotionalBatch]);
 

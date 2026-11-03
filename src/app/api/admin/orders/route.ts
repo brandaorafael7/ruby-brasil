@@ -28,7 +28,14 @@ export async function GET(req: Request) {
       include: {
         items: {
           include: {
-            product: true,
+            product: {
+              select: {
+                id: true,
+                name: true,
+                club: true,
+                season: true,
+              },
+            },
           },
         },
       },

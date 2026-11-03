@@ -2,7 +2,8 @@ import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getAdminSessionFromRequest } from '@/lib/auth';
 
-export const dynamic = 'force-dynamic';
+// Revalida a cada 1 minuto para reduzir egress no Supabase
+export const revalidate = 60;
 
 // 1. LISTAR PRODUTOS (Para a loja e para o admin)
 export async function GET(request: Request) {
@@ -24,10 +25,17 @@ export async function GET(request: Request) {
       orderBy: { minQuantity: 'asc' },
     });
 
-    return NextResponse.json({
-      products,
-      globalTiers,
-    });
+    return NextResponse.json(
+      {
+        products,
+        globalTiers,
+      },
+      {
+        headers: {
+          'Cache-Control': 'public, s-maxage=60, stale-while-revalidate=300',
+        },
+      }
+    );
   } catch (error) {
     console.error('Erro ao buscar produtos:', error);
     return NextResponse.json({ error: 'Erro ao carregar catálogo' }, { status: 500 });

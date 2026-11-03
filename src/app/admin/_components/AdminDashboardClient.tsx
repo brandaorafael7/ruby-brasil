@@ -172,7 +172,7 @@ async function compressAndConvertImage(file: File): Promise<string> {
       const img = new Image();
       img.onload = () => {
         const canvas = document.createElement('canvas');
-        const MAX_DIMENSION = 1200;
+        const MAX_DIMENSION = 800; // Otimizado para reduzir tráfego Base64
         let width = img.width;
         let height = img.height;
 
@@ -198,9 +198,9 @@ async function compressAndConvertImage(file: File): Promise<string> {
 
         ctx.drawImage(img, 0, 0, width, height);
 
-        let dataUrl = canvas.toDataURL('image/webp', 0.82);
+        let dataUrl = canvas.toDataURL('image/webp', 0.72);
         if (!dataUrl.startsWith('data:image/webp')) {
-          dataUrl = canvas.toDataURL('image/jpeg', 0.85);
+          dataUrl = canvas.toDataURL('image/jpeg', 0.75);
         }
         resolve(dataUrl);
       };
