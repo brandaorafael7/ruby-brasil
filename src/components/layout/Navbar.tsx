@@ -136,7 +136,7 @@ export default function Navbar() {
 
         {/* Ações: Regra Atacado, Tema, Admin e Sacola */}
         <div className="flex items-center gap-2 sm:gap-2.5">
-          {/* Pílula Discreta Varejo / Atacado */}
+          {/* Pílula Discreta Preço Direto de Fábrica & Envio */}
           <div
             className="hidden xl:flex items-center gap-2 px-3 py-1.5 rounded-full border text-xs"
             style={{
@@ -146,12 +146,11 @@ export default function Navbar() {
           >
             <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
             <span className="font-medium" style={{ color: 'var(--text-secondary)' }}>
-              Varejo <strong style={{ color: 'var(--text-primary)' }}>R$ 60</strong>
+              Direto de Fábrica <strong style={{ color: 'var(--text-primary)' }}>R$ 60</strong>
             </span>
-            <span style={{ color: 'var(--text-muted)' }}>/</span>
-            <span className="font-medium" style={{ color: 'var(--text-secondary)' }}>
-              Atacado 50+{' '}
-              <strong className="text-emerald-600 dark:text-emerald-400">R$ 55</strong>
+            <span style={{ color: 'var(--text-muted)' }}>•</span>
+            <span className="font-medium text-emerald-600 dark:text-emerald-400">
+              Melhor Envio
             </span>
           </div>
 

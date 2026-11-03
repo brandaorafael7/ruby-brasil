@@ -280,8 +280,11 @@ export default function ProductCard({ product }: Props) {
                     </span>
                   )}
                 </div>
-                <span className="text-[11px] font-mono font-semibold text-emerald-600 dark:text-emerald-400">
-                  R$ 55 no 50+
+                <span
+                  className="text-[11px] font-mono font-semibold"
+                  style={{ color: 'var(--text-muted)' }}
+                >
+                  Tailandesa 1:1
                 </span>
               </div>
             </div>

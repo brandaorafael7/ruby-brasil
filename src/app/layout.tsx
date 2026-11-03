@@ -86,16 +86,9 @@ export default function RootLayout({
               </h4>
               <ul className="space-y-1.5 text-xs">
                 <li>
-                  • Varejo (1 a 49 pçs):{' '}
+                  • Preço Base:{' '}
                   <strong className="font-mono" style={{ color: 'var(--text-primary)' }}>
                     R$ 60,00
-                  </strong>{' '}
-                  / un
-                </li>
-                <li>
-                  • Atacado (50+ pçs):{' '}
-                  <strong className="font-mono text-emerald-600 dark:text-emerald-400">
-                    R$ 55,00
                   </strong>{' '}
                   / un
                 </li>
@@ -104,7 +97,13 @@ export default function RootLayout({
                   <strong style={{ color: 'var(--text-primary)' }}>Padrão Tailandês 1:1</strong>
                 </li>
                 <li>
-                  • Logística:{' '}
+                  • Envio:{' '}
+                  <strong className="text-emerald-600 dark:text-emerald-400">
+                    Melhor Envio Oficial
+                  </strong>
+                </li>
+                <li>
+                  • Transportadoras:{' '}
                   <strong style={{ color: 'var(--text-primary)' }}>
                     Correios (PAC/SEDEX) & Loggi
                   </strong>

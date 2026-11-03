@@ -38,9 +38,9 @@ const FAQS = [
       'Os modelos Pronta Entrega já estão em nosso estoque físico em Campinas/SP e são postados rapidamente após a confirmação. Os modelos marcados com ⏳ Pré-Venda são lançamentos e reposições que já estão em trânsito para o Brasil — você reserva seus tamanhos antecipadamente pelo site e garante prioridade total no envio assim que o lote dá entrada.',
   },
   {
-    question: '2. Como funciona o desconto progressivo de Atacado (R$ 55/un)?',
+    question: '2. Qual o valor unitário das camisas e posso misturar modelos?',
     answer:
-      'Você pode misturar livremente clubes, tamanhos adultos (P ao 4XL), kits infantis (16 ao 28) e modelos de pré-venda na mesma sacola. De 1 a 49 peças, cada camisa sai por R$ 60,00. Ao atingir 50 peças ou mais no carrinho, o sistema recalcula automaticamente o valor base para R$ 55,00/un.',
+      'Trabalhamos com preço direto de fábrica a partir de R$ 60,00 por camisa no padrão Tailandês 1:1 oficial. Você pode misturar livremente clubes, seleções, tamanhos adultos (P ao 4XL), kits infantis (16 ao 28) e modelos de pré-venda na mesma sacola.',
   },
   {
     question: '3. Qual o padrão de qualidade das camisas (Tailandesa 1:1)?',
@@ -187,7 +187,7 @@ export default function CatalogView({ initialProducts }: Props) {
                   className="mt-3 text-sm sm:text-base max-w-xl leading-relaxed"
                   style={{ color: 'var(--text-secondary)' }}
                 >
-                  Bordados de alta definição, versões Jogador (Slim Fit) e Torcedor, além de relíquias retrô imortais. Compre no varejo sem pedido mínimo ou destrave o preço de atacado automaticamente na sacola.
+                  Bordados de alta definição, versões Jogador (Slim Fit) e Torcedor, além de relíquias retrô imortais. Compre pronta entrega ou reserve lançamentos exclusivos na pré-venda com envio seguro para todo o Brasil.
                 </p>
               </div>
 
@@ -201,7 +201,7 @@ export default function CatalogView({ initialProducts }: Props) {
                     className="text-[11px] font-mono uppercase block"
                     style={{ color: 'var(--text-muted)' }}
                   >
-                    1 a 49 Peças
+                    Preço de Fábrica
                   </span>
                   <span
                     className="text-lg sm:text-xl font-black font-mono tabular-nums"
@@ -221,11 +221,14 @@ export default function CatalogView({ initialProducts }: Props) {
                   className="border-l pl-4"
                   style={{ borderColor: 'var(--border-crisp)' }}
                 >
-                  <span className="text-[11px] font-mono uppercase block text-emerald-600 dark:text-emerald-400">
-                    Atacado (50+ un)
+                  <span className="text-[11px] font-mono uppercase block text-rose-600 dark:text-rose-400">
+                    Qualidade Oficial
                   </span>
-                  <span className="text-lg sm:text-xl font-black font-mono tabular-nums text-emerald-600 dark:text-emerald-400">
-                    R$ 55<small className="text-xs font-normal">/un</small>
+                  <span
+                    className="text-base sm:text-xl font-black font-mono tabular-nums"
+                    style={{ color: 'var(--text-primary)' }}
+                  >
+                    Padrão 1:1
                   </span>
                 </div>
 
@@ -234,16 +237,14 @@ export default function CatalogView({ initialProducts }: Props) {
                   style={{ borderColor: 'var(--border-crisp)' }}
                 >
                   <span
-                    className="text-[11px] font-mono uppercase block"
-                    style={{ color: 'var(--text-muted)' }}
+                    className="text-[11px] font-mono uppercase block text-emerald-600 dark:text-emerald-400"
                   >
-                    Frete Grátis
+                    Cotação Real-Time
                   </span>
                   <span
-                    className="text-lg sm:text-xl font-black font-mono tabular-nums"
-                    style={{ color: 'var(--text-primary)' }}
+                    className="text-base sm:text-xl font-black font-mono tabular-nums text-emerald-600 dark:text-emerald-400"
                   >
-                    10+ pçs
+                    Melhor Envio
                   </span>
                 </div>
               </div>
@@ -302,7 +303,7 @@ export default function CatalogView({ initialProducts }: Props) {
                           {formatCurrency(spotlightProduct.retailPrice || 60)}
                         </span>
                         <span className="text-xs text-zinc-500 font-mono">
-                          R$ 55 no atacado 50+
+                          Padrão Tailandês 1:1
                         </span>
                       </div>
                     </div>
