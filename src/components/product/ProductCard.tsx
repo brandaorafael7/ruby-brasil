@@ -5,14 +5,10 @@ import Image from 'next/image';
 import Link from 'next/link';
 import {
   ShoppingBag,
-  Shirt,
   Check,
-  Sparkles,
-  ExternalLink,
   Copy,
   CheckCircle2,
   Clock,
-  CalendarClock,
 } from 'lucide-react';
 import { Product } from '@/types';
 import { useCartStore } from '@/store';
@@ -43,7 +39,12 @@ export default function ProductCard({ product }: Props) {
 
   const sizeInfoList = standardSizes.map((size) => {
     const variant = product.variants?.find((v) => v.size === size);
-    const stock = variant !== undefined ? variant.stockQuantity : (product.variants?.length ? 0 : 50);
+    const stock =
+      variant !== undefined
+        ? variant.stockQuantity
+        : product.variants?.length
+        ? 0
+        : 50;
     const inStock = stock > 0;
     const surcharge = getSizeSurcharge(size);
     return {
@@ -70,13 +71,18 @@ export default function ProductCard({ product }: Props) {
   const [isCustomOpen, setIsCustomOpen] = useState(false);
   const [justAdded, setJustAdded] = useState(false);
   const [copiedLink, setCopiedLink] = useState(false);
+  const [imgError, setImgError] = useState(false);
 
   const selectedInfo = sizeInfoList.find((s) => s.size === selectedSize);
   const inCartForSelectedSize = items
     .filter((i) => i.productId === product.id && i.size === selectedSize)
     .reduce((sum, i) => sum + i.quantity, 0);
-  const remainingStock = Math.max(0, (selectedInfo?.stock || 0) - inCartForSelectedSize);
-  const isAvailableToAdd = (selectedInfo?.inStock || false) && remainingStock > 0;
+  const remainingStock = Math.max(
+    0,
+    (selectedInfo?.stock || 0) - inCartForSelectedSize
+  );
+  const isAvailableToAdd =
+    (selectedInfo?.inStock || false) && remainingStock > 0;
 
   const basePrice = product.retailPrice || 60.0;
   const surcharge = getSizeSurcharge(selectedSize);
@@ -88,7 +94,7 @@ export default function ProductCard({ product }: Props) {
     if (res.success) {
       setJustAdded(true);
       openCart();
-      setTimeout(() => setJustAdded(false), 1800);
+      setTimeout(() => setJustAdded(false), 1600);
     }
   };
 
@@ -98,7 +104,7 @@ export default function ProductCard({ product }: Props) {
     if (res.success) {
       setJustAdded(true);
       openCart();
-      setTimeout(() => setJustAdded(false), 1800);
+      setTimeout(() => setJustAdded(false), 1600);
     }
   };
 
@@ -113,185 +119,200 @@ export default function ProductCard({ product }: Props) {
     }
   };
 
+  const versionLabel = isKids
+    ? 'KIT INFANTIL'
+    : product.type === 'JOGADOR'
+    ? 'VERSÃO JOGADOR'
+    : product.type === 'RETRO'
+    ? 'ARQUIVO RETRÔ'
+    : 'TORCEDOR 1:1';
+
   return (
     <>
-      <div
-        className={`bg-zinc-900/90 border rounded-2xl overflow-hidden transition-all duration-300 flex flex-col group shadow-lg shadow-black/40 ${
-          isPreSale
-            ? 'border-amber-500/40 hover:border-amber-400/70'
-            : 'border-zinc-800 hover:border-rose-500/50'
-        }`}
+      <article
+        className="group rounded-2xl border overflow-hidden flex flex-col justify-between tactile"
+        style={{
+          backgroundColor: 'var(--bg-surface)',
+          borderColor: isPreSale ? 'rgba(245, 158, 11, 0.45)' : 'var(--border-crisp)',
+        }}
       >
-        {/* IMAGEM E TAGS */}
-        <div className="relative aspect-[4/3] bg-zinc-950 overflow-hidden">
-          <Link
-            href={`/produto/${product.slug}`}
-            target="_blank"
-            rel="noopener noreferrer"
-            title="Clique para abrir esta camisa em uma nova aba"
-            className="block w-full h-full cursor-pointer"
+        <div>
+          {/* MOLDURA DE ESTÚDIO 4:5 (Estilo END. Clothing / Nike) */}
+          <div
+            className="relative aspect-[4/5] overflow-hidden border-b flex flex-col justify-between p-4"
+            style={{
+              backgroundColor: 'var(--bg-studio)',
+              borderColor: 'var(--border-crisp)',
+            }}
           >
-            <Image
-              src={product.imageUrl}
-              alt={product.name}
-              fill
-              unoptimized={product.imageUrl?.startsWith('data:')}
-              sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-              className="object-cover group-hover:scale-105 transition-transform duration-500"
-            />
-            <div className="absolute inset-0 bg-gradient-to-t from-zinc-950 via-transparent to-black/40" />
-          </Link>
-
-          {/* BADGES NO TOPO ESQUERDO */}
-          <div className="absolute top-2.5 left-2.5 flex flex-wrap gap-1.5 z-10">
-            {isKids ? (
-              <span className="bg-amber-500 text-black text-[10px] font-black uppercase px-2 py-0.5 rounded-md shadow backdrop-blur-sm">
-                👶 Kit Infantil (Camisa + Calção)
-              </span>
-            ) : (
-              <span className="bg-rose-600/90 text-white text-[10px] font-black uppercase px-2 py-0.5 rounded-md shadow backdrop-blur-sm">
-                {product.league || 'Tailandesa 1:1'}
-              </span>
-            )}
-            {product.season && (
-              <span className="bg-zinc-900/90 text-zinc-300 text-[10px] font-semibold px-2 py-0.5 rounded-md border border-zinc-700 backdrop-blur-sm">
-                {product.season}
-              </span>
-            )}
-          </div>
-
-          {/* BADGE TOPO DIREITO: PRÉ-VENDA OU PRONTA ENTREGA */}
-          <div className="absolute top-2.5 right-2.5 z-10 flex items-center gap-1.5">
-            {isPreSale ? (
-              <span className="bg-amber-500 text-zinc-950 text-[10px] font-black uppercase px-2.5 py-0.5 rounded-md border border-amber-300 shadow-md inline-flex items-center gap-1">
-                <Clock className="w-3 h-3 stroke-[2.5]" />
-                Pré-Venda
-              </span>
-            ) : (
-              <span className="bg-zinc-950/90 text-emerald-400 text-[10px] font-bold px-2 py-0.5 rounded-md border border-emerald-500/30">
-                Pronta Entrega
-              </span>
-            )}
+            {/* Imagem Oficial da Camisa ou Fallback Vetorial */}
             <Link
               href={`/produto/${product.slug}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              title="Abrir em nova aba"
-              className="p-1 rounded-md bg-zinc-950/90 hover:bg-rose-600 text-zinc-300 hover:text-white border border-zinc-700/80 transition-all flex items-center justify-center shadow-md"
+              className="absolute inset-0 block cursor-pointer overflow-hidden"
+              title={product.name}
             >
-              <ExternalLink className="w-3 h-3" />
+              {!imgError && product.imageUrl ? (
+                <Image
+                  src={product.imageUrl}
+                  alt={product.name}
+                  fill
+                  unoptimized={product.imageUrl?.startsWith('data:')}
+                  onError={() => setImgError(true)}
+                  sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 25vw"
+                  className="object-cover jersey-zoom"
+                />
+              ) : (
+                <div className="w-full h-full flex items-center justify-center p-10 jersey-zoom">
+                  <img
+                    src="/ruby-brasil-icon.png"
+                    alt={product.name}
+                    className="w-28 h-28 object-contain opacity-80 ruby-icon-adaptive"
+                  />
+                </div>
+              )}
             </Link>
-          </div>
 
-          {/* FAIXA DE PREÇO */}
-          <div className="absolute bottom-2.5 left-2.5 right-2.5 z-10 bg-zinc-950/95 backdrop-blur-md rounded-xl p-2.5 border border-zinc-800 flex items-center justify-between">
-            <div>
-              <span className="text-[10px] text-zinc-400 uppercase font-semibold block">
-                {isPreSale ? 'Valor de Pré-Venda' : 'Valor Unitário'}
-              </span>
-              <div className="flex items-baseline gap-2">
-                <span className="text-xl font-black text-white">
-                  {formatCurrency(currentPrice)}
-                </span>
-                {surcharge > 0 && (
-                  <span className="text-[10px] font-bold text-amber-300 bg-amber-500/20 border border-amber-500/30 px-1.5 py-0.5 rounded">
-                    +{formatCurrency(surcharge)} ({selectedSize})
-                  </span>
-                )}
-              </div>
-            </div>
-            <div className="text-right">
+            {/* Linha Superior Discreta: Status Pré-Venda ou Versão + Personalizar */}
+            <div className="relative z-10 flex items-center justify-between gap-2">
               {isPreSale ? (
-                <span className="bg-amber-500/15 text-amber-300 border border-amber-500/30 text-[10px] font-bold px-2 py-0.5 rounded-full inline-flex items-center gap-1">
-                  <CalendarClock className="w-3 h-3 text-amber-400" />
-                  {preSaleEta || 'Chegando em Breve'}
+                <span className="px-2.5 py-1 rounded-full bg-amber-400 text-zinc-950 text-[10px] font-black uppercase tracking-wider shadow-sm inline-flex items-center gap-1">
+                  <Clock className="w-3 h-3 stroke-[2.5]" />
+                  <span>Pré-Venda{preSaleEta ? ` • ${preSaleEta}` : ''}</span>
                 </span>
               ) : (
-                <span className="bg-zinc-800 text-zinc-300 border border-zinc-700 text-[10px] font-semibold px-2 py-0.5 rounded-full inline-flex items-center gap-1">
-                  <Sparkles className="w-3 h-3 text-amber-400" />
-                  Tailandesa 1:1
+                <span
+                  className="px-2.5 py-1 rounded-full border text-[10px] font-mono font-bold uppercase tracking-wider backdrop-blur-md"
+                  style={{
+                    backgroundColor: 'color-mix(in srgb, var(--bg-surface) 90%, transparent)',
+                    borderColor: 'var(--border-crisp)',
+                    color: 'var(--text-primary)',
+                  }}
+                >
+                  {versionLabel}
+                </span>
+              )}
+
+              {product.allowCustom !== false && (
+                <button
+                  type="button"
+                  disabled={!isAvailableToAdd}
+                  onClick={() => isAvailableToAdd && setIsCustomOpen(true)}
+                  className="px-2.5 py-1 rounded-full border text-[10px] font-bold uppercase tracking-wider backdrop-blur-md hover:border-rose-600 hover:text-rose-600 tactile disabled:opacity-40"
+                  style={{
+                    backgroundColor: 'color-mix(in srgb, var(--bg-surface) 90%, transparent)',
+                    borderColor: 'var(--border-crisp)',
+                    color: 'var(--text-primary)',
+                  }}
+                  title="Personalizar Nome e Número (+ R$ 15)"
+                >
+                  Personalizar ✎
+                </button>
+              )}
+            </div>
+
+            {/* Rodapé Discreto da Moldura: Clube/Liga & Temporada */}
+            <div className="relative z-10 flex items-center justify-between gap-2 pointer-events-none">
+              <span
+                className="px-2 py-0.5 rounded text-[10px] font-mono font-semibold uppercase backdrop-blur-md border"
+                style={{
+                  backgroundColor: 'color-mix(in srgb, var(--bg-surface) 88%, transparent)',
+                  borderColor: 'var(--border-crisp)',
+                  color: 'var(--text-secondary)',
+                }}
+              >
+                {product.club || product.league || 'Oficial 1:1'}
+              </span>
+              {product.season && (
+                <span
+                  className="px-2 py-0.5 rounded text-[10px] font-mono font-semibold backdrop-blur-md border"
+                  style={{
+                    backgroundColor: 'color-mix(in srgb, var(--bg-surface) 88%, transparent)',
+                    borderColor: 'var(--border-crisp)',
+                    color: 'var(--text-secondary)',
+                  }}
+                >
+                  {product.season}
                 </span>
               )}
             </div>
           </div>
-        </div>
 
-        {/* CORPO DO CARD */}
-        <div className="p-4 flex-1 flex flex-col justify-between">
-          <div>
-            {isPreSale && (
-              <div className="mb-2 px-2.5 py-1.5 rounded-lg bg-amber-500/10 border border-amber-500/25 flex items-center justify-between gap-2 text-[11px]">
-                <span className="font-bold text-amber-300 flex items-center gap-1.5">
-                  <Clock className="w-3.5 h-3.5 text-amber-400 shrink-0" />
-                  Modelo que irá chegar
-                </span>
-                <span className="text-zinc-300 font-medium truncate">
-                  {preSaleEta || 'Reserve sua grade antecipada'}
+          {/* INFORMAÇÕES EDITORIAIS E SELETOR TÁTIL DE TAMANHO */}
+          <div className="p-4 space-y-3">
+            <div>
+              <div className="flex items-start justify-between gap-2">
+                <Link
+                  href={`/produto/${product.slug}`}
+                  className="text-sm font-bold leading-snug line-clamp-2 hover:text-rose-600 tactile flex-1"
+                  style={{ color: 'var(--text-primary)' }}
+                >
+                  {product.name}
+                </Link>
+                <button
+                  type="button"
+                  onClick={handleCopyLink}
+                  title="Copiar link desta camisa"
+                  className="p-1 rounded-md border tactile shrink-0 hover:opacity-80"
+                  style={{
+                    borderColor: 'var(--border-crisp)',
+                    color: 'var(--text-muted)',
+                  }}
+                >
+                  {copiedLink ? (
+                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" />
+                  ) : (
+                    <Copy className="w-3.5 h-3.5" />
+                  )}
+                </button>
+              </div>
+
+              <div className="mt-1.5 flex items-baseline justify-between">
+                <div className="flex items-baseline gap-2">
+                  <span
+                    className="text-lg font-black font-mono tabular-nums"
+                    style={{ color: 'var(--text-primary)' }}
+                  >
+                    {formatCurrency(currentPrice)}
+                  </span>
+                  {surcharge > 0 && (
+                    <span className="text-[10px] font-mono font-bold text-amber-600 dark:text-amber-400">
+                      +{formatCurrency(surcharge)} ({selectedSize})
+                    </span>
+                  )}
+                </div>
+                <span className="text-[11px] font-mono font-semibold text-emerald-600 dark:text-emerald-400">
+                  R$ 55 no 50+
                 </span>
               </div>
-            )}
-
-            <div className="flex items-start justify-between gap-1.5">
-              <Link
-                href={`/produto/${product.slug}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                title="Abrir em nova aba"
-                className="text-sm font-bold text-white line-clamp-2 hover:text-rose-400 transition-colors flex-1"
-              >
-                {product.name}
-              </Link>
-              <button
-                type="button"
-                onClick={handleCopyLink}
-                title="Copiar link deste item para enviar ao cliente"
-                className="p-1 text-zinc-400 hover:text-white hover:bg-zinc-800 rounded-md transition-colors shrink-0"
-              >
-                {copiedLink ? (
-                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
-                ) : (
-                  <Copy className="w-3.5 h-3.5" />
-                )}
-              </button>
             </div>
-            <p className="text-xs text-zinc-400 mt-1 line-clamp-1">
-              {product.description ||
-                (isPreSale
-                  ? 'Lançamento em pré-venda! Garanta sua peça antecipadamente antes do lote esgotar.'
-                  : isKids
-                  ? 'Kit infantil com camisa oficial e calção com cordão elástico.'
-                  : 'Padrão torcedor oficial com detalhes bordados e tecnologia de secagem rápida.')}
-            </p>
 
-            {/* SELETOR DE TAMANHO */}
-            <div className="mt-3">
-              <div className="flex items-center justify-between text-xs mb-1.5">
-                <span className="font-semibold text-zinc-300">
-                  {isKids ? 'Idade / Tamanho Infantil:' : 'Escolha o Tamanho:'}
+            {/* Seletor de Grade Direto */}
+            <div>
+              <div
+                className="flex items-center justify-between text-[11px] font-mono mb-1.5"
+                style={{ color: 'var(--text-muted)' }}
+              >
+                <span>
+                  TAM: <strong style={{ color: 'var(--text-primary)' }}>{selectedSize}</strong>
                 </span>
                 {!selectedInfo?.inStock ? (
-                  <span className="text-[11px] text-rose-400 font-bold flex items-center gap-1">
-                    <span className="w-1.5 h-1.5 rounded-full bg-rose-400" />
-                    Esgotado
-                  </span>
+                  <span className="text-rose-600 font-bold">Esgotado</span>
                 ) : remainingStock === 0 ? (
-                  <span className="text-[11px] text-amber-400 font-bold flex items-center gap-1">
-                    <span className="w-1.5 h-1.5 rounded-full bg-amber-400" />
-                    Máximo no Carrinho
+                  <span className="text-amber-600 dark:text-amber-400 font-bold">
+                    Limite na Sacola
                   </span>
                 ) : isPreSale ? (
-                  <span className="text-[11px] text-amber-400 font-semibold flex items-center gap-1">
-                    <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
-                    Reserva Aberta ({remainingStock} un)
+                  <span className="text-amber-600 dark:text-amber-400 font-semibold">
+                    Reserva ({remainingStock} un)
                   </span>
                 ) : (
-                  <span className="text-[11px] text-emerald-400 font-semibold flex items-center gap-1">
-                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                    Em Estoque ({remainingStock} un)
+                  <span className="text-emerald-600 dark:text-emerald-400 font-semibold">
+                    Disponível ({remainingStock} un)
                   </span>
                 )}
               </div>
-              <div className={`grid ${standardSizes.length > 5 ? 'grid-cols-7' : 'grid-cols-5'} gap-1`}>
+
+              <div className="flex flex-wrap gap-1">
                 {sizeInfoList.map((info) => {
                   const isSelected = selectedSize === info.size;
                   const inCartForThisSize = items
@@ -306,108 +327,70 @@ export default function ProductCard({ product }: Props) {
                       key={info.size}
                       type="button"
                       onClick={() => setSelectedSize(info.size)}
-                      className={`py-1.5 px-0.5 rounded-lg text-xs font-bold border transition-all flex flex-col items-center justify-center relative ${
+                      className={`h-7 min-w-[34px] px-1.5 rounded-md font-mono text-xs font-bold border tactile ${
                         isSelected
-                          ? !isSoldOut && !isMaxInCart
-                            ? isPreSale
-                              ? 'bg-amber-500 border-amber-400 text-zinc-950 shadow-md shadow-amber-950/50'
-                              : 'bg-rose-600 border-rose-500 text-white shadow-md shadow-rose-950/50'
-                            : 'bg-zinc-800 border-rose-500/80 text-rose-300'
+                          ? 'bg-zinc-950 text-white border-zinc-950 dark:bg-white dark:text-zinc-950 dark:border-white'
                           : isSoldOut || isMaxInCart
-                          ? 'bg-zinc-950/40 border-zinc-800/60 text-zinc-600 hover:border-zinc-700'
-                          : 'bg-zinc-950 border-zinc-800 text-zinc-300 hover:border-zinc-700'
+                          ? 'opacity-40 line-through'
+                          : 'hover:border-zinc-500'
                       }`}
+                      style={
+                        !isSelected
+                          ? {
+                              backgroundColor: 'var(--bg-canvas)',
+                              borderColor: 'var(--border-crisp)',
+                              color: 'var(--text-secondary)',
+                            }
+                          : undefined
+                      }
                     >
-                      <span className={`leading-tight ${isSoldOut ? 'line-through opacity-60 text-zinc-500' : ''}`}>
-                        {info.size}
-                      </span>
-                      {info.surcharge > 0 && !isSoldOut && (
-                        <span
-                          className={`text-[8px] font-semibold leading-none mt-0.5 ${
-                            isSelected
-                              ? isPreSale
-                                ? 'text-zinc-900'
-                                : 'text-rose-200'
-                              : 'text-amber-400'
-                          }`}
-                        >
-                          +{info.surcharge}
-                        </span>
-                      )}
-                      {isSoldOut ? (
-                        <span className="text-[7px] text-rose-400/90 font-semibold leading-none mt-0.5">
-                          Esgotado
-                        </span>
-                      ) : isMaxInCart ? (
-                        <span className="text-[7px] text-amber-400/90 font-semibold leading-none mt-0.5">
-                          No Carrinho
-                        </span>
-                      ) : null}
+                      {info.size}
                     </button>
                   );
                 })}
               </div>
             </div>
           </div>
-
-          {/* BOTÕES DE AÇÃO */}
-          <div className="mt-4 space-y-2">
-            <button
-              type="button"
-              disabled={!isAvailableToAdd}
-              onClick={handleBuy}
-              className={`w-full py-2.5 px-4 rounded-xl text-xs sm:text-sm font-black flex items-center justify-center gap-2 transition-all ${
-                justAdded
-                  ? 'bg-emerald-600 text-white'
-                  : !isAvailableToAdd
-                  ? 'bg-zinc-800/80 text-zinc-500 border border-zinc-700/50 cursor-not-allowed'
-                  : isPreSale
-                  ? 'bg-amber-500 hover:bg-amber-400 text-zinc-950 shadow-lg shadow-amber-950/50 active:scale-95'
-                  : 'bg-rose-600 hover:bg-rose-500 text-white shadow-lg shadow-rose-950/60 active:scale-95'
-              }`}
-            >
-              {justAdded ? (
-                <>
-                  <Check className="w-4 h-4" />
-                  {isPreSale ? 'Reserva Adicionada!' : 'Adicionado ao Carrinho!'}
-                </>
-              ) : !selectedInfo?.inStock ? (
-                <>Tamanho {selectedSize} Esgotado</>
-              ) : remainingStock === 0 ? (
-                <>Limite no Carrinho ({selectedInfo?.stock} un)</>
-              ) : isPreSale ? (
-                <>
-                  <Clock className="w-4 h-4 stroke-[2.5]" />
-                  Reservar na Pré-Venda ({selectedSize})
-                </>
-              ) : (
-                <>
-                  <ShoppingBag className="w-4 h-4" />
-                  Adicionar ao Carrinho ({selectedSize})
-                </>
-              )}
-            </button>
-
-            {product.allowCustom && (
-              <button
-                type="button"
-                disabled={!isAvailableToAdd}
-                onClick={() => isAvailableToAdd && setIsCustomOpen(true)}
-                className={`w-full py-1.5 px-3 rounded-lg text-xs font-semibold border flex items-center justify-center gap-1.5 transition-colors ${
-                  !isAvailableToAdd
-                    ? 'opacity-40 cursor-not-allowed border-zinc-800 bg-zinc-950 text-zinc-600'
-                    : 'text-zinc-400 hover:text-white bg-zinc-950 hover:bg-zinc-800/80 border-zinc-800'
-                }`}
-              >
-                <Shirt className="w-3.5 h-3.5 text-amber-400" />
-                Personalizar Nome e Número (+ R$ 15)
-              </button>
-            )}
-          </div>
         </div>
-      </div>
 
-      {product.allowCustom && (
+        {/* CTA Principal */}
+        <div className="px-4 pb-4">
+          <button
+            type="button"
+            disabled={!isAvailableToAdd}
+            onClick={handleBuy}
+            className={`w-full h-10 rounded-xl font-black text-xs uppercase tracking-wider flex items-center justify-center gap-2 tactile ${
+              justAdded
+                ? 'bg-emerald-600 text-white'
+                : !isAvailableToAdd
+                ? 'opacity-40 cursor-not-allowed bg-zinc-500 text-white'
+                : isPreSale
+                ? 'bg-amber-400 hover:bg-amber-300 text-zinc-950'
+                : 'bg-rose-600 hover:bg-rose-500 text-white'
+            }`}
+          >
+            {justAdded ? (
+              <>
+                <Check className="w-4 h-4" />
+                <span>{isPreSale ? 'Reserva Adicionada!' : 'Adicionado à Sacola!'}</span>
+              </>
+            ) : !selectedInfo?.inStock ? (
+              <span>Tamanho {selectedSize} Esgotado</span>
+            ) : remainingStock === 0 ? (
+              <span>Limite na Sacola ({selectedInfo?.stock} un)</span>
+            ) : isPreSale ? (
+              <span>⏳ Reservar Pré-Venda ({selectedSize})</span>
+            ) : (
+              <>
+                <ShoppingBag className="w-3.5 h-3.5" />
+                <span>Adicionar à Sacola ({selectedSize})</span>
+              </>
+            )}
+          </button>
+        </div>
+      </article>
+
+      {product.allowCustom !== false && (
         <CustomizationModal
           isOpen={isCustomOpen}
           onClose={() => setIsCustomOpen(false)}

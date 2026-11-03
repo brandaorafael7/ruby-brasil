@@ -1,26 +1,17 @@
 'use client';
 
 import React, { useState, useMemo } from 'react';
+import Image from 'next/image';
+import Link from 'next/link';
 import {
   Search,
-  Flame,
-  Truck,
-  Sparkles,
-  ShieldCheck,
-  Star,
-  MessageSquare,
-  ArrowRight,
-  ChevronDown,
-  ChevronUp,
-  PackageCheck,
-  Zap,
-  Award,
-  ShoppingCart,
   Clock,
-  CalendarClock,
+  ArrowRight,
+  ShoppingBag,
 } from 'lucide-react';
 import { Product } from '@/types';
-import { getProductPreSaleInfo } from '@/lib/utils';
+import { useCartStore } from '@/store';
+import { formatCurrency, getProductPreSaleInfo } from '@/lib/utils';
 import ProductCard from '@/components/product/ProductCard';
 
 interface Props {
@@ -30,85 +21,48 @@ interface Props {
 const CATEGORIES = [
   'Todas as Categorias',
   'Pré-Venda',
-  'Infantil',
   'Brasileirão',
   'Premier League',
   'La Liga',
   'Champions League',
   'Seleções',
   'Retrô',
+  'Infantil',
   'Feminina',
 ];
 
 const FAQS = [
   {
-    question: 'Qual o valor unitário das camisas?',
+    question: '1. Qual a diferença entre os modelos Pronta Entrega e Pré-Venda?',
     answer:
-      'Trabalhamos com preço justo direto de fábrica a partir de R$ 60,00 por camisa para o padrão Tailandês 1:1 oficial.',
+      'Os modelos Pronta Entrega já estão em nosso estoque físico em Campinas/SP e são postados rapidamente após a confirmação. Os modelos marcados com ⏳ Pré-Venda são lançamentos e reposições que já estão em trânsito para o Brasil — você reserva seus tamanhos antecipadamente pelo site e garante prioridade total no envio assim que o lote dá entrada.',
   },
   {
-    question: 'Como funciona a Pré-Venda de modelos que irão chegar?',
+    question: '2. Como funciona o desconto progressivo de Atacado (R$ 55/un)?',
     answer:
-      'Na seção de Pré-Venda você encontra os lançamentos e reposições que já estão em trânsito para o nosso estoque. Você pode reservar seus tamanhos antecipadamente pelo site e garantir prioridade total no envio assim que o lote chegar.',
+      'Você pode misturar livremente clubes, tamanhos adultos (P ao 4XL), kits infantis (16 ao 28) e modelos de pré-venda na mesma sacola. De 1 a 49 peças, cada camisa sai por R$ 60,00. Ao atingir 50 peças ou mais no carrinho, o sistema recalcula automaticamente o valor base para R$ 55,00/un.',
   },
   {
-    question: 'Como funciona o cálculo do frete?',
+    question: '3. Qual o padrão de qualidade das camisas (Tailandesa 1:1)?',
     answer:
-      'O frete é calculado em tempo real através da integração oficial com o Melhor Envio. Você pode escolher as opções mais vantajosas dos Correios (PAC e SEDEX) ou da Loggi, de acordo com seu CEP e prazo desejado.',
+      'Trabalhamos exclusivamente com importação direta padrão 1:1: tecido tecnológico respirável Dri-Fit/AEROREADY, escudos bordados de alta definição ou termoaplicados em TPU nas versões Jogador, etiquetas internas e externas originais de fábrica e embalagem individual ziplock.',
   },
   {
-    question: 'Posso mesclar times, modelos e tamanhos diferentes no mesmo pedido?',
+    question: '4. É possível personalizar as camisas com Nome e Número oficial?',
     answer:
-      'Sim, com certeza! Você pode misturar qualquer clube do Brasileirão, times europeus, seleções e edições retrô em qualquer tamanho adulto (do P ao 4XL) ou infantil (16 ao 28) no seu carrinho com total liberdade.',
+      'Sim! Basta clicar no botão "Personalizar ✎" em qualquer camisa para simular e adicionar qualquer nome e número oficial termoaplicado por apenas + R$ 15,00 por peça.',
   },
   {
-    question: 'Qual é o padrão de qualidade das camisas?',
+    question: '5. Como funciona o cálculo de frete e o fechamento no WhatsApp?',
     answer:
-      'Trabalhamos exclusivamente com o padrão Tailandês 1:1, a melhor qualidade do mercado internacional. São camisas com tecido tecnológico Dri-Fit/AEROREADY, escudos bordados de alta definição, etiquetas internas e externas oficiais e saquinho com fecho zip da marca.',
-  },
-  {
-    question: 'É possível personalizar as camisas com nome e número?',
-    answer:
-      'Sim! É possível solicitar personalização com qualquer nome e número oficial pelo valor adicional de apenas R$ 15,00 por camisa.',
-  },
-  {
-    question: 'Como finalizo meu pedido e recebo o rastreamento?',
-    answer:
-      'Você escolhe as camisas aqui no site, e ao clicar em "Finalizar no WhatsApp" no carrinho, o sistema gera a lista completa e formatada direto no WhatsApp oficial da nossa equipe. Enviamos foto do pedido embalado e o código de rastreamento dos Correios/transportadora.',
-  },
-];
-
-const TESTIMONIALS = [
-  {
-    name: 'Marcos Vinícius',
-    role: 'Revendedor em Salvador - BA',
-    comment:
-      'Comprei camisas para revender na minha cidade direto pelo site. A qualidade Tailandesa 1:1 é surreal de perfeita, vendi todas em menos de 10 dias. Já montei meu próximo pedido!',
-    rating: 5,
-    tag: 'Revenda de Camisas',
-  },
-  {
-    name: 'Rodrigo Alencar',
-    role: 'Cliente em Belo Horizonte - MG',
-    comment:
-      'Juntei com o pessoal da pelada e pedimos 14 camisas pelo site. Chegou tudo certinho, tecidos impecáveis com todos os detalhes e etiquetas. Melhor fornecedor do Brasil!',
-    rating: 5,
-    tag: 'Pedido Coletivo (14 un)',
-  },
-  {
-    name: 'Matheus Fontes',
-    role: 'Cliente em Aracaju - SE',
-    comment:
-      'Atendimento no WhatsApp é nota 10. Tiraram minhas dúvidas de tamanho, confirmaram o pedido super rápido e me mandaram o código de rastreio. Recomendo muito!',
-    rating: 5,
-    tag: 'Cliente Satisfeito',
+      'O frete é cotado em tempo real via Melhor Envio (Correios PAC, SEDEX e Loggi) diretamente na sacola. Ao clicar em "Finalizar no WhatsApp", o sistema gera seu pedido completo e numerado (identificando automaticamente os itens a pronta entrega e as reservas de pré-venda) direto para nossa equipe.',
   },
 ];
 
 export default function CatalogView({ initialProducts }: Props) {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('Todas as Categorias');
-  const [openFaq, setOpenFaq] = useState<number | null>(0);
+  const { addItem, openCart } = useCartStore();
 
   const preSaleProducts = useMemo(() => {
     return initialProducts.filter((p) => getProductPreSaleInfo(p).isPreSale);
@@ -124,6 +78,15 @@ export default function CatalogView({ initialProducts }: Props) {
         p.description?.toLowerCase().includes('infantil')
     );
   }, [initialProducts]);
+
+  const spotlightProduct = useMemo(() => {
+    if (preSaleProducts.length > 0) return preSaleProducts[0];
+    return initialProducts[0] || null;
+  }, [preSaleProducts, initialProducts]);
+
+  const spotlightPreSale = useMemo(() => {
+    return spotlightProduct ? getProductPreSaleInfo(spotlightProduct) : { isPreSale: false, preSaleEta: null };
+  }, [spotlightProduct]);
 
   const filteredProducts = useMemo(() => {
     return initialProducts.filter((product) => {
@@ -156,158 +119,241 @@ export default function CatalogView({ initialProducts }: Props) {
     });
   }, [initialProducts, searchTerm, selectedCategory]);
 
-  const toggleFaq = (idx: number) => {
-    setOpenFaq(openFaq === idx ? null : idx);
+  const handleSpotlightBuy = () => {
+    if (!spotlightProduct) return;
+    const defaultSize =
+      spotlightProduct.type === 'INFANTIL' ? '22' : 'M';
+    const res = addItem(spotlightProduct, defaultSize, 1);
+    if (res.success) {
+      openCart();
+    }
   };
 
   return (
-    <div className="min-h-screen bg-zinc-950 text-zinc-100 flex flex-col">
-      {/* 1. HERO SECTION */}
-      <section className="relative overflow-hidden pt-8 pb-16 sm:pt-14 sm:pb-20 border-b border-zinc-900 bg-zinc-950">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-          <div className="text-center max-w-3xl mx-auto">
-            {/* Badge de Destaque */}
-            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-rose-500/10 border border-rose-500/30 text-rose-400 text-xs font-black tracking-wider uppercase mb-6 shadow-sm">
-              <Sparkles className="w-3.5 h-3.5" />
-              <span>Fornecedor Oficial • Camisas Tailandesas 1:1</span>
-            </div>
+    <div className="min-h-screen flex flex-col">
+      {/* =========================================================================
+          1. LOOKBOOK EDITORIAL SPLIT-BANNER (Estilo Nike Lab / END. / Classic Football Shirts)
+          ========================================================================= */}
+      <section
+        className="border-b"
+        style={{
+          borderColor: 'var(--border-crisp)',
+          backgroundColor: 'var(--bg-surface)',
+        }}
+      >
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 lg:py-8">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
+            {/* Coluna Editorial Esquerda (7 cols): Manifesto + Condições Diretas */}
+            <div
+              className="lg:col-span-7 flex flex-col justify-between p-6 sm:p-8 rounded-2xl border relative overflow-hidden"
+              style={{
+                borderColor: 'var(--border-crisp)',
+                backgroundColor: 'var(--bg-studio)',
+              }}
+            >
+              {/* Marca d'água sutil do Diamante Ruby Brasil */}
+              <img
+                src="/ruby-brasil-icon.png"
+                alt=""
+                aria-hidden="true"
+                className="w-36 h-36 object-contain absolute -right-4 -top-4 opacity-[0.08] pointer-events-none ruby-icon-adaptive"
+              />
 
-            {/* Título Principal */}
-            <h1 className="text-3xl sm:text-5xl lg:text-6xl font-black text-white tracking-tight leading-[1.1] uppercase">
-              Camisas de Futebol <br />
-              <span className="text-rose-500">Direto de Fábrica</span>
-            </h1>
+              <div className="relative z-10">
+                <div className="flex flex-wrap items-center gap-2 mb-4">
+                  <span className="px-2.5 py-1 rounded-full bg-rose-600 text-white text-[11px] font-bold uppercase tracking-wider">
+                    TEMPORADA 25/26 & CLÁSSICOS
+                  </span>
+                  <span
+                    className="px-2.5 py-1 rounded-full border text-[11px] font-mono uppercase tracking-wider"
+                    style={{
+                      borderColor: 'var(--border-crisp)',
+                      backgroundColor: 'var(--bg-surface)',
+                      color: 'var(--text-secondary)',
+                    }}
+                  >
+                    TECIDO TAILANDÊS 1:1 • ENVIO DE CAMPINAS/SP
+                  </span>
+                </div>
 
-            {/* Subtítulo */}
-            <p className="mt-4 sm:mt-5 text-sm sm:text-base text-zinc-300 leading-relaxed max-w-2xl mx-auto font-medium">
-              Padrão oficial Tailandês 1:1 com tecido tecnológico Dri-Fit, bordados impecáveis e etiquetas autênticas. Compre pronta entrega ou reserve modelos exclusivos na pré-venda.
-            </p>
+                <h1
+                  className="text-3xl sm:text-4xl lg:text-[42px] font-black tracking-tight leading-[1.06] uppercase"
+                  style={{ color: 'var(--text-primary)' }}
+                >
+                  Mantos Oficiais & Arquivo Histórico Direto da Fábrica.
+                </h1>
 
-            {/* FAIXA DE CONDIÇÕES COMERCIAIS */}
-            <div className="mt-8 grid grid-cols-1 sm:grid-cols-2 gap-3 p-3 bg-zinc-900/90 border border-zinc-800 rounded-2xl shadow-2xl max-w-xl mx-auto">
-              <div className="flex items-center gap-3 p-2.5 rounded-xl bg-zinc-950/80 border border-zinc-800/80">
-                <Sparkles className="w-5 h-5 text-zinc-300 shrink-0" />
-                <div className="text-left text-xs">
-                  <span className="text-zinc-400 block text-[10px]">Padrão Tailandês 1:1</span>
-                  <strong className="text-white font-black">Qualidade Oficial</strong>
+                <p
+                  className="mt-3 text-sm sm:text-base max-w-xl leading-relaxed"
+                  style={{ color: 'var(--text-secondary)' }}
+                >
+                  Bordados de alta definição, versões Jogador (Slim Fit) e Torcedor, além de relíquias retrô imortais. Compre no varejo sem pedido mínimo ou destrave o preço de atacado automaticamente na sacola.
+                </p>
+              </div>
+
+              {/* Barra de Condições Comerciais Integrada */}
+              <div
+                className="relative z-10 mt-6 pt-5 border-t grid grid-cols-3 gap-4"
+                style={{ borderColor: 'var(--border-crisp)' }}
+              >
+                <div>
+                  <span
+                    className="text-[11px] font-mono uppercase block"
+                    style={{ color: 'var(--text-muted)' }}
+                  >
+                    1 a 49 Peças
+                  </span>
+                  <span
+                    className="text-lg sm:text-xl font-black font-mono tabular-nums"
+                    style={{ color: 'var(--text-primary)' }}
+                  >
+                    R$ 60
+                    <small
+                      className="text-xs font-normal"
+                      style={{ color: 'var(--text-muted)' }}
+                    >
+                      /un
+                    </small>
+                  </span>
+                </div>
+
+                <div
+                  className="border-l pl-4"
+                  style={{ borderColor: 'var(--border-crisp)' }}
+                >
+                  <span className="text-[11px] font-mono uppercase block text-emerald-600 dark:text-emerald-400">
+                    Atacado (50+ un)
+                  </span>
+                  <span className="text-lg sm:text-xl font-black font-mono tabular-nums text-emerald-600 dark:text-emerald-400">
+                    R$ 55<small className="text-xs font-normal">/un</small>
+                  </span>
+                </div>
+
+                <div
+                  className="border-l pl-4"
+                  style={{ borderColor: 'var(--border-crisp)' }}
+                >
+                  <span
+                    className="text-[11px] font-mono uppercase block"
+                    style={{ color: 'var(--text-muted)' }}
+                  >
+                    Frete Grátis
+                  </span>
+                  <span
+                    className="text-lg sm:text-xl font-black font-mono tabular-nums"
+                    style={{ color: 'var(--text-primary)' }}
+                  >
+                    10+ pçs
+                  </span>
                 </div>
               </div>
-
-              <div className="flex items-center gap-3 p-2.5 rounded-xl bg-zinc-950/80 border border-amber-500/30 shadow-sm">
-                <Truck className="w-5 h-5 text-amber-400 shrink-0" />
-                <div className="text-left text-xs">
-                  <span className="text-zinc-400 block text-[10px]">Envio para todo o Brasil</span>
-                  <strong className="text-amber-300 font-black">Melhor Envio Oficial</strong>
-                </div>
-              </div>
             </div>
 
-            {/* BOTÕES DE AÇÃO HERO */}
-            <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-4">
-              <a
-                href="#catalogo"
-                className="w-full sm:w-auto px-8 py-3.5 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-extrabold text-sm sm:text-base flex items-center justify-center gap-2 shadow-lg shadow-rose-950/50 transition-all hover:scale-[1.02]"
-              >
-                <ShoppingCart className="w-5 h-5" />
-                Explorar Catálogo de Peças
-              </a>
-              <a
-                href="#pre-venda"
-                className="w-full sm:w-auto px-7 py-3.5 rounded-xl bg-zinc-900 hover:bg-zinc-800 border border-amber-500/40 text-amber-300 hover:text-amber-200 font-bold text-sm sm:text-base flex items-center justify-center gap-2 transition-all"
-              >
-                <Clock className="w-5 h-5 text-amber-400" />
-                Ver Pré-Venda (Modelos Chegando)
-              </a>
-            </div>
+            {/* Coluna Editorial Direita (5 cols): Card de Drop / Pré-Venda em Destaque */}
+            <div
+              className="lg:col-span-5 rounded-2xl border p-6 flex flex-col justify-between bg-zinc-950 text-white relative overflow-hidden"
+              style={{ borderColor: 'var(--border-crisp)' }}
+            >
+              <div className="flex items-center justify-between gap-2 z-10">
+                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-amber-400 text-zinc-950 text-[11px] font-black uppercase tracking-wider">
+                  {spotlightPreSale.isPreSale ? '⏳ DROP PRÉ-VENDA' : '★ DESTAQUE DA COLEÇÃO'}
+                </span>
+                <span className="text-xs font-mono text-amber-300">
+                  {spotlightPreSale.isPreSale
+                    ? spotlightPreSale.preSaleEta || 'Lote Chegando • Reserva Aberta'
+                    : 'Pronta Entrega • Envio Rápido'}
+                </span>
+              </div>
 
-            {/* MINI BADGES DE CONFIANÇA */}
-            <div className="mt-10 pt-8 border-t border-zinc-800/60 grid grid-cols-2 sm:grid-cols-4 gap-4 text-center">
-              <div>
-                <span className="block text-xl sm:text-2xl font-black text-white">+12.000</span>
-                <span className="text-[11px] text-zinc-400 font-medium">Camisas Entregues</span>
-              </div>
-              <div>
-                <span className="block text-xl sm:text-2xl font-black text-rose-400">1:1 Oficial</span>
-                <span className="text-[11px] text-zinc-400 font-medium">Padrão Tailandês</span>
-              </div>
-              <div>
-                <span className="block text-xl sm:text-2xl font-black text-emerald-400">4.9 ★★★★★</span>
-                <span className="text-[11px] text-zinc-400 font-medium">Avaliação dos Clientes</span>
-              </div>
-              <div>
-                <span className="block text-xl sm:text-2xl font-black text-amber-400">100% Seguro</span>
-                <span className="text-[11px] text-zinc-400 font-medium">Envio com Rastreio</span>
-              </div>
+              {spotlightProduct ? (
+                <>
+                  <div className="my-4 flex items-center gap-4 sm:gap-5 z-10">
+                    <Link
+                      href={`/produto/${spotlightProduct.slug}`}
+                      className="w-28 h-36 sm:w-32 sm:h-40 shrink-0 relative rounded-xl border border-zinc-800 bg-zinc-900 overflow-hidden block"
+                    >
+                      <Image
+                        src={spotlightProduct.imageUrl}
+                        alt={spotlightProduct.name}
+                        fill
+                        unoptimized={spotlightProduct.imageUrl?.startsWith('data:')}
+                        sizes="150px"
+                        className="object-cover hover:scale-105 transition-transform duration-300"
+                      />
+                    </Link>
+
+                    <div className="space-y-1.5 min-w-0">
+                      <div className="text-[11px] font-mono uppercase tracking-widest text-zinc-400 truncate">
+                        {spotlightProduct.club || spotlightProduct.league} •{' '}
+                        {spotlightProduct.season || '25/26'}
+                      </div>
+                      <Link
+                        href={`/produto/${spotlightProduct.slug}`}
+                        className="text-base sm:text-lg font-black tracking-tight leading-snug text-white line-clamp-2 hover:text-amber-300 tactile block"
+                      >
+                        {spotlightProduct.name}
+                      </Link>
+                      <p className="text-xs text-zinc-400 leading-relaxed line-clamp-2">
+                        {spotlightProduct.description ||
+                          'Acabamento oficial Tailandês 1:1 com tecido respirável e escudo de alta definição.'}
+                      </p>
+                      <div className="pt-1 flex items-baseline gap-2">
+                        <span className="text-lg font-black font-mono tabular-nums text-amber-400">
+                          {formatCurrency(spotlightProduct.retailPrice || 60)}
+                        </span>
+                        <span className="text-xs text-zinc-500 font-mono">
+                          R$ 55 no atacado 50+
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-2 pt-3 border-t border-zinc-800/80 z-10">
+                    <button
+                      type="button"
+                      onClick={handleSpotlightBuy}
+                      className="flex-1 h-10 rounded-xl bg-amber-400 hover:bg-amber-300 text-zinc-950 font-black text-xs uppercase tracking-wider tactile"
+                    >
+                      {spotlightPreSale.isPreSale
+                        ? 'Reservar na Pré-Venda'
+                        : 'Adicionar Destaque à Sacola'}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (preSaleProducts.length > 0) {
+                          setSelectedCategory('Pré-Venda');
+                        }
+                        document
+                          .getElementById('catalogo')
+                          ?.scrollIntoView({ behavior: 'smooth' });
+                      }}
+                      className="h-10 px-3.5 rounded-xl bg-zinc-900 hover:bg-zinc-800 border border-zinc-700 text-zinc-200 font-semibold text-xs tactile"
+                    >
+                      Ver Drops ({preSaleProducts.length || initialProducts.length})
+                    </button>
+                  </div>
+                </>
+              ) : null}
             </div>
           </div>
         </div>
       </section>
 
-      {/* 2. BARRA DE BENEFÍCIOS */}
-      <section className="py-12 bg-zinc-950 border-b border-zinc-900">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            <div className="bg-zinc-900/60 border border-zinc-800/80 rounded-2xl p-5 hover:border-rose-500/40 transition-colors">
-              <div className="w-10 h-10 rounded-xl bg-rose-500/10 border border-rose-500/20 flex items-center justify-center text-rose-400 mb-3">
-                <Truck className="w-5 h-5" />
-              </div>
-              <h3 className="text-sm font-black text-white">Envio Seguro Melhor Envio</h3>
-              <p className="text-xs text-zinc-400 mt-1 leading-relaxed">
-                Cotação em tempo real com as melhores tarifas dos Correios (PAC/SEDEX) e Loggi com rastreamento completo.
-              </p>
-            </div>
-
-            <div className="bg-zinc-900/60 border border-zinc-800/80 rounded-2xl p-5 hover:border-amber-500/40 transition-colors">
-              <div className="w-10 h-10 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-400 mb-3">
-                <CalendarClock className="w-5 h-5" />
-              </div>
-              <h3 className="text-sm font-black text-white">Pré-Venda Exclusiva</h3>
-              <p className="text-xs text-zinc-400 mt-1 leading-relaxed">
-                Reserve antecipadamente os lançamentos e modelos que estão chegando antes que esgotem no lote.
-              </p>
-            </div>
-
-            <div className="bg-zinc-900/60 border border-zinc-800/80 rounded-2xl p-5 hover:border-emerald-500/40 transition-colors">
-              <div className="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400 mb-3">
-                <Award className="w-5 h-5" />
-              </div>
-              <h3 className="text-sm font-black text-white">Padrão Tailandês 1:1</h3>
-              <p className="text-xs text-zinc-400 mt-1 leading-relaxed">
-                Tecido tecnológico respirável, escudos e bordados precisos e todas as etiquetas oficiais.
-              </p>
-            </div>
-
-            <div className="bg-zinc-900/60 border border-zinc-800/80 rounded-2xl p-5 hover:border-blue-500/40 transition-colors">
-              <div className="w-10 h-10 rounded-xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-400 mb-3">
-                <MessageSquare className="w-5 h-5" />
-              </div>
-              <h3 className="text-sm font-black text-white">Atendimento Direto</h3>
-              <p className="text-xs text-zinc-400 mt-1 leading-relaxed">
-                Tire dúvidas, personalize peças e finalize seu pedido com nossa equipe de atendimento no carrinho.
-              </p>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* 3. SEÇÃO PRINCIPAL DE CATÁLOGO E BUSCA */}
-      <section id="catalogo" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-10 pb-16 flex-1 w-full">
-        {/* Cabeçalho do Catálogo */}
-        <div className="mb-6">
-          <span className="text-[11px] font-black uppercase tracking-wider text-rose-400 block mb-1">
-            Pronta Entrega & Pré-Venda • Despacho Rápido
-          </span>
-          <h2 className="text-2xl sm:text-3xl font-black text-white">
-            Catálogo Completo de Peças
-          </h2>
-          <p className="text-xs sm:text-sm text-zinc-400 mt-1">
-            Escolha seus modelos em pronta entrega ou reserve lançamentos que irão chegar na aba Pré-Venda.
-          </p>
-        </div>
-
-        {/* BARRA DE CATEGORIAS ACIMA */}
-        <div className="mb-4">
-          <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-none">
+      {/* =========================================================================
+          2. CATÁLOGO VISUAL DE CAMISAS (Proporção 4:5 de Estúdio • Estilo END. / Nike)
+          ========================================================================= */}
+      <main
+        id="catalogo"
+        className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8"
+      >
+        {/* Barra Unificada de Filtros de Coleção e Busca */}
+        <div
+          className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pb-6 border-b"
+          style={{ borderColor: 'var(--border-crisp)' }}
+        >
+          {/* Pílulas de Categoria */}
+          <div className="flex items-center gap-1.5 overflow-x-auto pb-1 lg:pb-0">
             {CATEGORIES.map((cat) => {
               const isPreSaleTab = cat === 'Pré-Venda';
               const isSelected = selectedCategory === cat;
@@ -316,24 +362,37 @@ export default function CatalogView({ initialProducts }: Props) {
                   key={cat}
                   type="button"
                   onClick={() => setSelectedCategory(cat)}
-                  className={`px-4 py-2 rounded-xl text-xs sm:text-sm font-bold whitespace-nowrap transition-all duration-200 border inline-flex items-center gap-1.5 ${
+                  className={`px-3.5 py-2 rounded-full text-xs font-bold whitespace-nowrap tactile inline-flex items-center gap-1.5 border ${
                     isSelected
                       ? isPreSaleTab
-                        ? 'bg-amber-500 text-zinc-950 border-amber-400 shadow-lg shadow-amber-950/60 scale-[1.02]'
-                        : 'bg-rose-600 text-white border-rose-500 shadow-lg shadow-rose-950/60 scale-[1.02]'
+                        ? 'bg-amber-400 text-zinc-950 border-amber-400'
+                        : 'bg-zinc-950 text-white border-zinc-950 dark:bg-white dark:text-zinc-950 dark:border-white'
                       : isPreSaleTab
-                      ? 'bg-amber-500/10 text-amber-300 hover:bg-amber-500/20 border-amber-500/30'
-                      : 'bg-zinc-900/90 text-zinc-400 hover:text-white border-zinc-800 hover:border-zinc-700'
+                      ? 'bg-amber-500/10 text-amber-600 dark:text-amber-300 border-amber-500/30 hover:bg-amber-500/20'
+                      : 'hover:opacity-80'
                   }`}
+                  style={
+                    !isSelected && !isPreSaleTab
+                      ? {
+                          backgroundColor: 'var(--bg-surface)',
+                          borderColor: 'var(--border-crisp)',
+                          color: 'var(--text-secondary)',
+                        }
+                      : undefined
+                  }
                 >
                   {isPreSaleTab && <Clock className="w-3.5 h-3.5" />}
-                  <span>{cat}</span>
+                  <span>
+                    {cat === 'Todas as Categorias'
+                      ? `Todos os Mantos (${initialProducts.length})`
+                      : cat}
+                  </span>
                   {isPreSaleTab && preSaleProducts.length > 0 && (
                     <span
-                      className={`text-[10px] font-black px-1.5 py-0.5 rounded-full ${
+                      className={`px-1.5 py-0.2 rounded-full font-mono text-[11px] ${
                         isSelected
                           ? 'bg-zinc-950 text-amber-400'
-                          : 'bg-amber-500/20 text-amber-300'
+                          : 'bg-amber-500/20 text-amber-600 dark:text-amber-300'
                       }`}
                     >
                       {preSaleProducts.length}
@@ -343,52 +402,67 @@ export default function CatalogView({ initialProducts }: Props) {
               );
             })}
           </div>
-        </div>
 
-        {/* LUPA E BARRA DE BUSCA POR NOME */}
-        <div className="bg-zinc-900/90 border border-zinc-800 rounded-2xl p-3 sm:p-4 shadow-xl mb-8">
-          <div className="relative w-full">
-            <Search className="w-5 h-5 text-rose-500 absolute left-4 top-1/2 -translate-y-1/2 pointer-events-none" />
+          {/* Busca Instantânea */}
+          <div className="relative w-full lg:w-72 shrink-0">
+            <Search
+              className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none"
+              style={{ color: 'var(--text-muted)' }}
+            />
             <input
-              type="text"
+              type="search"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              placeholder="Buscar camisa por nome, clube, seleção, pré-venda ou edição..."
-              className="w-full bg-zinc-950 border border-zinc-700/80 rounded-xl pl-12 pr-4 py-3 sm:py-3.5 text-xs sm:text-base text-white placeholder-zinc-500 focus:outline-none focus:border-rose-500 transition-colors shadow-inner"
+              placeholder="Buscar clube, seleção ou ano..."
+              className="w-full h-10 pl-9 pr-4 rounded-full border text-xs font-medium focus:outline-none focus:ring-2 focus:ring-rose-600 tactile"
+              style={{
+                backgroundColor: 'var(--bg-surface)',
+                borderColor: 'var(--border-crisp)',
+                color: 'var(--text-primary)',
+              }}
             />
-            {searchTerm && (
-              <button
-                type="button"
-                onClick={() => setSearchTerm('')}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-zinc-400 hover:text-white bg-zinc-800 px-2 py-1 rounded-md"
-              >
-                Limpar
-              </button>
-            )}
-          </div>
-
-          <div className="flex items-center justify-between text-xs text-zinc-400 mt-3 pt-3 border-t border-zinc-800/80">
-            <span>
-              Mostrando <strong className="text-white">{filteredProducts.length}</strong> peças encontradas
-            </span>
-            <span className="hidden sm:inline">
-              Preço Direto de Fábrica • Padrão Tailandês 1:1 Oficial
-            </span>
           </div>
         </div>
 
-        {/* LISTAGEM DE PRODUTOS */}
+        {/* Barra Contextual quando filtra por Pré-Venda */}
+        {selectedCategory === 'Pré-Venda' && (
+          <div className="mt-6 p-4 rounded-2xl border border-amber-500/40 bg-amber-500/10 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div className="flex items-center gap-3">
+              <span className="px-2.5 py-1 rounded-full bg-amber-400 text-zinc-950 text-xs font-black uppercase shrink-0">
+                Lote em Trânsito
+              </span>
+              <p className="text-xs sm:text-sm font-medium">
+                Modelos em <strong>Pré-Venda</strong> são lançamentos e reposições que irão chegar. Reserve sua grade agora e garanta prioridade no envio.
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => setSelectedCategory('Todas as Categorias')}
+              className="text-xs font-bold underline shrink-0"
+            >
+              Ver todo o catálogo
+            </button>
+          </div>
+        )}
+
+        {/* GRADE DE CAMISAS (4 COLUNAS DESKTOP) */}
         {filteredProducts.length === 0 ? (
-          <div className="bg-zinc-900/40 border border-zinc-800 rounded-2xl p-12 text-center text-zinc-500">
-            <p className="font-bold text-lg text-zinc-300">
+          <div
+            className="mt-6 rounded-2xl border p-12 text-center"
+            style={{
+              backgroundColor: 'var(--bg-surface)',
+              borderColor: 'var(--border-crisp)',
+            }}
+          >
+            <p className="font-bold text-base" style={{ color: 'var(--text-primary)' }}>
               {selectedCategory === 'Pré-Venda'
-                ? 'Nenhum modelo em pré-venda no momento'
-                : 'Nenhuma camisa encontrada'}
+                ? 'Nenhum modelo em pré-venda cadastrado no momento'
+                : 'Nenhum manto encontrado para este filtro'}
             </p>
-            <p className="text-xs text-zinc-500 mt-1">
+            <p className="text-xs mt-1" style={{ color: 'var(--text-secondary)' }}>
               {selectedCategory === 'Pré-Venda'
-                ? 'Novos modelos que irão chegar serão listados aqui em breve. Enquanto isso, confira nosso catálogo a pronta entrega!'
-                : 'Tente buscar por outro termo ou selecione "Todas as Categorias".'}
+                ? 'Assim que novos lotes estiverem em trânsito, aparecerão aqui para reserva antecipada.'
+                : 'Tente buscar por outro clube ou limpar o filtro selecionado.'}
             </p>
             <button
               type="button"
@@ -396,470 +470,204 @@ export default function CatalogView({ initialProducts }: Props) {
                 setSearchTerm('');
                 setSelectedCategory('Todas as Categorias');
               }}
-              className="mt-4 px-4 py-2 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-xs font-bold text-white transition-colors"
+              className="mt-4 px-4 py-2 rounded-full bg-rose-600 text-white text-xs font-bold tactile hover:bg-rose-500"
             >
-              Ver Todo o Catálogo
+              Ver Todos os Mantos
             </button>
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
+          <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             {filteredProducts.map((product) => (
               <ProductCard key={product.id} product={product} />
             ))}
           </div>
         )}
-      </section>
 
-      {/* SEÇÃO EXCLUSIVA: PRÉ-VENDA (MODELOS QUE IRÃO CHEGAR) */}
-      <section
-        id="pre-venda"
-        className="py-16 bg-zinc-900/40 border-t border-b border-zinc-900 relative overflow-hidden"
-      >
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-          <div className="flex flex-col md:flex-row items-start md:items-end justify-between gap-6 mb-10">
+        {/* =========================================================================
+            3. SEÇÃO EDITORIAL: PRÉ-VENDA (MODELOS QUE IRÃO CHEGAR)
+            ========================================================================= */}
+        <section
+          id="pre-venda"
+          className="mt-16 pt-10 border-t"
+          style={{ borderColor: 'var(--border-crisp)' }}
+        >
+          <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-6">
             <div>
-              <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-400 text-xs font-black tracking-wider uppercase mb-3 shadow-sm">
-                <Clock className="w-3.5 h-3.5" />
-                <span>Pré-Venda Oficial</span>
-                <span className="text-zinc-500">•</span>
-                <span className="text-white">Modelos que Irão Chegar</span>
-              </div>
-              <h2 className="text-2xl sm:text-4xl font-black text-white tracking-tight">
-                Lançamentos & Reposições em Pré-Venda
+              <span className="text-xs font-mono uppercase tracking-widest text-amber-600 dark:text-amber-400 font-bold">
+                ⏳ DROPS EM TRÂNSITO • RESERVA ANTECIPADA
+              </span>
+              <h2
+                className="mt-1 text-2xl font-black tracking-tight uppercase"
+                style={{ color: 'var(--text-primary)' }}
+              >
+                Pré-Venda: Modelos que Irão Chegar
               </h2>
-              <p className="text-xs sm:text-sm text-zinc-400 mt-2 max-w-2xl leading-relaxed">
-                Garanta antecipadamente os modelos mais aguardados que já estão a caminho do nosso estoque. Ao reservar na pré-venda, suas peças ficam separadas com prioridade de envio assim que o lote chegar.
+              <p className="mt-1 text-xs sm:text-sm" style={{ color: 'var(--text-secondary)' }}>
+                Garanta seus tamanhos nos lançamentos da temporada antes do desembarque oficial do lote.
               </p>
             </div>
-
-            <div className="flex items-center gap-3">
-              <button
-                type="button"
-                onClick={() => {
-                  setSelectedCategory('Pré-Venda');
-                  document.getElementById('catalogo')?.scrollIntoView({ behavior: 'smooth' });
-                }}
-                className="px-5 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-zinc-950 font-extrabold text-xs sm:text-sm flex items-center gap-2 shadow-lg shadow-amber-950/40 transition-all hover:scale-[1.02]"
-              >
-                <span>Filtrar Pré-Venda no Catálogo</span>
-                <ArrowRight className="w-4 h-4" />
-              </button>
-            </div>
+            <button
+              type="button"
+              onClick={() => {
+                setSelectedCategory('Pré-Venda');
+                document.getElementById('catalogo')?.scrollIntoView({ behavior: 'smooth' });
+              }}
+              className="self-start sm:self-auto px-4 py-2 rounded-full bg-amber-400 hover:bg-amber-300 text-zinc-950 font-black text-xs uppercase tracking-wider inline-flex items-center gap-1.5 tactile"
+            >
+              <span>Filtrar Pré-Venda</span>
+              <ArrowRight className="w-3.5 h-3.5" />
+            </button>
           </div>
 
-          {/* CARDS DE VANTAGENS DA PRÉ-VENDA */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-10">
-            <div className="bg-zinc-950/80 border border-zinc-800/80 rounded-2xl p-4 flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-400 shrink-0">
-                <CalendarClock className="w-5 h-5" />
-              </div>
-              <div>
-                <strong className="text-xs font-black text-white block">Reserva Garantida</strong>
-                <span className="text-[11px] text-zinc-400">Garanta seus tamanhos antes do lote esgotar</span>
-              </div>
-            </div>
-
-            <div className="bg-zinc-950/80 border border-zinc-800/80 rounded-2xl p-4 flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-rose-500/10 border border-rose-500/20 flex items-center justify-center text-rose-400 shrink-0">
-                <Sparkles className="w-5 h-5" />
-              </div>
-              <div>
-                <strong className="text-xs font-black text-white block">Lançamentos Exclusivos</strong>
-                <span className="text-[11px] text-zinc-400">Modelos novos que estão chegando da fábrica</span>
-              </div>
-            </div>
-
-            <div className="bg-zinc-950/80 border border-zinc-800/80 rounded-2xl p-4 flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400 shrink-0">
-                <Truck className="w-5 h-5" />
-              </div>
-              <div>
-                <strong className="text-xs font-black text-white block">Prioridade no Despacho</strong>
-                <span className="text-[11px] text-zinc-400">Envio imediato assim que o lote der entrada</span>
-              </div>
-            </div>
-          </div>
-
-          {/* VITRINE DE PRODUTOS EM PRÉ-VENDA */}
           {preSaleProducts.length > 0 ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
-              {preSaleProducts.map((product) => (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+              {preSaleProducts.slice(0, 4).map((product) => (
                 <ProductCard key={product.id} product={product} />
               ))}
             </div>
           ) : (
-            <div className="bg-zinc-950/80 border border-zinc-800 rounded-3xl p-8 text-center max-w-3xl mx-auto shadow-xl">
-              <div className="w-14 h-14 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-amber-400 flex items-center justify-center mx-auto mb-3">
-                <CalendarClock className="w-7 h-7" />
+            <div
+              className="rounded-2xl border p-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4"
+              style={{
+                backgroundColor: 'var(--bg-surface)',
+                borderColor: 'var(--border-crisp)',
+              }}
+            >
+              <div>
+                <h3 className="text-sm font-bold" style={{ color: 'var(--text-primary)' }}>
+                  Próximo Lote de Lançamentos em Preparação
+                </h3>
+                <p className="text-xs mt-0.5" style={{ color: 'var(--text-secondary)' }}>
+                  Novos modelos em trânsito podem ser adicionados a qualquer momento pelo painel administrativo.
+                </p>
               </div>
-              <h3 className="text-lg font-black text-white">
-                Próximo Lote de Lançamentos em Preparação
-              </h3>
-              <p className="text-xs text-zinc-300 mt-2 max-w-lg mx-auto leading-relaxed">
-                Fique de olho! Sempre que novos modelos estiverem em trânsito para o Brasil, eles aparecerão aqui para você reservar antecipadamente.
-              </p>
-              <div className="mt-5 flex items-center justify-center">
-                <a
-                  href="#catalogo"
-                  className="px-6 py-3 rounded-xl bg-zinc-900 hover:bg-zinc-800 border border-zinc-700 text-white font-bold text-xs sm:text-sm flex items-center gap-2 transition-all"
-                >
-                  <ShoppingCart className="w-4 h-4 text-rose-400" />
-                  <span>Ver Modelos a Pronta Entrega</span>
-                </a>
-              </div>
+              <a
+                href="#catalogo"
+                className="px-4 py-2 rounded-full border text-xs font-bold inline-flex items-center gap-1.5 tactile shrink-0"
+                style={{
+                  borderColor: 'var(--border-crisp)',
+                  color: 'var(--text-primary)',
+                }}
+              >
+                <ShoppingBag className="w-3.5 h-3.5 text-rose-600" />
+                <span>Ver Pronta Entrega</span>
+              </a>
             </div>
           )}
-        </div>
-      </section>
+        </section>
 
-      {/* SEÇÃO EXCLUSIVA: CAMISAS & KITS INFANTIS */}
-      <section id="infantil" className="py-16 bg-zinc-950 border-b border-zinc-900 relative overflow-hidden">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-          <div className="flex flex-col md:flex-row items-start md:items-end justify-between gap-6 mb-10">
-            <div>
-              <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-400 text-xs font-black tracking-wider uppercase mb-3 shadow-sm">
-                <span>👶 Linha Infantil & Juvenil</span>
-                <span className="text-zinc-500">•</span>
-                <span className="text-white">Kits Completos (Camisa + Calção)</span>
+        {/* =========================================================================
+            4. SEÇÃO EDITORIAL: LINHA INFANTIL (KITS CAMISA + CALÇÃO)
+            ========================================================================= */}
+        {kidsProducts.length > 0 && (
+          <section
+            id="infantil"
+            className="mt-16 pt-10 border-t"
+            style={{ borderColor: 'var(--border-crisp)' }}
+          >
+            <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-6">
+              <div>
+                <span className="text-xs font-mono uppercase tracking-widest text-rose-600 font-bold">
+                  LINHA KIDS • TAMANHOS 16 AO 28
+                </span>
+                <h2
+                  className="mt-1 text-2xl font-black tracking-tight uppercase"
+                  style={{ color: 'var(--text-primary)' }}
+                >
+                  Kits Infantis Oficiais (Camisa + Calção)
+                </h2>
               </div>
-              <h2 className="text-2xl sm:text-4xl font-black text-white tracking-tight">
-                Camisas & Kits Infantis 1:1
+              <button
+                type="button"
+                onClick={() => {
+                  setSelectedCategory('Infantil');
+                  document.getElementById('catalogo')?.scrollIntoView({ behavior: 'smooth' });
+                }}
+                className="self-start sm:self-auto px-4 py-2 rounded-full border text-xs font-bold inline-flex items-center gap-1.5 tactile"
+                style={{
+                  borderColor: 'var(--border-crisp)',
+                  backgroundColor: 'var(--bg-surface)',
+                  color: 'var(--text-primary)',
+                }}
+              >
+                <span>Ver Todos os Kits Kids</span>
+                <ArrowRight className="w-3.5 h-3.5" />
+              </button>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+              {kidsProducts.slice(0, 4).map((product) => (
+                <ProductCard key={product.id} product={product} />
+              ))}
+            </div>
+          </section>
+        )}
+
+        {/* =========================================================================
+            5. FAQ & LOGÍSTICA EM <details> NATIVO (content-first-noise-reduction)
+            ========================================================================= */}
+        <section
+          id="faq"
+          className="mt-16 pt-10 border-t"
+          style={{ borderColor: 'var(--border-crisp)' }}
+        >
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+            <div className="lg:col-span-4">
+              <span className="text-xs font-mono uppercase tracking-widest text-rose-600 font-bold">
+                TRANSPARÊNCIA & ATACADO
+              </span>
+              <h2
+                className="mt-1 text-2xl font-black tracking-tight uppercase"
+                style={{ color: 'var(--text-primary)' }}
+              >
+                Perguntas Frequentes & Logística
               </h2>
-              <p className="text-xs sm:text-sm text-zinc-400 mt-2 max-w-2xl leading-relaxed">
-                Vista os pequenos campeões com o mesmo padrão oficial Tailandês 1:1 dos adultos. Nossos kits infantis acompanham camisa e calção oficial, disponíveis nos tamanhos 16 ao 28 (16, 18, 20, 22, 24, 26, 28).
-              </p>
-            </div>
-
-            <div className="flex items-center gap-3">
-              <button
-                type="button"
-                onClick={() => {
-                  setSelectedCategory('Infantil');
-                  document.getElementById('catalogo')?.scrollIntoView({ behavior: 'smooth' });
-                }}
-                className="px-5 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-black font-extrabold text-xs sm:text-sm flex items-center gap-2 shadow-lg shadow-amber-950/40 transition-all hover:scale-[1.02]"
+              <p
+                className="mt-2 text-xs sm:text-sm leading-relaxed"
+                style={{ color: 'var(--text-secondary)' }}
               >
-                <span>Filtrar no Catálogo</span>
-                <ArrowRight className="w-4 h-4" />
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  setSelectedCategory('Infantil');
-                  document.getElementById('catalogo')?.scrollIntoView({ behavior: 'smooth' });
-                }}
-                className="px-4 py-2.5 rounded-xl bg-zinc-900 hover:bg-zinc-800 border border-zinc-700 text-white font-bold text-xs sm:text-sm flex items-center gap-2 transition-colors"
-              >
-                <Sparkles className="w-4 h-4 text-emerald-400" />
-                <span>Ver Kits Infantis</span>
-              </button>
-            </div>
-          </div>
-
-          {/* CARDS DE DESTAQUE DA LINHA INFANTIL */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-10">
-            <div className="bg-zinc-900/60 border border-zinc-800/80 rounded-2xl p-4 flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-400 shrink-0">
-                <PackageCheck className="w-5 h-5" />
-              </div>
-              <div>
-                <strong className="text-xs font-black text-white block">Kit Completo Oficial</strong>
-                <span className="text-[11px] text-zinc-400">Camisa oficial + calção com elástico regulador</span>
-              </div>
-            </div>
-
-            <div className="bg-zinc-900/60 border border-zinc-800/80 rounded-2xl p-4 flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-rose-500/10 border border-rose-500/20 flex items-center justify-center text-rose-400 shrink-0">
-                <Sparkles className="w-5 h-5" />
-              </div>
-              <div>
-                <strong className="text-xs font-black text-white block">Tamanhos Kids: 16 ao 28</strong>
-                <span className="text-[11px] text-zinc-400">Grade padrão: 16, 18, 20, 22, 24, 26 e 28</span>
-              </div>
-            </div>
-
-            <div className="bg-zinc-900/60 border border-zinc-800/80 rounded-2xl p-4 flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400 shrink-0">
-                <Truck className="w-5 h-5" />
-              </div>
-              <div>
-                <strong className="text-xs font-black text-white block">Envio Seguro Nacional</strong>
-                <span className="text-[11px] text-zinc-400">Entrega rápida para todo o Brasil via Melhor Envio</span>
-              </div>
-            </div>
-          </div>
-
-          {/* VITRINE DE PRODUTOS INFANTIS */}
-          {kidsProducts.length > 0 ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
-              {kidsProducts.map((product) => (
-                <ProductCard key={product.id} product={product} />
-              ))}
-            </div>
-          ) : (
-            <div className="bg-zinc-900/60 border border-zinc-800 rounded-3xl p-8 text-center max-w-3xl mx-auto shadow-xl">
-              <div className="w-14 h-14 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-amber-400 flex items-center justify-center mx-auto mb-3 shadow-inner">
-                <PackageCheck className="w-7 h-7" />
-              </div>
-              <h3 className="text-lg font-black text-white">
-                Kits Infantis dos Maiores Clubes do Mundo
-              </h3>
-              <p className="text-xs text-zinc-300 mt-2 max-w-lg mx-auto leading-relaxed">
-                Temos kits infantis (camisa + short) de times como Flamengo, Real Madrid, Brasil, Barcelona, Corinthians, Palmeiras, PSG e muito mais. Consulte os modelos e tamanhos disponíveis para envio imediato!
-              </p>
-              <div className="mt-5 flex flex-col sm:flex-row items-center justify-center gap-3">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setSelectedCategory('Infantil');
-                    document.getElementById('catalogo')?.scrollIntoView({ behavior: 'smooth' });
-                  }}
-                  className="px-6 py-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold text-xs sm:text-sm flex items-center gap-2 shadow-lg shadow-emerald-950/40 transition-all hover:scale-[1.02]"
-                >
-                  <ShoppingCart className="w-4 h-4" />
-                  <span>Explorar Modelos Infantis no Catálogo</span>
-                </button>
-              </div>
-            </div>
-          )}
-        </div>
-      </section>
-
-      {/* 4. COMO FUNCIONA O PEDIDO */}
-      <section id="como-funciona" className="py-14 bg-zinc-900/40 border-b border-zinc-900">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center max-w-2xl mx-auto mb-12">
-            <span className="text-[11px] font-black uppercase tracking-wider text-rose-400 block mb-1">
-              Passo a Passo Simples
-            </span>
-            <h2 className="text-2xl sm:text-3xl font-black text-white">
-              Como Funciona a Sua Compra
-            </h2>
-            <p className="text-xs sm:text-sm text-zinc-400 mt-1">
-              Processo 100% transparente com confirmação e suporte humano no fechamento
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div className="bg-zinc-950 p-6 rounded-2xl border border-zinc-800 relative group hover:border-zinc-700 transition-all">
-              <div className="w-12 h-12 rounded-xl bg-rose-600/10 border border-rose-600/30 flex items-center justify-center text-rose-400 font-black text-lg mb-4">
-                01
-              </div>
-              <h3 className="text-base font-extrabold text-white mb-2">
-                1. Monte seu Carrinho
-              </h3>
-              <p className="text-xs text-zinc-400 leading-relaxed">
-                Navegue pelas camisas a pronta entrega ou modelos em pré-venda. Selecione os tamanhos e adicione tudo ao seu carrinho com total flexibilidade.
+                Operação própria em Campinas/SP com despacho via Correios (PAC/SEDEX) e Loggi para todo o Brasil.
               </p>
             </div>
 
-            <div className="bg-zinc-950 p-6 rounded-2xl border border-zinc-800 relative group hover:border-zinc-700 transition-all">
-              <div className="w-12 h-12 rounded-xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400 font-black text-lg mb-4">
-                02
-              </div>
-              <h3 className="text-base font-extrabold text-white mb-2">
-                2. Calcule seu Frete
-              </h3>
-              <p className="text-xs text-zinc-400 leading-relaxed">
-                Digite seu CEP no checkout para cotar fretes oficiais dos Correios (PAC/SEDEX) e Loggi com seguro e rastreamento completo.
-              </p>
-            </div>
-
-            <div className="bg-zinc-950 p-6 rounded-2xl border border-zinc-800 relative group hover:border-zinc-700 transition-all">
-              <div className="w-12 h-12 rounded-xl bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-400 font-black text-lg mb-4">
-                03
-              </div>
-              <h3 className="text-base font-extrabold text-white mb-2">
-                3. Finalize no WhatsApp
-              </h3>
-              <p className="text-xs text-zinc-400 leading-relaxed">
-                Clique em &ldquo;Finalizar no WhatsApp&rdquo; para enviar seu pedido pronto diretamente para nossa equipe de atendimento. Confirmamos tudo e despachamos com código de rastreio!
-              </p>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* 5. DIFERENCIAIS DA QUALIDADE TAILANDESA 1:1 */}
-      <section className="py-14 bg-zinc-950 border-b border-zinc-900">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center max-w-2xl mx-auto mb-12">
-            <span className="text-[11px] font-black uppercase tracking-wider text-rose-400 block mb-1">
-              Garantia de Qualidade
-            </span>
-            <h2 className="text-2xl sm:text-3xl font-black text-white">
-              Por que a Ruby Brasil é Referência?
-            </h2>
-            <p className="text-xs sm:text-sm text-zinc-400 mt-1">
-              Não aceite réplicas de baixa qualidade. Nossas peças seguem o rigoroso padrão Tailandês 1:1.
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            <div className="p-5 rounded-2xl bg-zinc-900/50 border border-zinc-800">
-              <ShieldCheck className="w-8 h-8 text-rose-500 mb-3" />
-              <h4 className="text-sm font-extrabold text-white">Tecido Dri-Fit Tecnológico</h4>
-              <p className="text-xs text-zinc-400 mt-1 leading-relaxed">
-                Tecido 100% respirável com microperfurações que proporcionam caimento perfeito e secagem rápida.
-              </p>
-            </div>
-
-            <div className="p-5 rounded-2xl bg-zinc-900/50 border border-zinc-800">
-              <Award className="w-8 h-8 text-amber-400 mb-3" />
-              <h4 className="text-sm font-extrabold text-white">Escudos e Bordados Oficiais</h4>
-              <p className="text-xs text-zinc-400 mt-1 leading-relaxed">
-                Bordados de alta definição e termocolantes aplicados com precisão cirúrgica sem desbotar.
-              </p>
-            </div>
-
-            <div className="p-5 rounded-2xl bg-zinc-900/50 border border-zinc-800">
-              <PackageCheck className="w-8 h-8 text-emerald-400 mb-3" />
-              <h4 className="text-sm font-extrabold text-white">Etiquetas & Embalagem Lacrada</h4>
-              <p className="text-xs text-zinc-400 mt-1 leading-relaxed">
-                Todas as etiquetas internas e externas de autenticidade, em saquinhos plásticos lacrados com zip.
-              </p>
-            </div>
-
-            <div className="p-5 rounded-2xl bg-zinc-900/50 border border-zinc-800">
-              <Zap className="w-8 h-8 text-blue-400 mb-3" />
-              <h4 className="text-sm font-extrabold text-white">Envio Ágil com Rastreamento</h4>
-              <p className="text-xs text-zinc-400 mt-1 leading-relaxed">
-                Postagem rápida para todo o território nacional com código de rastreio direto no seu WhatsApp.
-              </p>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* 6. DEPOIMENTOS */}
-      <section className="py-14 bg-zinc-900/30 border-b border-zinc-900">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center max-w-2xl mx-auto mb-12">
-            <span className="text-[11px] font-black uppercase tracking-wider text-rose-400 block mb-1">
-              Prova Social
-            </span>
-            <h2 className="text-2xl sm:text-3xl font-black text-white">
-              O que Dizem Nossos Clientes e Revendedores
-            </h2>
-            <p className="text-xs sm:text-sm text-zinc-400 mt-1">
-              Mais de 12.000 camisas entregues com nota 4.9/5 em satisfação
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {TESTIMONIALS.map((t, idx) => (
-              <div
-                key={idx}
-                className="bg-zinc-950 p-6 rounded-2xl border border-zinc-800 flex flex-col justify-between shadow-lg shadow-black/40"
-              >
-                <div>
-                  <div className="flex items-center justify-between mb-3">
-                    <div className="flex items-center gap-1 text-amber-400">
-                      {[...Array(t.rating)].map((_, i) => (
-                        <Star key={i} className="w-4 h-4 fill-amber-400 text-amber-400" />
-                      ))}
-                    </div>
-                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-zinc-900 text-zinc-400 border border-zinc-800">
-                      {t.tag}
-                    </span>
-                  </div>
-
-                  <p className="text-xs text-zinc-300 italic leading-relaxed">
-                    &ldquo;{t.comment}&rdquo;
-                  </p>
-                </div>
-
-                <div className="mt-5 pt-4 border-t border-zinc-900">
-                  <span className="font-extrabold text-sm text-white block">{t.name}</span>
-                  <span className="text-[11px] text-zinc-400">{t.role}</span>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* 7. PERGUNTAS FREQUENTES */}
-      <section className="py-14 bg-zinc-950 border-b border-zinc-900">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-10">
-            <span className="text-[11px] font-black uppercase tracking-wider text-rose-400 block mb-1">
-              Dúvidas Comuns
-            </span>
-            <h2 className="text-2xl sm:text-3xl font-black text-white">
-              Perguntas Frequentes (FAQ)
-            </h2>
-            <p className="text-xs sm:text-sm text-zinc-400 mt-1">
-              Tudo o que você precisa saber antes de fazer seu pedido
-            </p>
-          </div>
-
-          <div className="space-y-3">
-            {FAQS.map((faq, idx) => {
-              const isOpen = openFaq === idx;
-              return (
-                <div
+            <div className="lg:col-span-8 space-y-2.5">
+              {FAQS.map((faq, idx) => (
+                <details
                   key={idx}
-                  className="bg-zinc-900/60 border border-zinc-800/80 rounded-2xl overflow-hidden transition-colors"
+                  open={idx === 0}
+                  className="group rounded-xl border p-4"
+                  style={{
+                    borderColor: 'var(--border-crisp)',
+                    backgroundColor: 'var(--bg-surface)',
+                  }}
                 >
-                  <button
-                    type="button"
-                    onClick={() => toggleFaq(idx)}
-                    className="w-full text-left p-4 sm:p-5 flex items-center justify-between gap-4 text-sm sm:text-base font-bold text-white hover:text-rose-400 transition-colors"
+                  <summary
+                    className="flex items-center justify-between cursor-pointer font-bold text-sm"
+                    style={{ color: 'var(--text-primary)' }}
                   >
                     <span>{faq.question}</span>
-                    {isOpen ? (
-                      <ChevronUp className="w-5 h-5 text-rose-400 shrink-0" />
-                    ) : (
-                      <ChevronDown className="w-5 h-5 text-zinc-400 shrink-0" />
-                    )}
-                  </button>
-
-                  {isOpen && (
-                    <div className="px-4 pb-4 sm:px-5 sm:pb-5 text-xs sm:text-sm text-zinc-400 leading-relaxed border-t border-zinc-800/60 pt-3">
-                      {faq.answer}
-                    </div>
-                  )}
-                </div>
-              );
-            })}
+                    <span
+                      className="font-mono text-sm group-open:rotate-45 tactile ml-2"
+                      style={{ color: 'var(--text-muted)' }}
+                    >
+                      +
+                    </span>
+                  </summary>
+                  <p
+                    className="mt-2.5 text-xs sm:text-sm leading-relaxed pt-2.5 border-t"
+                    style={{
+                      color: 'var(--text-secondary)',
+                      borderColor: 'var(--border-crisp)',
+                    }}
+                  >
+                    {faq.answer}
+                  </p>
+                </details>
+              ))}
+            </div>
           </div>
-        </div>
-      </section>
-
-      {/* 8. BANNER FINAL CALL-TO-ACTION */}
-      <section className="py-16 bg-zinc-950 relative overflow-hidden">
-        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 text-center relative z-10">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs font-bold mb-4">
-            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-            Lote de Fábrica Ativo com Condições Promocionais
-          </div>
-
-          <h2 className="text-2xl sm:text-4xl font-black text-white uppercase tracking-tight">
-            Pronto para Montar seu Pedido ou Revender?
-          </h2>
-          <p className="mt-3 text-xs sm:text-base text-zinc-300 max-w-xl mx-auto">
-            Aproveite a melhor qualidade Tailandesa 1:1 do Brasil com envio seguro e rastreado via Melhor Envio!
-          </p>
-
-          <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-3">
-            <a
-              href="#catalogo"
-              className="w-full sm:w-auto px-8 py-3.5 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-extrabold text-sm sm:text-base flex items-center justify-center gap-2 shadow-lg shadow-rose-950/50 transition-all hover:scale-[1.02]"
-            >
-              <ShoppingCart className="w-5 h-5" />
-              Escolher Peças no Catálogo
-            </a>
-            <a
-              href="#pre-venda"
-              className="w-full sm:w-auto px-7 py-3.5 rounded-xl bg-zinc-900 hover:bg-zinc-800 border border-zinc-700 text-white font-bold text-sm sm:text-base flex items-center justify-center gap-2 transition-all hover:border-zinc-500"
-            >
-              <Clock className="w-5 h-5 text-amber-400" />
-              Ver Modelos em Pré-Venda
-            </a>
-          </div>
-        </div>
-      </section>
+        </section>
+      </main>
     </div>
   );
 }
