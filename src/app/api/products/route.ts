@@ -10,7 +10,9 @@ export const revalidate = 60;
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
-    const includeInactive = searchParams.get('all') === 'true';
+    const wantsAll = searchParams.get('all') === 'true';
+    const session = wantsAll ? getAdminSessionFromRequest(request) : null;
+    const includeInactive = Boolean(wantsAll && session);
 
     const products = await prisma.product.findMany({
       where: includeInactive ? {} : { isActive: true },
@@ -33,7 +35,9 @@ export async function GET(request: Request) {
       },
       {
         headers: {
-          'Cache-Control': 'public, s-maxage=60, stale-while-revalidate=300',
+          'Cache-Control': includeInactive
+            ? 'private, no-store'
+            : 'public, s-maxage=60, stale-while-revalidate=300',
         },
       }
     );

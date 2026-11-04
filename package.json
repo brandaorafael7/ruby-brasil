@@ -8,7 +8,8 @@
     "start": "next start",
     "postinstall": "prisma generate",
     "db:push": "prisma db push",
-    "db:seed": "npx tsx prisma/seed.ts"
+    "db:seed": "npx tsx prisma/seed.ts",
+    "db:rls": "npx tsx src/scripts/enable-rls.ts"
   },
   "dependencies": {
     "@prisma/client": "^5.21.1",

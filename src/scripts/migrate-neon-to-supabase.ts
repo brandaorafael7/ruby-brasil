@@ -1,7 +1,7 @@
 import { Client } from 'pg';
 
-const neonConnectionString = 'postgresql://neondb_owner:npg_5CINHRX2nBiQ@ep-quiet-poetry-b460ygto-pooler.c-6.us-east-2.aws.neon.tech/neondb?sslmode=require';
-const supabaseConnectionString = 'postgresql://postgres.ugdbzhkdxxfndjcfqssm:Rafa%23Guimaraes4@aws-0-us-east-2.pooler.supabase.com:5432/postgres';
+const neonConnectionString = process.env.NEON_DATABASE_URL || '';
+const supabaseConnectionString = process.env.DIRECT_URL || process.env.DATABASE_URL || '';
 
 async function migrateTable(
   neonClient: Client,

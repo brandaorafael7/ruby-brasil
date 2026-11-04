@@ -1,10 +1,21 @@
 import React from 'react';
+import { cookies } from 'next/headers';
+import { redirect } from 'next/navigation';
 import { prisma } from '@/lib/prisma';
+import { verifySessionToken } from '@/lib/auth';
 import AdminDashboardClient from './_components/AdminDashboardClient';
 
 export const dynamic = 'force-dynamic';
 
 export default async function AdminPage() {
+  const cookieStore = cookies();
+  const sessionToken = cookieStore.get('rubybr_admin_session')?.value;
+  const session = sessionToken ? verifySessionToken(sessionToken) : null;
+
+  if (!session) {
+    redirect('/admin/login');
+  }
+
   let batch = await prisma.promotionalBatch.findFirst({
     where: { isActive: true },
     orderBy: { createdAt: 'desc' },
