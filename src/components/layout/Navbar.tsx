@@ -65,15 +65,15 @@ export default function Navbar() {
         borderColor: 'var(--border-crisp)',
       }}
     >
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-4">
+      <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 min-h-14 sm:h-16 py-2 sm:py-0 flex items-center justify-between gap-2 sm:gap-4">
         {/* Marca + Ícone Oficial Camisa-Diamante Ruby Brasil */}
-        <div className="flex items-center gap-6">
+        <div className="flex items-center gap-3 sm:gap-6 min-w-0">
           <Link
             href="/"
-            className="flex items-center gap-3 group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-600 rounded"
+            className="flex items-center gap-2.5 sm:gap-3 min-w-0 group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-600 rounded"
           >
             <div
-              className="w-11 h-11 rounded-xl border flex items-center justify-center p-1 overflow-hidden tactile group-hover:scale-105"
+              className="w-9 h-9 sm:w-11 sm:h-11 shrink-0 rounded-xl border flex items-center justify-center p-1 overflow-hidden tactile group-hover:scale-105"
               style={{
                 borderColor: 'var(--border-crisp)',
                 backgroundColor: 'var(--bg-surface)',
@@ -85,18 +85,19 @@ export default function Navbar() {
                 className="w-full h-full object-contain ruby-icon-adaptive"
               />
             </div>
-            <div>
+            <div className="min-w-0">
               <span
-                className="font-black text-base tracking-tighter block leading-none"
+                className="font-black text-sm sm:text-base tracking-tighter block leading-none whitespace-nowrap"
                 style={{ color: 'var(--text-primary)' }}
               >
                 RUBY BRASIL
               </span>
               <span
-                className="text-[10px] font-mono uppercase tracking-widest block mt-0.5"
+                className="text-[9px] sm:text-[10px] font-mono uppercase tracking-wider sm:tracking-widest block mt-0.5 whitespace-nowrap truncate"
                 style={{ color: 'var(--text-muted)' }}
               >
-                FOOTBALL ARCHIVE & ATELIER 1:1
+                <span className="sm:hidden">ATELIER TAILANDÊS 1:1</span>
+                <span className="hidden sm:inline">FOOTBALL ARCHIVE & ATELIER 1:1</span>
               </span>
             </div>
           </Link>
@@ -135,7 +136,7 @@ export default function Navbar() {
         </div>
 
         {/* Ações: Regra Atacado, Tema, Admin e Sacola */}
-        <div className="flex items-center gap-2 sm:gap-2.5">
+        <div className="flex items-center gap-1.5 sm:gap-2.5 shrink-0">
           {/* Pílula Discreta Preço Direto de Fábrica & Envio */}
           <div
             className="hidden xl:flex items-center gap-2 px-3 py-1.5 rounded-full border text-xs"
@@ -159,7 +160,7 @@ export default function Navbar() {
             type="button"
             onClick={toggleTheme}
             title="Alternar entre Modo Claro (Boutique) e Modo Escuro"
-            className="h-9 px-3 rounded-full border text-xs font-semibold flex items-center gap-1.5 tactile focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-600"
+            className="w-9 h-9 sm:w-auto sm:px-3 rounded-full border text-xs font-semibold flex items-center justify-center gap-1.5 shrink-0 tactile focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-600"
             style={{
               borderColor: 'var(--border-crisp)',
               backgroundColor: 'var(--bg-surface)',
@@ -168,12 +169,12 @@ export default function Navbar() {
           >
             {isDark ? (
               <>
-                <Sun className="w-3.5 h-3.5 text-amber-400" />
+                <Sun className="w-3.5 h-3.5 text-amber-400 shrink-0" />
                 <span className="hidden sm:inline">Modo Claro</span>
               </>
             ) : (
               <>
-                <Moon className="w-3.5 h-3.5 text-zinc-600" />
+                <Moon className="w-3.5 h-3.5 text-zinc-600 shrink-0" />
                 <span className="hidden sm:inline">Modo Escuro</span>
               </>
             )}
@@ -182,7 +183,7 @@ export default function Navbar() {
           {/* Link Admin */}
           <Link
             href="/admin"
-            className="h-9 px-2.5 rounded-full border flex items-center gap-1.5 text-xs font-semibold tactile hover:opacity-80"
+            className="w-9 h-9 md:w-auto md:px-2.5 rounded-full border flex items-center justify-center gap-1.5 text-xs font-semibold shrink-0 tactile hover:opacity-80"
             style={{
               borderColor: 'var(--border-crisp)',
               backgroundColor: 'var(--bg-surface)',
@@ -190,7 +191,7 @@ export default function Navbar() {
             }}
             title="Painel Administrativo"
           >
-            <Settings className="w-3.5 h-3.5" />
+            <Settings className="w-3.5 h-3.5 shrink-0" />
             <span className="hidden md:inline">Admin</span>
           </Link>
 
@@ -199,15 +200,15 @@ export default function Navbar() {
             type="button"
             onClick={openCart}
             id="cart-trigger-button"
-            className={`h-9 px-3.5 sm:px-4 rounded-full text-xs font-bold flex items-center gap-2 tactile focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-600 ${
+            className={`h-9 px-3 sm:px-4 rounded-full text-xs font-bold flex items-center gap-1.5 sm:gap-2 shrink-0 tactile focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-600 ${
               wholesaleActive
                 ? 'bg-emerald-600 text-white'
                 : 'bg-zinc-950 text-white dark:bg-white dark:text-zinc-950'
             }`}
           >
             <ShoppingBag className="w-3.5 h-3.5 shrink-0" />
-            <span className="uppercase tracking-wider">Sacola</span>
-            <span className="px-1.5 py-0.5 rounded-full bg-rose-600 text-white font-mono text-[11px] tabular-nums leading-none">
+            <span className="uppercase tracking-wider text-[11px] sm:text-xs">Sacola</span>
+            <span className="px-1.5 py-0.5 rounded-full bg-rose-600 text-white font-mono text-[10px] sm:text-[11px] tabular-nums leading-none">
               {totalPieces}
             </span>
             {subtotal > 0 && (

@@ -141,11 +141,11 @@ export default function CatalogView({ initialProducts }: Props) {
           backgroundColor: 'var(--bg-surface)',
         }}
       >
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 lg:py-8">
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
+        <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 sm:gap-6 items-stretch">
             {/* Coluna Editorial Esquerda (7 cols): Manifesto + Condições Diretas */}
             <div
-              className="lg:col-span-7 flex flex-col justify-between p-6 sm:p-8 rounded-2xl border relative overflow-hidden"
+              className="lg:col-span-7 flex flex-col justify-between p-4 sm:p-8 rounded-2xl border relative overflow-hidden"
               style={{
                 borderColor: 'var(--border-crisp)',
                 backgroundColor: 'var(--bg-studio)',
@@ -156,35 +156,36 @@ export default function CatalogView({ initialProducts }: Props) {
                 src="/ruby-brasil-icon.png"
                 alt=""
                 aria-hidden="true"
-                className="w-36 h-36 object-contain absolute -right-4 -top-4 opacity-[0.08] pointer-events-none ruby-icon-adaptive"
+                className="w-28 h-28 sm:w-36 sm:h-36 object-contain absolute -right-4 -top-4 opacity-[0.07] pointer-events-none ruby-icon-adaptive"
               />
 
               <div className="relative z-10">
-                <div className="flex flex-wrap items-center gap-2 mb-4">
-                  <span className="px-2.5 py-1 rounded-full bg-rose-600 text-white text-[11px] font-bold uppercase tracking-wider">
+                <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 mb-3.5 sm:mb-4">
+                  <span className="px-2.5 py-1 rounded-full bg-rose-600 text-white text-[10px] sm:text-[11px] font-bold uppercase tracking-wider whitespace-nowrap">
                     TEMPORADA 25/26 & CLÁSSICOS
                   </span>
                   <span
-                    className="px-2.5 py-1 rounded-full border text-[11px] font-mono uppercase tracking-wider"
+                    className="px-2.5 py-1 rounded-full border text-[10px] sm:text-[11px] font-mono uppercase tracking-wider whitespace-nowrap"
                     style={{
                       borderColor: 'var(--border-crisp)',
                       backgroundColor: 'var(--bg-surface)',
                       color: 'var(--text-secondary)',
                     }}
                   >
-                    TECIDO TAILANDÊS 1:1 • ENVIO DE CAMPINAS/SP
+                    <span className="sm:hidden">TAILANDÊS 1:1 • CAMPINAS/SP</span>
+                    <span className="hidden sm:inline">TECIDO TAILANDÊS 1:1 • ENVIO DE CAMPINAS/SP</span>
                   </span>
                 </div>
 
                 <h1
-                  className="text-3xl sm:text-4xl lg:text-[42px] font-black tracking-tight leading-[1.06] uppercase"
+                  className="text-2xl sm:text-4xl lg:text-[42px] font-black tracking-tight leading-[1.08] uppercase"
                   style={{ color: 'var(--text-primary)' }}
                 >
                   Mantos Oficiais & Arquivo Histórico Direto da Fábrica.
                 </h1>
 
                 <p
-                  className="mt-3 text-sm sm:text-base max-w-xl leading-relaxed"
+                  className="mt-2.5 sm:mt-3 text-xs sm:text-base max-w-xl leading-relaxed"
                   style={{ color: 'var(--text-secondary)' }}
                 >
                   Bordados de alta definição, versões Jogador (Slim Fit) e Torcedor, além de relíquias retrô imortais. Compre pronta entrega ou reserve lançamentos exclusivos na pré-venda com envio seguro para todo o Brasil.
@@ -193,23 +194,23 @@ export default function CatalogView({ initialProducts }: Props) {
 
               {/* Barra de Condições Comerciais Integrada */}
               <div
-                className="relative z-10 mt-6 pt-5 border-t grid grid-cols-3 gap-4"
+                className="relative z-10 mt-5 sm:mt-6 pt-4 sm:pt-5 border-t grid grid-cols-3 gap-2 sm:gap-4"
                 style={{ borderColor: 'var(--border-crisp)' }}
               >
-                <div>
+                <div className="min-w-0">
                   <span
-                    className="text-[11px] font-mono uppercase block"
+                    className="text-[9px] sm:text-[11px] font-mono uppercase block truncate"
                     style={{ color: 'var(--text-muted)' }}
                   >
-                    Preço de Fábrica
+                    Preço Fábrica
                   </span>
                   <span
-                    className="text-lg sm:text-xl font-black font-mono tabular-nums"
+                    className="text-sm sm:text-xl font-black font-mono tabular-nums whitespace-nowrap block mt-0.5"
                     style={{ color: 'var(--text-primary)' }}
                   >
                     R$ 60
                     <small
-                      className="text-xs font-normal"
+                      className="text-[10px] sm:text-xs font-normal"
                       style={{ color: 'var(--text-muted)' }}
                     >
                       /un
@@ -218,14 +219,14 @@ export default function CatalogView({ initialProducts }: Props) {
                 </div>
 
                 <div
-                  className="border-l pl-4"
+                  className="border-l pl-2.5 sm:pl-4 min-w-0"
                   style={{ borderColor: 'var(--border-crisp)' }}
                 >
-                  <span className="text-[11px] font-mono uppercase block text-rose-600 dark:text-rose-400">
-                    Qualidade Oficial
+                  <span className="text-[9px] sm:text-[11px] font-mono uppercase block text-rose-600 dark:text-rose-400 truncate">
+                    Qualidade
                   </span>
                   <span
-                    className="text-base sm:text-xl font-black font-mono tabular-nums"
+                    className="text-sm sm:text-xl font-black font-mono tabular-nums whitespace-nowrap block mt-0.5"
                     style={{ color: 'var(--text-primary)' }}
                   >
                     Padrão 1:1
@@ -233,16 +234,16 @@ export default function CatalogView({ initialProducts }: Props) {
                 </div>
 
                 <div
-                  className="border-l pl-4"
+                  className="border-l pl-2.5 sm:pl-4 min-w-0"
                   style={{ borderColor: 'var(--border-crisp)' }}
                 >
                   <span
-                    className="text-[11px] font-mono uppercase block text-emerald-600 dark:text-emerald-400"
+                    className="text-[9px] sm:text-[11px] font-mono uppercase block text-emerald-600 dark:text-emerald-400 truncate"
                   >
-                    Cotação Real-Time
+                    Frete Oficial
                   </span>
                   <span
-                    className="text-base sm:text-xl font-black font-mono tabular-nums text-emerald-600 dark:text-emerald-400"
+                    className="text-sm sm:text-xl font-black font-mono tabular-nums text-emerald-600 dark:text-emerald-400 whitespace-nowrap block mt-0.5"
                   >
                     Melhor Envio
                   </span>
@@ -252,14 +253,14 @@ export default function CatalogView({ initialProducts }: Props) {
 
             {/* Coluna Editorial Direita (5 cols): Card de Drop / Pré-Venda em Destaque */}
             <div
-              className="lg:col-span-5 rounded-2xl border p-6 flex flex-col justify-between bg-zinc-950 text-white relative overflow-hidden"
+              className="lg:col-span-5 rounded-2xl border p-4 sm:p-6 flex flex-col justify-between bg-zinc-950 text-white relative overflow-hidden"
               style={{ borderColor: 'var(--border-crisp)' }}
             >
-              <div className="flex items-center justify-between gap-2 z-10">
-                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-amber-400 text-zinc-950 text-[11px] font-black uppercase tracking-wider">
+              <div className="flex flex-wrap items-center justify-between gap-2 z-10">
+                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-amber-400 text-zinc-950 text-[10px] sm:text-[11px] font-black uppercase tracking-wider shrink-0 whitespace-nowrap">
                   {spotlightPreSale.isPreSale ? '⏳ DROP PRÉ-VENDA' : '★ DESTAQUE DA COLEÇÃO'}
                 </span>
-                <span className="text-xs font-mono text-amber-300">
+                <span className="text-[11px] sm:text-xs font-mono text-amber-300 truncate max-w-full">
                   {spotlightPreSale.isPreSale
                     ? spotlightPreSale.preSaleEta || 'Lote Chegando • Reserva Aberta'
                     : 'Pronta Entrega • Envio Rápido'}
@@ -268,10 +269,10 @@ export default function CatalogView({ initialProducts }: Props) {
 
               {spotlightProduct ? (
                 <>
-                  <div className="my-4 flex items-center gap-4 sm:gap-5 z-10">
+                  <div className="my-3.5 sm:my-4 flex items-center gap-3.5 sm:gap-5 z-10">
                     <Link
                       href={`/produto/${spotlightProduct.slug}`}
-                      className="w-28 h-36 sm:w-32 sm:h-40 shrink-0 relative rounded-xl border border-zinc-800 bg-zinc-900 overflow-hidden block"
+                      className="w-24 h-32 sm:w-32 sm:h-40 shrink-0 relative rounded-xl border border-zinc-800 bg-zinc-900 overflow-hidden block"
                     >
                       <Image
                         src={spotlightProduct.imageUrl}
@@ -283,27 +284,27 @@ export default function CatalogView({ initialProducts }: Props) {
                       />
                     </Link>
 
-                    <div className="space-y-1.5 min-w-0">
-                      <div className="text-[11px] font-mono uppercase tracking-widest text-zinc-400 truncate">
+                    <div className="space-y-1 sm:space-y-1.5 min-w-0 flex-1">
+                      <div className="text-[10px] sm:text-[11px] font-mono uppercase tracking-widest text-zinc-400 truncate">
                         {spotlightProduct.club || spotlightProduct.league} •{' '}
                         {spotlightProduct.season || '25/26'}
                       </div>
                       <Link
                         href={`/produto/${spotlightProduct.slug}`}
-                        className="text-base sm:text-lg font-black tracking-tight leading-snug text-white line-clamp-2 hover:text-amber-300 tactile block"
+                        className="text-sm sm:text-lg font-black tracking-tight leading-snug text-white line-clamp-2 hover:text-amber-300 tactile block"
                       >
                         {spotlightProduct.name}
                       </Link>
-                      <p className="text-xs text-zinc-400 leading-relaxed line-clamp-2">
+                      <p className="text-[11px] sm:text-xs text-zinc-400 leading-relaxed line-clamp-2">
                         {spotlightProduct.description ||
                           'Acabamento oficial Tailandês 1:1 com tecido respirável e escudo de alta definição.'}
                       </p>
-                      <div className="pt-1 flex items-baseline gap-2">
-                        <span className="text-lg font-black font-mono tabular-nums text-amber-400">
+                      <div className="pt-1 flex items-baseline gap-2 flex-wrap">
+                        <span className="text-base sm:text-lg font-black font-mono tabular-nums text-amber-400 whitespace-nowrap">
                           {formatCurrency(spotlightProduct.retailPrice || 60)}
                         </span>
-                        <span className="text-xs text-zinc-500 font-mono">
-                          Padrão Tailandês 1:1
+                        <span className="text-[11px] text-zinc-500 font-mono whitespace-nowrap">
+                          Padrão 1:1
                         </span>
                       </div>
                     </div>
@@ -313,11 +314,11 @@ export default function CatalogView({ initialProducts }: Props) {
                     <button
                       type="button"
                       onClick={handleSpotlightBuy}
-                      className="flex-1 h-10 rounded-xl bg-amber-400 hover:bg-amber-300 text-zinc-950 font-black text-xs uppercase tracking-wider tactile"
+                      className="flex-1 h-10 px-3 rounded-xl bg-amber-400 hover:bg-amber-300 text-zinc-950 font-black text-[11px] sm:text-xs uppercase tracking-wider whitespace-nowrap tactile"
                     >
                       {spotlightPreSale.isPreSale
-                        ? 'Reservar na Pré-Venda'
-                        : 'Adicionar Destaque à Sacola'}
+                        ? 'Reservar Pré-Venda'
+                        : 'Adicionar à Sacola'}
                     </button>
                     <button
                       type="button"
@@ -329,7 +330,7 @@ export default function CatalogView({ initialProducts }: Props) {
                           .getElementById('catalogo')
                           ?.scrollIntoView({ behavior: 'smooth' });
                       }}
-                      className="h-10 px-3.5 rounded-xl bg-zinc-900 hover:bg-zinc-800 border border-zinc-700 text-zinc-200 font-semibold text-xs tactile"
+                      className="h-10 px-3 sm:px-3.5 rounded-xl bg-zinc-900 hover:bg-zinc-800 border border-zinc-700 text-zinc-200 font-semibold text-[11px] sm:text-xs shrink-0 whitespace-nowrap tactile"
                     >
                       Ver Drops ({preSaleProducts.length || initialProducts.length})
                     </button>
@@ -346,15 +347,15 @@ export default function CatalogView({ initialProducts }: Props) {
           ========================================================================= */}
       <main
         id="catalogo"
-        className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8"
+        className="flex-1 max-w-7xl w-full mx-auto px-3 sm:px-6 lg:px-8 py-6 sm:py-8"
       >
         {/* Barra Unificada de Filtros de Coleção e Busca */}
         <div
-          className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pb-6 border-b"
+          className="flex flex-col lg:flex-row lg:items-center justify-between gap-3 sm:gap-4 pb-5 sm:pb-6 border-b"
           style={{ borderColor: 'var(--border-crisp)' }}
         >
           {/* Pílulas de Categoria */}
-          <div className="flex items-center gap-1.5 overflow-x-auto pb-1 lg:pb-0">
+          <div className="flex items-center gap-1.5 overflow-x-auto pb-1 lg:pb-0 -mx-3 px-3 sm:mx-0 sm:px-0">
             {CATEGORIES.map((cat) => {
               const isPreSaleTab = cat === 'Pré-Venda';
               const isSelected = selectedCategory === cat;
@@ -363,7 +364,7 @@ export default function CatalogView({ initialProducts }: Props) {
                   key={cat}
                   type="button"
                   onClick={() => setSelectedCategory(cat)}
-                  className={`px-3.5 py-2 rounded-full text-xs font-bold whitespace-nowrap tactile inline-flex items-center gap-1.5 border ${
+                  className={`px-3 sm:px-3.5 py-2 rounded-full text-xs font-bold whitespace-nowrap tactile inline-flex items-center gap-1.5 border shrink-0 ${
                     isSelected
                       ? isPreSaleTab
                         ? 'bg-amber-400 text-zinc-950 border-amber-400'
@@ -427,9 +428,9 @@ export default function CatalogView({ initialProducts }: Props) {
 
         {/* Barra Contextual quando filtra por Pré-Venda */}
         {selectedCategory === 'Pré-Venda' && (
-          <div className="mt-6 p-4 rounded-2xl border border-amber-500/40 bg-amber-500/10 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-            <div className="flex items-center gap-3">
-              <span className="px-2.5 py-1 rounded-full bg-amber-400 text-zinc-950 text-xs font-black uppercase shrink-0">
+          <div className="mt-5 sm:mt-6 p-4 rounded-2xl border border-amber-500/40 bg-amber-500/10 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div className="flex items-start sm:items-center gap-3">
+              <span className="px-2.5 py-1 rounded-full bg-amber-400 text-zinc-950 text-[11px] font-black uppercase shrink-0 whitespace-nowrap">
                 Lote em Trânsito
               </span>
               <p className="text-xs sm:text-sm font-medium">
@@ -439,7 +440,7 @@ export default function CatalogView({ initialProducts }: Props) {
             <button
               type="button"
               onClick={() => setSelectedCategory('Todas as Categorias')}
-              className="text-xs font-bold underline shrink-0"
+              className="text-xs font-bold underline shrink-0 self-start sm:self-auto"
             >
               Ver todo o catálogo
             </button>
@@ -449,7 +450,7 @@ export default function CatalogView({ initialProducts }: Props) {
         {/* GRADE DE CAMISAS (4 COLUNAS DESKTOP) */}
         {filteredProducts.length === 0 ? (
           <div
-            className="mt-6 rounded-2xl border p-12 text-center"
+            className="mt-6 rounded-2xl border p-8 sm:p-12 text-center"
             style={{
               backgroundColor: 'var(--bg-surface)',
               borderColor: 'var(--border-crisp)',
@@ -477,7 +478,7 @@ export default function CatalogView({ initialProducts }: Props) {
             </button>
           </div>
         ) : (
-          <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+          <div className="mt-5 sm:mt-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
             {filteredProducts.map((product) => (
               <ProductCard key={product.id} product={product} />
             ))}
@@ -489,7 +490,7 @@ export default function CatalogView({ initialProducts }: Props) {
             ========================================================================= */}
         <section
           id="pre-venda"
-          className="mt-16 pt-10 border-t"
+          className="mt-12 sm:mt-16 pt-8 sm:pt-10 border-t"
           style={{ borderColor: 'var(--border-crisp)' }}
         >
           <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-6">
@@ -498,7 +499,7 @@ export default function CatalogView({ initialProducts }: Props) {
                 ⏳ DROPS EM TRÂNSITO • RESERVA ANTECIPADA
               </span>
               <h2
-                className="mt-1 text-2xl font-black tracking-tight uppercase"
+                className="mt-1 text-xl sm:text-2xl font-black tracking-tight uppercase"
                 style={{ color: 'var(--text-primary)' }}
               >
                 Pré-Venda: Modelos que Irão Chegar
@@ -521,14 +522,14 @@ export default function CatalogView({ initialProducts }: Props) {
           </div>
 
           {preSaleProducts.length > 0 ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
               {preSaleProducts.slice(0, 4).map((product) => (
                 <ProductCard key={product.id} product={product} />
               ))}
             </div>
           ) : (
             <div
-              className="rounded-2xl border p-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4"
+              className="rounded-2xl border p-5 sm:p-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4"
               style={{
                 backgroundColor: 'var(--bg-surface)',
                 borderColor: 'var(--border-crisp)',
@@ -563,7 +564,7 @@ export default function CatalogView({ initialProducts }: Props) {
         {kidsProducts.length > 0 && (
           <section
             id="infantil"
-            className="mt-16 pt-10 border-t"
+            className="mt-12 sm:mt-16 pt-8 sm:pt-10 border-t"
             style={{ borderColor: 'var(--border-crisp)' }}
           >
             <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-6">
@@ -572,7 +573,7 @@ export default function CatalogView({ initialProducts }: Props) {
                   LINHA KIDS • TAMANHOS 16 AO 28
                 </span>
                 <h2
-                  className="mt-1 text-2xl font-black tracking-tight uppercase"
+                  className="mt-1 text-xl sm:text-2xl font-black tracking-tight uppercase"
                   style={{ color: 'var(--text-primary)' }}
                 >
                   Kits Infantis Oficiais (Camisa + Calção)
@@ -596,7 +597,7 @@ export default function CatalogView({ initialProducts }: Props) {
               </button>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
               {kidsProducts.slice(0, 4).map((product) => (
                 <ProductCard key={product.id} product={product} />
               ))}
@@ -609,16 +610,16 @@ export default function CatalogView({ initialProducts }: Props) {
             ========================================================================= */}
         <section
           id="faq"
-          className="mt-16 pt-10 border-t"
+          className="mt-12 sm:mt-16 pt-8 sm:pt-10 border-t"
           style={{ borderColor: 'var(--border-crisp)' }}
         >
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 sm:gap-8">
             <div className="lg:col-span-4">
               <span className="text-xs font-mono uppercase tracking-widest text-rose-600 font-bold">
                 TRANSPARÊNCIA & ATACADO
               </span>
               <h2
-                className="mt-1 text-2xl font-black tracking-tight uppercase"
+                className="mt-1 text-xl sm:text-2xl font-black tracking-tight uppercase"
                 style={{ color: 'var(--text-primary)' }}
               >
                 Perguntas Frequentes & Logística
@@ -643,12 +644,12 @@ export default function CatalogView({ initialProducts }: Props) {
                   }}
                 >
                   <summary
-                    className="flex items-center justify-between cursor-pointer font-bold text-sm"
+                    className="flex items-center justify-between cursor-pointer font-bold text-xs sm:text-sm gap-2"
                     style={{ color: 'var(--text-primary)' }}
                   >
                     <span>{faq.question}</span>
                     <span
-                      className="font-mono text-sm group-open:rotate-45 tactile ml-2"
+                      className="font-mono text-sm group-open:rotate-45 tactile shrink-0"
                       style={{ color: 'var(--text-muted)' }}
                     >
                       +

@@ -139,7 +139,7 @@ export default function ProductCard({ product }: Props) {
         <div>
           {/* MOLDURA DE ESTÚDIO 4:5 (Estilo END. Clothing / Nike) */}
           <div
-            className="relative aspect-[4/5] overflow-hidden border-b flex flex-col justify-between p-4"
+            className="relative aspect-[4/5] overflow-hidden border-b flex flex-col justify-between p-3.5 sm:p-4"
             style={{
               backgroundColor: 'var(--bg-studio)',
               borderColor: 'var(--border-crisp)',
@@ -175,13 +175,13 @@ export default function ProductCard({ product }: Props) {
             {/* Linha Superior Discreta: Status Pré-Venda ou Versão + Personalizar */}
             <div className="relative z-10 flex items-center justify-between gap-2">
               {isPreSale ? (
-                <span className="px-2.5 py-1 rounded-full bg-amber-400 text-zinc-950 text-[10px] font-black uppercase tracking-wider shadow-sm inline-flex items-center gap-1">
-                  <Clock className="w-3 h-3 stroke-[2.5]" />
-                  <span>Pré-Venda{preSaleEta ? ` • ${preSaleEta}` : ''}</span>
+                <span className="px-2.5 py-1 rounded-full bg-amber-400 text-zinc-950 text-[10px] font-black uppercase tracking-wider shadow-sm inline-flex items-center gap-1 shrink-0 whitespace-nowrap">
+                  <Clock className="w-3 h-3 stroke-[2.5] shrink-0" />
+                  <span>Pré-Venda</span>
                 </span>
               ) : (
                 <span
-                  className="px-2.5 py-1 rounded-full border text-[10px] font-mono font-bold uppercase tracking-wider backdrop-blur-md"
+                  className="px-2.5 py-1 rounded-full border text-[10px] font-mono font-bold uppercase tracking-wider backdrop-blur-md shrink-0 whitespace-nowrap"
                   style={{
                     backgroundColor: 'color-mix(in srgb, var(--bg-surface) 90%, transparent)',
                     borderColor: 'var(--border-crisp)',
@@ -197,7 +197,7 @@ export default function ProductCard({ product }: Props) {
                   type="button"
                   disabled={!isAvailableToAdd}
                   onClick={() => isAvailableToAdd && setIsCustomOpen(true)}
-                  className="px-2.5 py-1 rounded-full border text-[10px] font-bold uppercase tracking-wider backdrop-blur-md hover:border-rose-600 hover:text-rose-600 tactile disabled:opacity-40"
+                  className="px-2.5 py-1 rounded-full border text-[10px] font-bold uppercase tracking-wider backdrop-blur-md hover:border-rose-600 hover:text-rose-600 tactile disabled:opacity-40 shrink-0 whitespace-nowrap"
                   style={{
                     backgroundColor: 'color-mix(in srgb, var(--bg-surface) 90%, transparent)',
                     borderColor: 'var(--border-crisp)',
@@ -213,7 +213,7 @@ export default function ProductCard({ product }: Props) {
             {/* Rodapé Discreto da Moldura: Clube/Liga & Temporada */}
             <div className="relative z-10 flex items-center justify-between gap-2 pointer-events-none">
               <span
-                className="px-2 py-0.5 rounded text-[10px] font-mono font-semibold uppercase backdrop-blur-md border"
+                className="px-2 py-0.5 rounded text-[10px] font-mono font-semibold uppercase backdrop-blur-md border truncate max-w-[70%]"
                 style={{
                   backgroundColor: 'color-mix(in srgb, var(--bg-surface) 88%, transparent)',
                   borderColor: 'var(--border-crisp)',
@@ -224,7 +224,7 @@ export default function ProductCard({ product }: Props) {
               </span>
               {product.season && (
                 <span
-                  className="px-2 py-0.5 rounded text-[10px] font-mono font-semibold backdrop-blur-md border"
+                  className="px-2 py-0.5 rounded text-[10px] font-mono font-semibold backdrop-blur-md border shrink-0"
                   style={{
                     backgroundColor: 'color-mix(in srgb, var(--bg-surface) 88%, transparent)',
                     borderColor: 'var(--border-crisp)',
@@ -240,6 +240,12 @@ export default function ProductCard({ product }: Props) {
           {/* INFORMAÇÕES EDITORIAIS E SELETOR TÁTIL DE TAMANHO */}
           <div className="p-4 space-y-3">
             <div>
+              {isPreSale && preSaleEta && (
+                <div className="mb-1.5 px-2 py-0.5 rounded-md bg-amber-500/10 border border-amber-500/30 text-[10px] font-mono font-semibold text-amber-600 dark:text-amber-400 truncate">
+                  ⏳ {preSaleEta}
+                </div>
+              )}
+
               <div className="flex items-start justify-between gap-2">
                 <Link
                   href={`/produto/${product.slug}`}
