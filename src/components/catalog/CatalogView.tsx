@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import {
@@ -17,6 +17,8 @@ import ProductCard from '@/components/product/ProductCard';
 interface Props {
   initialProducts: Product[];
 }
+
+const PAGE_SIZE = 24;
 
 const CATEGORIES = [
   'Todas as Categorias',
@@ -62,6 +64,8 @@ const FAQS = [
 export default function CatalogView({ initialProducts }: Props) {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('Todas as Categorias');
+  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
+  const loadMoreRef = useRef<HTMLDivElement | null>(null);
   const { addItem, openCart } = useCartStore();
 
   const preSaleProducts = useMemo(() => {
@@ -118,6 +122,33 @@ export default function CatalogView({ initialProducts }: Props) {
       return matchesSearch && matchesCategory;
     });
   }, [initialProducts, searchTerm, selectedCategory]);
+
+  // Reinicia a paginação progressiva ao trocar filtro ou busca
+  useEffect(() => {
+    setVisibleCount(PAGE_SIZE);
+  }, [searchTerm, selectedCategory]);
+
+  // Carrega mais cards automaticamente conforme o usuário rola a página
+  useEffect(() => {
+    const el = loadMoreRef.current;
+    if (!el || visibleCount >= filteredProducts.length) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0]?.isIntersecting) {
+          setVisibleCount((prev) => Math.min(prev + PAGE_SIZE, filteredProducts.length));
+        }
+      },
+      { rootMargin: '600px' }
+    );
+
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [visibleCount, filteredProducts.length]);
+
+  const displayedProducts = useMemo(() => {
+    return filteredProducts.slice(0, visibleCount);
+  }, [filteredProducts, visibleCount]);
 
   const handleSpotlightBuy = () => {
     if (!spotlightProduct) return;
@@ -272,13 +303,15 @@ export default function CatalogView({ initialProducts }: Props) {
                   <div className="my-3.5 sm:my-4 flex items-center gap-3.5 sm:gap-5 z-10">
                     <Link
                       href={`/produto/${spotlightProduct.slug}`}
+                      prefetch={false}
                       className="w-24 h-32 sm:w-32 sm:h-40 shrink-0 relative rounded-xl border border-zinc-800 bg-zinc-900 overflow-hidden block"
                     >
                       <Image
                         src={spotlightProduct.imageUrl}
                         alt={spotlightProduct.name}
                         fill
-                        unoptimized={spotlightProduct.imageUrl?.startsWith('data:')}
+                        unoptimized
+                        priority
                         sizes="150px"
                         className="object-cover hover:scale-105 transition-transform duration-300"
                       />
@@ -291,6 +324,7 @@ export default function CatalogView({ initialProducts }: Props) {
                       </div>
                       <Link
                         href={`/produto/${spotlightProduct.slug}`}
+                        prefetch={false}
                         className="text-sm sm:text-lg font-black tracking-tight leading-snug text-white line-clamp-2 hover:text-amber-300 tactile block"
                       >
                         {spotlightProduct.name}
@@ -478,11 +512,32 @@ export default function CatalogView({ initialProducts }: Props) {
             </button>
           </div>
         ) : (
-          <div className="mt-5 sm:mt-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
-            {filteredProducts.map((product) => (
-              <ProductCard key={product.id} product={product} />
-            ))}
-          </div>
+          <>
+            <div className="mt-5 sm:mt-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
+              {displayedProducts.map((product) => (
+                <ProductCard key={product.id} product={product} />
+              ))}
+            </div>
+
+            {visibleCount < filteredProducts.length && (
+              <div ref={loadMoreRef} className="mt-8 flex flex-col items-center justify-center gap-2">
+                <button
+                  type="button"
+                  onClick={() =>
+                    setVisibleCount((prev) => Math.min(prev + PAGE_SIZE, filteredProducts.length))
+                  }
+                  className="px-6 py-2.5 rounded-full border text-xs font-bold tactile hover:opacity-80"
+                  style={{
+                    borderColor: 'var(--border-crisp)',
+                    backgroundColor: 'var(--bg-surface)',
+                    color: 'var(--text-primary)',
+                  }}
+                >
+                  Carregar mais camisas ({filteredProducts.length - visibleCount} restantes)
+                </button>
+              </div>
+            )}
+          </>
         )}
 
         {/* =========================================================================

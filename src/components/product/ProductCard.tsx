@@ -148,6 +148,7 @@ export default function ProductCard({ product }: Props) {
             {/* Imagem Oficial da Camisa ou Fallback Vetorial */}
             <Link
               href={`/produto/${product.slug}`}
+              prefetch={false}
               className="absolute inset-0 block cursor-pointer overflow-hidden"
               title={product.name}
             >
@@ -156,7 +157,8 @@ export default function ProductCard({ product }: Props) {
                   src={product.imageUrl}
                   alt={product.name}
                   fill
-                  unoptimized={product.imageUrl?.startsWith('data:')}
+                  unoptimized
+                  loading="lazy"
                   onError={() => setImgError(true)}
                   sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 25vw"
                   className="object-cover jersey-zoom"
@@ -249,6 +251,7 @@ export default function ProductCard({ product }: Props) {
               <div className="flex items-start justify-between gap-2">
                 <Link
                   href={`/produto/${product.slug}`}
+                  prefetch={false}
                   className="text-sm font-bold leading-snug line-clamp-2 hover:text-rose-600 tactile flex-1"
                   style={{ color: 'var(--text-primary)' }}
                 >

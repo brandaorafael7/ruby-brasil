@@ -183,6 +183,7 @@ export default function Navbar() {
           {/* Link Admin */}
           <Link
             href="/admin"
+            prefetch={false}
             className="w-9 h-9 md:w-auto md:px-2.5 rounded-full border flex items-center justify-center gap-1.5 text-xs font-semibold shrink-0 tactile hover:opacity-80"
             style={{
               borderColor: 'var(--border-crisp)',

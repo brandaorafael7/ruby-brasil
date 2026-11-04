@@ -1,7 +1,10 @@
 import { NextResponse } from 'next/server';
+import { revalidatePath, revalidateTag } from 'next/cache';
 import { prisma } from '@/lib/prisma';
 import { getAdminSessionFromRequest } from '@/lib/auth';
 import { getProductPreSaleInfo, serializeProductPreSaleGallery } from '@/lib/utils';
+import { isDataUrlImage, persistProductImageIfNeeded } from '@/lib/product-images';
+import { getCachedCatalogProducts, getFastCatalogProducts } from '@/lib/fast-queries';
 
 // Revalida a cada 1 minuto para reduzir egress no Supabase
 export const revalidate = 60;
@@ -14,19 +17,13 @@ export async function GET(request: Request) {
     const session = wantsAll ? getAdminSessionFromRequest(request) : null;
     const includeInactive = Boolean(wantsAll && session);
 
-    const products = await prisma.product.findMany({
-      where: includeInactive ? {} : { isActive: true },
-      include: {
-        variants: true,
-        priceTiers: true,
-      },
-      orderBy: { createdAt: 'desc' },
-    });
-
-    const globalTiers = await prisma.wholesaleTier.findMany({
-      where: { productId: null },
-      orderBy: { minQuantity: 'asc' },
-    });
+    const [products, globalTiers] = await Promise.all([
+      includeInactive ? getFastCatalogProducts(true) : getCachedCatalogProducts(),
+      prisma.wholesaleTier.findMany({
+        where: { productId: null },
+        orderBy: { minQuantity: 'asc' },
+      }),
+    ]);
 
     return NextResponse.json(
       {
@@ -105,7 +102,9 @@ export async function POST(request: Request) {
       preSaleEta: preSaleEta ? String(preSaleEta) : '',
     });
 
-    const product = await prisma.product.create({
+    const isBase64Upload = isDataUrlImage(imageUrl);
+
+    let product = await prisma.product.create({
       data: {
         name,
         slug,
@@ -113,7 +112,7 @@ export async function POST(request: Request) {
         league,
         season,
         type,
-        imageUrl,
+        imageUrl: isBase64Upload ? '/ruby-brasil-icon.png' : imageUrl,
         gallery,
         retailPrice: Number(retailPrice),
         description,
@@ -131,6 +130,19 @@ export async function POST(request: Request) {
         variants: true,
       },
     });
+
+    if (isBase64Upload) {
+      const cleanImageUrl = await persistProductImageIfNeeded(product.id, imageUrl);
+      product = await prisma.product.update({
+        where: { id: product.id },
+        data: { imageUrl: cleanImageUrl },
+        include: { variants: true },
+      });
+    }
+
+    revalidateTag('catalog-products');
+    revalidatePath('/');
+    revalidatePath(`/produto/${product.slug}`);
 
     return NextResponse.json(product, { status: 201 });
   } catch (error: any) {
@@ -189,6 +201,10 @@ export async function PUT(request: Request) {
       });
     }
 
+    const finalImageUrl = imageUrl
+      ? await persistProductImageIfNeeded(id, imageUrl)
+      : undefined;
+
     // Atualiza dados principais da camisa
     await prisma.product.update({
       where: { id },
@@ -198,7 +214,7 @@ export async function PUT(request: Request) {
         ...(league && { league }),
         ...(season && { season }),
         ...(type && { type }),
-        ...(imageUrl && { imageUrl }),
+        ...(finalImageUrl && { imageUrl: finalImageUrl }),
         ...(updatedGallery !== undefined && { gallery: updatedGallery }),
         ...(retailPrice !== undefined && { retailPrice: Number(retailPrice) }),
         ...(customPrice !== undefined && { customPrice: Number(customPrice) }),
@@ -220,32 +236,40 @@ export async function PUT(request: Request) {
         });
       }
 
-      for (const variant of variants) {
-        if (variant.size) {
-          await prisma.productVariant.upsert({
-            where: {
-              productId_size: {
+      await Promise.all(
+        variants
+          .filter((v: any) => v.size)
+          .map((variant: any) =>
+            prisma.productVariant.upsert({
+              where: {
+                productId_size: {
+                  productId: id,
+                  size: variant.size,
+                },
+              },
+              update: {
+                stockQuantity: Number(variant.stockQuantity) || 0,
+              },
+              create: {
                 productId: id,
                 size: variant.size,
+                stockQuantity: Number(variant.stockQuantity) || 0,
               },
-            },
-            update: {
-              stockQuantity: Number(variant.stockQuantity) || 0,
-            },
-            create: {
-              productId: id,
-              size: variant.size,
-              stockQuantity: Number(variant.stockQuantity) || 0,
-            },
-          });
-        }
-      }
+            })
+          )
+      );
     }
 
     const fullProduct = await prisma.product.findUnique({
       where: { id },
       include: { variants: true },
     });
+
+    revalidateTag('catalog-products');
+    revalidatePath('/');
+    if (fullProduct?.slug) {
+      revalidatePath(`/produto/${fullProduct.slug}`);
+    }
 
     return NextResponse.json(fullProduct);
   } catch (error: any) {
@@ -278,6 +302,9 @@ export async function DELETE(request: Request) {
     await prisma.product.delete({
       where: { id },
     });
+
+    revalidateTag('catalog-products');
+    revalidatePath('/');
 
     return NextResponse.json({ success: true, message: 'Peça excluída com sucesso' });
   } catch (error: any) {

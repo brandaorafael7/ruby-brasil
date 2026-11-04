@@ -3,6 +3,7 @@ import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { prisma } from '@/lib/prisma';
 import { verifySessionToken } from '@/lib/auth';
+import { getFastAdminDashboardData } from '@/lib/fast-queries';
 import AdminDashboardClient from './_components/AdminDashboardClient';
 
 export const dynamic = 'force-dynamic';
@@ -16,11 +17,10 @@ export default async function AdminPage() {
     redirect('/admin/login');
   }
 
-  let batch = await prisma.promotionalBatch.findFirst({
-    where: { isActive: true },
-    orderBy: { createdAt: 'desc' },
-  });
+  // Busca todos os dados do painel (batch, tiers, products e orders) em 1 único round-trip SQL
+  const { batch: existingBatch, tiers, products, orders } = await getFastAdminDashboardData();
 
+  let batch = existingBatch;
   if (!batch) {
     batch = await prisma.promotionalBatch.create({
       data: {
@@ -35,39 +35,6 @@ export default async function AdminPage() {
       },
     });
   }
-
-  const tiers = await prisma.wholesaleTier.findMany({
-    orderBy: { minQuantity: 'asc' },
-  });
-
-  const products = await prisma.product.findMany({
-    include: {
-      variants: true,
-    },
-    orderBy: { createdAt: 'desc' },
-  });
-
-  const orders = await prisma.order.findMany({
-    include: {
-      items: {
-        include: {
-          product: {
-            select: {
-              id: true,
-              name: true,
-              club: true,
-              season: true,
-              league: true,
-              type: true,
-              gallery: true,
-            },
-          },
-        },
-      },
-    },
-    orderBy: { createdAt: 'desc' },
-    take: 100,
-  });
 
   return (
     <AdminDashboardClient
