@@ -32,6 +32,8 @@ import {
   MessageCircle,
   Send,
   Check,
+  Sun,
+  Moon,
 } from 'lucide-react';
 import {
   formatCurrency,
@@ -232,6 +234,32 @@ export default function AdminDashboardClient({
 }: Props) {
   const [adminEmail, setAdminEmail] = useState<string>('admin@rubybr.com.br');
   const [activeTab, setActiveTab] = useState<'products' | 'batch' | 'orders'>('products');
+  const [mounted, setMounted] = useState(false);
+  const [isDark, setIsDark] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+    const savedTheme = localStorage.getItem('ruby-theme');
+    if (savedTheme === 'dark') {
+      document.documentElement.classList.add('dark');
+      setIsDark(true);
+    } else {
+      document.documentElement.classList.remove('dark');
+      setIsDark(false);
+    }
+  }, []);
+
+  const toggleTheme = () => {
+    const nextDark = !isDark;
+    setIsDark(nextDark);
+    if (nextDark) {
+      document.documentElement.classList.add('dark');
+      localStorage.setItem('ruby-theme', 'dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+      localStorage.setItem('ruby-theme', 'light');
+    }
+  };
 
   // Estados do Lote
   const [batch, setBatch] = useState<PromotionalBatch | null>(initialBatch);
@@ -787,61 +815,105 @@ export default function AdminDashboardClient({
   const percentUsed = batch ? ((totalSold / batch.totalQuota) * 100).toFixed(1) : '0';
 
   return (
-    <div className="min-h-screen bg-zinc-950 text-zinc-100 font-sans selection:bg-rose-500 selection:text-white">
+    <div
+      className="min-h-screen flex flex-col font-sans selection:bg-rose-500 selection:text-white"
+      style={{
+        backgroundColor: 'var(--bg-canvas)',
+        color: 'var(--text-primary)',
+      }}
+    >
       {/* TOAST FEEDBACK */}
       {productFeedback && (
         <div
-          className={`fixed top-5 right-5 z-50 px-5 py-3.5 rounded-2xl shadow-2xl border text-xs sm:text-sm font-bold flex items-center gap-2.5 transition-all ${
+          className={`fixed top-5 right-5 z-50 px-5 py-3.5 rounded-2xl shadow-xl border text-xs sm:text-sm font-bold flex items-center gap-2.5 transition-all ${
             productFeedback.type === 'success'
-              ? 'bg-emerald-950/95 border-emerald-500/60 text-emerald-200'
-              : 'bg-rose-950/95 border-rose-500/60 text-rose-200'
+              ? 'bg-emerald-500/10 border-emerald-500/40 text-emerald-600 dark:text-emerald-300'
+              : 'bg-rose-500/10 border-rose-500/40 text-rose-600 dark:text-rose-300'
           }`}
+          style={{ backgroundColor: 'var(--bg-surface)' }}
         >
-          <CheckCircle className="w-5 h-5 text-emerald-400 shrink-0" />
+          <CheckCircle className="w-5 h-5 text-emerald-500 shrink-0" />
           {productFeedback.message}
         </div>
       )}
 
-      {/* TOPBAR ADMINISTRATIVO */}
-      <header className="sticky top-0 z-40 bg-zinc-950/90 backdrop-blur-xl border-b border-zinc-800/80 shadow-lg">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between gap-4">
-          <div className="flex items-center gap-3">
+      {/* TOPBAR ADMINISTRATIVO NO MODELO DO NAVBAR DO CLIENTE */}
+      <header
+        className="sticky top-0 z-40 border-b backdrop-blur-md"
+        style={{
+          backgroundColor: 'color-mix(in srgb, var(--bg-surface) 92%, transparent)',
+          borderColor: 'var(--border-crisp)',
+        }}
+      >
+        <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 min-h-14 sm:h-16 py-2 sm:py-0 flex items-center justify-between gap-2 sm:gap-4">
+          {/* Marca + Ícone Oficial Ruby Brasil */}
+          <div className="flex items-center gap-3 sm:gap-4 min-w-0">
             <Link
               href="/"
-              className="text-zinc-400 hover:text-white p-2 rounded-xl hover:bg-zinc-800/80 transition-colors"
-              title="Voltar para a Loja Virtual"
+              className="flex items-center gap-2.5 sm:gap-3 min-w-0 group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-600 rounded"
+              title="Ir para a Loja Virtual"
             >
-              <ArrowLeft className="w-5 h-5 text-rose-500" />
-            </Link>
-
-            <div className="flex items-center gap-2.5">
-              <div className="w-10 h-10 rounded-xl bg-rose-600 flex items-center justify-center shadow-lg border border-rose-400/30">
-                <span className="text-xl">💎</span>
+              <div
+                className="w-9 h-9 sm:w-11 sm:h-11 shrink-0 rounded-xl border flex items-center justify-center p-1 overflow-hidden tactile group-hover:scale-105"
+                style={{
+                  borderColor: 'var(--border-crisp)',
+                  backgroundColor: 'var(--bg-surface)',
+                }}
+              >
+                <img
+                  src="/ruby-brasil-icon.png"
+                  alt="Ícone Oficial Ruby Brasil"
+                  className="w-full h-full object-contain ruby-icon-adaptive"
+                />
               </div>
-              <div>
+              <div className="min-w-0">
                 <div className="flex items-center gap-2">
-                  <h1 className="text-base sm:text-lg font-black text-white leading-none">
-                    RUBY <span className="text-rose-500">BRASIL</span>
-                  </h1>
-                  <span className="text-[10px] uppercase font-bold px-2 py-0.5 rounded-md bg-rose-500/20 text-rose-300 border border-rose-500/30">
-                    Admin
+                  <span
+                    className="font-black text-sm sm:text-base tracking-tighter block leading-none whitespace-nowrap"
+                    style={{ color: 'var(--text-primary)' }}
+                  >
+                    RUBY BRASIL
+                  </span>
+                  <span className="text-[10px] uppercase font-mono font-bold px-2 py-0.5 rounded-full bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20">
+                    ADMIN
                   </span>
                 </div>
-                <p className="text-[11px] text-zinc-400 font-medium mt-0.5 hidden sm:block">
-                  Painel de Controle • Pronta Entrega & Pré-Venda
-                </p>
+                <span
+                  className="text-[9px] sm:text-[10px] font-mono uppercase tracking-wider sm:tracking-widest block mt-0.5 whitespace-nowrap truncate"
+                  style={{ color: 'var(--text-muted)' }}
+                >
+                  <span className="sm:hidden">PAINEL DE GESTÃO 1:1</span>
+                  <span className="hidden sm:inline">PAINEL DE GESTÃO & CONTROLE ATELIER 1:1</span>
+                </span>
               </div>
-            </div>
+            </Link>
           </div>
 
-          <div className="flex items-center gap-2 sm:gap-3">
+          {/* Ações e Controles */}
+          <div className="flex items-center gap-2 sm:gap-2.5">
+            {/* Alternador de Tema Claro / Escuro */}
+            <button
+              onClick={toggleTheme}
+              type="button"
+              className="p-2 sm:p-2.5 rounded-xl border tactile focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-600"
+              style={{
+                borderColor: 'var(--border-crisp)',
+                backgroundColor: 'var(--bg-surface)',
+                color: 'var(--text-secondary)',
+              }}
+              aria-label={isDark ? 'Ativar Modo Claro' : 'Ativar Modo Escuro'}
+              title={isDark ? 'Ativar Modo Claro' : 'Ativar Modo Escuro'}
+            >
+              {isDark ? <Sun className="w-4 h-4 text-amber-400" /> : <Moon className="w-4 h-4 text-zinc-600" />}
+            </button>
+
             {/* BOTÃO ADICIONAR PRÉ-VENDA */}
             <button
               onClick={() => handleOpenCreateModal(true)}
-              className="px-3.5 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-zinc-950 font-extrabold text-xs sm:text-sm flex items-center gap-1.5 shadow-lg shadow-amber-950/50 transition-all hover:scale-[1.02] active:scale-[0.98]"
+              className="px-3 sm:px-3.5 py-2 rounded-xl text-xs font-bold border tactile flex items-center gap-1.5 shrink-0 bg-amber-500/10 text-amber-700 dark:text-amber-300 border-amber-500/30 hover:bg-amber-500/20"
               title="Cadastrar modelo que irá chegar (Pré-Venda)"
             >
-              <CalendarClock className="w-4 h-4" />
+              <CalendarClock className="w-3.5 h-3.5" />
               <span className="hidden md:inline">Adicionar Pré-Venda</span>
               <span className="md:hidden">Pré-Venda</span>
             </button>
@@ -849,35 +921,49 @@ export default function AdminDashboardClient({
             {/* BOTÃO ADICIONAR NOVA PEÇA NO TOPO */}
             <button
               onClick={() => handleOpenCreateModal(false)}
-              className="px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold text-xs sm:text-sm flex items-center gap-2 shadow-lg shadow-emerald-950/60 transition-all hover:scale-[1.02] active:scale-[0.98]"
+              className="px-3.5 sm:px-4 py-2 rounded-xl bg-zinc-950 text-white dark:bg-white dark:text-zinc-950 font-bold text-xs flex items-center gap-1.5 border border-zinc-950 dark:border-white shadow-sm tactile hover:opacity-90 shrink-0"
             >
-              <PlusCircle className="w-4 h-4" />
-              <span>Adicionar Peça</span>
+              <PlusCircle className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">Adicionar Peça</span>
+              <span className="sm:hidden">Peça</span>
             </button>
 
             {/* BADGE DE USUÁRIO */}
-            <div className="hidden xl:flex items-center gap-2 px-3 py-1.5 rounded-xl bg-zinc-900 border border-zinc-800 text-xs text-zinc-300">
-              <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-              <User className="w-3.5 h-3.5 text-zinc-400" />
-              <span className="font-mono text-[11px] text-zinc-300 font-semibold">{adminEmail}</span>
+            <div
+              className="hidden xl:flex items-center gap-2 px-3 py-1.5 rounded-xl border text-xs"
+              style={{
+                borderColor: 'var(--border-crisp)',
+                backgroundColor: 'var(--bg-surface)',
+                color: 'var(--text-secondary)',
+              }}
+            >
+              <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+              <User className="w-3.5 h-3.5" style={{ color: 'var(--text-muted)' }} />
+              <span className="font-mono text-[11px] font-medium">{adminEmail}</span>
             </div>
 
             {/* BOTÃO VER LOJA */}
             <Link
               href="/"
-              className="px-3.5 py-2 rounded-xl bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 text-xs font-bold text-zinc-200 flex items-center gap-1.5 transition-colors"
+              className="px-3 py-2 rounded-xl border text-xs font-bold flex items-center gap-1.5 tactile"
+              style={{
+                borderColor: 'var(--border-crisp)',
+                backgroundColor: 'var(--bg-surface)',
+                color: 'var(--text-secondary)',
+              }}
+              title="Ver Loja no modo cliente"
             >
-              <ShoppingBag className="w-4 h-4 text-emerald-400" />
+              <ShoppingBag className="w-3.5 h-3.5 text-rose-600 dark:text-rose-400" />
               <span className="hidden sm:inline">Ver Loja</span>
             </Link>
 
             {/* BOTÃO LOGOUT */}
             <button
               onClick={handleLogout}
-              className="px-3.5 py-2 rounded-xl bg-rose-950/40 hover:bg-rose-900/60 border border-rose-500/30 text-xs font-bold text-rose-300 hover:text-white flex items-center gap-1.5 transition-all shadow-sm"
-              title="Encerrar sessão com segurança"
+              className="px-2.5 sm:px-3 py-2 rounded-xl border border-rose-500/20 bg-rose-500/10 text-rose-700 dark:text-rose-300 hover:bg-rose-500/20 text-xs font-bold flex items-center gap-1.5 tactile"
+              title="Encerrar sessão de administrador"
             >
-              <LogOut className="w-4 h-4" />
+              <LogOut className="w-3.5 h-3.5" />
               <span className="hidden sm:inline">Sair</span>
             </button>
           </div>
@@ -885,128 +971,268 @@ export default function AdminDashboardClient({
       </header>
 
       {/* CONTEÚDO PRINCIPAL */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
-        {/* CARDS DE KPIS */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-          <div className="bg-zinc-900/90 border border-zinc-800/80 rounded-2xl p-5 shadow-lg">
-            <span className="text-[11px] font-bold text-zinc-400 uppercase tracking-wider block">Catálogo Ativo</span>
-            <div className="flex items-baseline gap-2 mt-2">
-              <span className="text-2xl sm:text-3xl font-black text-white">{products.length}</span>
-              <span className="text-xs text-rose-400 font-bold">modelos</span>
+      <main className="max-w-7xl w-full mx-auto px-3 sm:px-6 lg:px-8 py-6 sm:py-8 space-y-6">
+        {/* CARDS DE KPIS NO ESTILO EDITORIAL DO CLIENTE */}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+          <div
+            className="p-4 sm:p-5 rounded-2xl border tactile"
+            style={{
+              backgroundColor: 'var(--bg-surface)',
+              borderColor: 'var(--border-crisp)',
+            }}
+          >
+            <span
+              className="text-[10px] sm:text-[11px] font-mono font-bold uppercase tracking-wider block truncate"
+              style={{ color: 'var(--text-muted)' }}
+            >
+              Catálogo Ativo
+            </span>
+            <div className="flex items-baseline gap-2 mt-1.5">
+              <span
+                className="text-2xl sm:text-3xl font-black font-mono tabular-nums"
+                style={{ color: 'var(--text-primary)' }}
+              >
+                {products.length}
+              </span>
+              <span className="text-xs text-rose-600 dark:text-rose-400 font-bold">modelos</span>
             </div>
-            <span className="text-[11px] text-amber-400 font-semibold mt-1 block">
-              {preSaleCount} modelo(s) em Pré-Venda
+            <span className="text-[11px] text-amber-600 dark:text-amber-400 font-medium mt-1 block truncate">
+              {preSaleCount} em Pré-Venda
             </span>
           </div>
 
-          <div className="bg-zinc-900/90 border border-rose-500/30 rounded-2xl p-5 shadow-lg">
-            <span className="text-[11px] font-bold text-rose-300 uppercase tracking-wider flex items-center gap-1">
-              <Flame className="w-3.5 h-3.5 text-amber-400" />
+          <div
+            className="p-4 sm:p-5 rounded-2xl border tactile"
+            style={{
+              backgroundColor: 'var(--bg-surface)',
+              borderColor: 'var(--border-crisp)',
+            }}
+          >
+            <span
+              className="text-[10px] sm:text-[11px] font-mono font-bold uppercase tracking-wider flex items-center gap-1 truncate"
+              style={{ color: 'var(--text-muted)' }}
+            >
+              <Flame className="w-3.5 h-3.5 text-amber-500" />
               Cota do Lote
             </span>
-            <div className="flex items-baseline gap-2 mt-2">
-              <span className="text-2xl sm:text-3xl font-black text-amber-300">
-                {batch?.remainingQuota.toLocaleString('pt-BR')}
+            <div className="flex items-baseline gap-2 mt-1.5">
+              <span
+                className="text-2xl sm:text-3xl font-black font-mono tabular-nums text-amber-600 dark:text-amber-400"
+              >
+                {batch?.remainingQuota?.toLocaleString('pt-BR')}
               </span>
-              <span className="text-xs text-zinc-400">peças</span>
+              <span
+                className="text-xs font-mono"
+                style={{ color: 'var(--text-muted)' }}
+              >
+                peças
+              </span>
             </div>
-            <div className="w-full bg-zinc-800 h-1.5 rounded-full overflow-hidden mt-3">
+            <div
+              className="w-full h-1.5 rounded-full overflow-hidden mt-3"
+              style={{ backgroundColor: 'var(--bg-studio)' }}
+            >
               <div
-                className="bg-rose-500 h-full rounded-full transition-all duration-500"
+                className="bg-rose-600 h-full rounded-full transition-all duration-500"
                 style={{ width: `${batch ? (batch.remainingQuota / batch.totalQuota) * 100 : 0}%` }}
               />
             </div>
           </div>
 
-          <div className="bg-zinc-900/90 border border-zinc-800/80 rounded-2xl p-5 shadow-lg">
-            <span className="text-[11px] font-bold text-zinc-400 uppercase tracking-wider block">Peças Bonificadas</span>
-            <div className="flex items-baseline gap-2 mt-2">
-              <span className="text-2xl sm:text-3xl font-black text-emerald-400">
+          <div
+            className="p-4 sm:p-5 rounded-2xl border tactile"
+            style={{
+              backgroundColor: 'var(--bg-surface)',
+              borderColor: 'var(--border-crisp)',
+            }}
+          >
+            <span
+              className="text-[10px] sm:text-[11px] font-mono font-bold uppercase tracking-wider block truncate"
+              style={{ color: 'var(--text-muted)' }}
+            >
+              Peças Bonificadas
+            </span>
+            <div className="flex items-baseline gap-2 mt-1.5">
+              <span className="text-2xl sm:text-3xl font-black font-mono tabular-nums text-emerald-600 dark:text-emerald-400">
                 {totalSold.toLocaleString('pt-BR')}
               </span>
-              <span className="text-xs text-zinc-400">({percentUsed}%)</span>
+              <span
+                className="text-xs font-mono"
+                style={{ color: 'var(--text-muted)' }}
+              >
+                ({percentUsed}%)
+              </span>
             </div>
-            <span className="text-[11px] text-zinc-500 mt-1 block">Consumidas no lote</span>
+            <span
+              className="text-[11px] font-mono mt-1 block truncate"
+              style={{ color: 'var(--text-muted)' }}
+            >
+              Consumidas no lote
+            </span>
           </div>
 
-          <div className="bg-zinc-900/90 border border-zinc-800/80 rounded-2xl p-5 shadow-lg">
-            <span className="text-[11px] font-bold text-zinc-400 uppercase tracking-wider block">Total de Pedidos</span>
-            <div className="flex items-baseline gap-2 mt-2">
-              <span className="text-2xl sm:text-3xl font-black text-white">{orders.length}</span>
-              <span className="text-xs text-emerald-400 font-bold">pedidos</span>
+          <div
+            className="p-4 sm:p-5 rounded-2xl border tactile"
+            style={{
+              backgroundColor: 'var(--bg-surface)',
+              borderColor: 'var(--border-crisp)',
+            }}
+          >
+            <span
+              className="text-[10px] sm:text-[11px] font-mono font-bold uppercase tracking-wider block truncate"
+              style={{ color: 'var(--text-muted)' }}
+            >
+              Total de Pedidos
+            </span>
+            <div className="flex items-baseline gap-2 mt-1.5">
+              <span
+                className="text-2xl sm:text-3xl font-black font-mono tabular-nums"
+                style={{ color: 'var(--text-primary)' }}
+              >
+                {orders.length}
+              </span>
+              <span className="text-xs text-emerald-600 dark:text-emerald-400 font-bold">pedidos</span>
             </div>
-            <span className="text-[11px] text-zinc-500 mt-1 block">Registrados no banco</span>
+            <span
+              className="text-[11px] mt-1 block truncate"
+              style={{ color: 'var(--text-muted)' }}
+            >
+              Registrados no sistema
+            </span>
           </div>
         </div>
 
-        {/* NAVEGAÇÃO DE ABAS */}
-        <div className="flex items-center gap-2 border-b border-zinc-800 pb-3">
+        {/* NAVEGAÇÃO DE ABAS NO FORMATO DE PÍLULAS DO CLIENTE */}
+        <div
+          className="flex items-center gap-2 overflow-x-auto pb-2 border-b -mx-3 px-3 sm:mx-0 sm:px-0"
+          style={{ borderColor: 'var(--border-crisp)' }}
+        >
           <button
             onClick={() => setActiveTab('products')}
-            className={`px-4 py-2 rounded-xl text-xs sm:text-sm font-bold flex items-center gap-2 transition-all ${
+            className={`px-3.5 sm:px-4 py-2 rounded-full text-xs font-bold whitespace-nowrap tactile inline-flex items-center gap-2 border shrink-0 ${
               activeTab === 'products'
-                ? 'bg-rose-600 text-white shadow-lg shadow-rose-950/60'
-                : 'text-zinc-400 hover:text-white hover:bg-zinc-900'
+                ? 'bg-zinc-950 text-white border-zinc-950 dark:bg-white dark:text-zinc-950 dark:border-white shadow-sm'
+                : 'hover:opacity-80'
             }`}
+            style={
+              activeTab !== 'products'
+                ? {
+                    backgroundColor: 'var(--bg-surface)',
+                    borderColor: 'var(--border-crisp)',
+                    color: 'var(--text-secondary)',
+                  }
+                : undefined
+            }
           >
-            <Package className="w-4 h-4" />
-            Catálogo & Pré-Venda ({products.length})
+            <Package className="w-3.5 h-3.5" />
+            <span>Catálogo & Pré-Venda</span>
+            <span
+              className={`px-1.5 py-0.2 rounded-full font-mono text-[10px] ${
+                activeTab === 'products'
+                  ? 'bg-white/20 dark:bg-zinc-900/20'
+                  : 'bg-[var(--bg-studio)]'
+              }`}
+            >
+              {products.length}
+            </span>
           </button>
 
           <button
             onClick={() => setActiveTab('batch')}
-            className={`px-4 py-2 rounded-xl text-xs sm:text-sm font-bold flex items-center gap-2 transition-all ${
+            className={`px-3.5 sm:px-4 py-2 rounded-full text-xs font-bold whitespace-nowrap tactile inline-flex items-center gap-2 border shrink-0 ${
               activeTab === 'batch'
-                ? 'bg-rose-600 text-white shadow-lg shadow-rose-950/60'
-                : 'text-zinc-400 hover:text-white hover:bg-zinc-900'
+                ? 'bg-zinc-950 text-white border-zinc-950 dark:bg-white dark:text-zinc-950 dark:border-white shadow-sm'
+                : 'hover:opacity-80'
             }`}
+            style={
+              activeTab !== 'batch'
+                ? {
+                    backgroundColor: 'var(--bg-surface)',
+                    borderColor: 'var(--border-crisp)',
+                    color: 'var(--text-secondary)',
+                  }
+                : undefined
+            }
           >
-            <Flame className="w-4 h-4 text-amber-400" />
-            Lote Promocional & Metas
+            <Flame className="w-3.5 h-3.5 text-amber-500" />
+            <span>Lote Promocional & Metas</span>
           </button>
 
           <button
             onClick={() => setActiveTab('orders')}
-            className={`px-4 py-2 rounded-xl text-xs sm:text-sm font-bold flex items-center gap-2 transition-all ${
+            className={`px-3.5 sm:px-4 py-2 rounded-full text-xs font-bold whitespace-nowrap tactile inline-flex items-center gap-2 border shrink-0 ${
               activeTab === 'orders'
-                ? 'bg-rose-600 text-white shadow-lg shadow-rose-950/60'
-                : 'text-zinc-400 hover:text-white hover:bg-zinc-900'
+                ? 'bg-zinc-950 text-white border-zinc-950 dark:bg-white dark:text-zinc-950 dark:border-white shadow-sm'
+                : 'hover:opacity-80'
             }`}
+            style={
+              activeTab !== 'orders'
+                ? {
+                    backgroundColor: 'var(--bg-surface)',
+                    borderColor: 'var(--border-crisp)',
+                    color: 'var(--text-secondary)',
+                  }
+                : undefined
+            }
           >
-            <Layers className="w-4 h-4" />
-            Gestão de Pedidos ({orders.length})
+            <Layers className="w-3.5 h-3.5" />
+            <span>Gestão de Pedidos</span>
+            <span
+              className={`px-1.5 py-0.2 rounded-full font-mono text-[10px] ${
+                activeTab === 'orders'
+                  ? 'bg-white/20 dark:bg-zinc-900/20'
+                  : 'bg-[var(--bg-studio)]'
+              }`}
+            >
+              {orders.length}
+            </span>
           </button>
         </div>
 
         {/* ABA 1: CATÁLOGO DE PEÇAS */}
         {activeTab === 'products' && (
-          <div className="bg-zinc-900/90 border border-zinc-800/80 rounded-3xl p-6 shadow-2xl overflow-hidden">
-            <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 mb-6 pb-5 border-b border-zinc-800">
+          <div
+            className="rounded-2xl border p-4 sm:p-6 shadow-sm overflow-hidden"
+            style={{
+              backgroundColor: 'var(--bg-surface)',
+              borderColor: 'var(--border-crisp)',
+            }}
+          >
+            <div
+              className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 mb-6 pb-5 border-b"
+              style={{ borderColor: 'var(--border-crisp)' }}
+            >
               <div>
-                <h2 className="text-xl font-black text-white flex items-center gap-2">
-                  <Package className="w-6 h-6 text-rose-500" />
+                <h2
+                  className="text-lg sm:text-xl font-black flex items-center gap-2 tracking-tight"
+                  style={{ color: 'var(--text-primary)' }}
+                >
+                  <Package className="w-5 h-5 text-rose-600 dark:text-rose-400" />
                   Gerenciamento de Peças & Pré-Venda
                 </h2>
-                <p className="text-xs text-zinc-400 mt-1">
+                <p
+                  className="text-xs mt-1"
+                  style={{ color: 'var(--text-secondary)' }}
+                >
                   Cadastre camisas a pronta entrega ou adicione modelos em Pré-Venda (que irão chegar) para reserva antecipada.
                 </p>
               </div>
 
-              <div className="flex flex-wrap items-center gap-2.5">
+              <div className="flex flex-wrap items-center gap-2">
                 <button
                   onClick={() => handleOpenCreateModal(true)}
-                  className="px-4 py-3 rounded-2xl bg-amber-500 hover:bg-amber-400 text-zinc-950 font-extrabold text-xs sm:text-sm flex items-center gap-2 shadow-lg shadow-amber-950/50 transition-all hover:scale-[1.02] active:scale-[0.98]"
+                  className="px-3.5 py-2 rounded-xl text-xs font-bold border tactile flex items-center gap-1.5 bg-amber-500/10 text-amber-700 dark:text-amber-300 border-amber-500/30 hover:bg-amber-500/20"
                 >
                   <CalendarClock className="w-4 h-4" />
-                  Adicionar Modelo em Pré-Venda
+                  <span>Adicionar Pré-Venda</span>
                 </button>
 
                 <button
                   onClick={() => handleOpenCreateModal(false)}
-                  className="px-5 py-3 rounded-2xl bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold text-xs sm:text-sm flex items-center gap-2 shadow-lg shadow-emerald-950/60 transition-all hover:scale-[1.02] active:scale-[0.98]"
+                  className="px-4 py-2 rounded-xl bg-zinc-950 text-white dark:bg-white dark:text-zinc-950 font-bold text-xs flex items-center gap-2 border border-zinc-950 dark:border-white shadow-sm tactile hover:opacity-90"
                 >
                   <PlusCircle className="w-4 h-4" />
-                  Adicionar Pronta Entrega
+                  <span>Adicionar Pronta Entrega</span>
                 </button>
               </div>
             </div>
@@ -1014,13 +1240,21 @@ export default function AdminDashboardClient({
             {/* FILTROS E BUSCA */}
             <div className="flex flex-col sm:flex-row items-center gap-3 mb-6">
               <div className="relative w-full sm:w-80">
-                <Search className="w-4 h-4 text-zinc-500 absolute left-3.5 top-3 pointer-events-none" />
+                <Search
+                  className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none"
+                  style={{ color: 'var(--text-muted)' }}
+                />
                 <input
                   type="text"
                   placeholder="Buscar por time, camisa ou liga..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full bg-zinc-950 border border-zinc-700/80 rounded-xl pl-10 pr-4 py-2 text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-rose-500 font-medium"
+                  className="w-full h-10 pl-9 pr-4 rounded-full border text-xs font-medium focus:outline-none focus:ring-2 focus:ring-rose-600 tactile"
+                  style={{
+                    backgroundColor: 'var(--bg-studio)',
+                    borderColor: 'var(--border-crisp)',
+                    color: 'var(--text-primary)',
+                  }}
                 />
               </div>
 
@@ -1041,22 +1275,31 @@ export default function AdminDashboardClient({
                     <button
                       key={league}
                       onClick={() => setSelectedLeague(league)}
-                      className={`px-3 py-1.5 rounded-lg text-xs font-bold whitespace-nowrap transition-colors inline-flex items-center gap-1.5 ${
+                      className={`px-3 py-1.5 rounded-full text-xs font-bold whitespace-nowrap tactile inline-flex items-center gap-1.5 border shrink-0 ${
                         isSelected
                           ? isPreSaleFilter
-                            ? 'bg-amber-500 text-zinc-950 border border-amber-400'
-                            : 'bg-rose-500/20 text-rose-300 border border-rose-500/40'
+                            ? 'bg-amber-400 text-zinc-950 border-amber-400'
+                            : 'bg-zinc-950 text-white border-zinc-950 dark:bg-white dark:text-zinc-950 dark:border-white'
                           : isPreSaleFilter
-                          ? 'bg-amber-500/10 text-amber-300 hover:bg-amber-500/20 border border-amber-500/30'
-                          : 'bg-zinc-950 text-zinc-400 hover:text-white border border-zinc-800'
+                          ? 'bg-amber-500/10 text-amber-700 dark:text-amber-300 border-amber-500/30 hover:bg-amber-500/20'
+                          : 'hover:opacity-80'
                       }`}
+                      style={
+                        !isSelected && !isPreSaleFilter
+                          ? {
+                              backgroundColor: 'var(--bg-surface)',
+                              borderColor: 'var(--border-crisp)',
+                              color: 'var(--text-secondary)',
+                            }
+                          : undefined
+                      }
                     >
                       {isPreSaleFilter && <Clock className="w-3 h-3" />}
                       <span>{league}</span>
                       {isPreSaleFilter && (
                         <span
-                          className={`text-[10px] font-black px-1.5 py-0.5 rounded-full ${
-                            isSelected ? 'bg-zinc-950 text-amber-400' : 'bg-amber-500/20 text-amber-300'
+                          className={`text-[10px] font-black px-1.5 py-0.2 rounded-full font-mono ${
+                            isSelected ? 'bg-zinc-950 text-amber-400' : 'bg-amber-500/20 text-amber-700 dark:text-amber-300'
                           }`}
                         >
                           {preSaleCount}
@@ -1069,23 +1312,43 @@ export default function AdminDashboardClient({
             </div>
 
             {/* TABELA DE PRODUTOS */}
-            <div className="overflow-x-auto rounded-2xl border border-zinc-800 bg-zinc-950/50">
-              <table className="w-full text-left text-xs text-zinc-300">
-                <thead className="bg-zinc-950 text-zinc-400 uppercase text-[10px] font-bold tracking-wider border-b border-zinc-800">
+            <div
+              className="overflow-x-auto rounded-2xl border"
+              style={{
+                backgroundColor: 'var(--bg-surface)',
+                borderColor: 'var(--border-crisp)',
+              }}
+            >
+              <table className="w-full text-left text-xs">
+                <thead
+                  className="uppercase text-[10px] font-mono font-bold tracking-wider border-b"
+                  style={{
+                    backgroundColor: 'var(--bg-studio)',
+                    borderColor: 'var(--border-crisp)',
+                    color: 'var(--text-muted)',
+                  }}
+                >
                   <tr>
-                    <th className="py-3.5 px-4">Foto</th>
-                    <th className="py-3.5 px-4">Camisa / Clube</th>
-                    <th className="py-3.5 px-3">Liga / Modalidade</th>
-                    <th className="py-3.5 px-3">Preço Base</th>
-                    <th className="py-3.5 px-3">Grade de Tamanhos</th>
-                    <th className="py-3.5 px-3 text-center">Status & Modo</th>
-                    <th className="py-3.5 px-4 text-right">Ações</th>
+                    <th className="py-3 px-4">Foto</th>
+                    <th className="py-3 px-4">Camisa / Clube</th>
+                    <th className="py-3 px-3">Liga / Modalidade</th>
+                    <th className="py-3 px-3">Preço Base</th>
+                    <th className="py-3 px-3">Grade de Tamanhos</th>
+                    <th className="py-3 px-3 text-center">Status & Modo</th>
+                    <th className="py-3 px-4 text-right">Ações</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-zinc-800/80">
+                <tbody
+                  className="divide-y"
+                  style={{ borderColor: 'var(--border-crisp)' }}
+                >
                   {filteredProducts.length === 0 ? (
                     <tr>
-                      <td colSpan={7} className="py-8 text-center text-zinc-500">
+                      <td
+                        colSpan={7}
+                        className="py-12 text-center text-xs"
+                        style={{ color: 'var(--text-muted)' }}
+                      >
                         Nenhuma peça encontrada com os filtros atuais.
                       </td>
                     </tr>
@@ -1094,70 +1357,104 @@ export default function AdminDashboardClient({
                       const preSaleInfo = getProductPreSaleInfo(p);
                       const productImages = getProductGalleryImages(p);
                       return (
-                        <tr key={p.id} className="hover:bg-zinc-800/40 transition-colors">
-                          <td className="py-3.5 px-4">
+                        <tr
+                          key={p.id}
+                          className="hover:bg-[var(--bg-studio)] transition-colors"
+                        >
+                          <td className="py-3 px-4">
                             {p.imageUrl ? (
-                              <div className="relative w-11 h-11">
+                              <div className="relative w-11 h-11 shrink-0">
                                 <img
                                   src={p.imageUrl}
                                   alt={p.name}
-                                  className="w-11 h-11 object-cover rounded-xl bg-zinc-900 border border-zinc-700/80 shadow-sm"
+                                  className="w-11 h-11 object-cover rounded-xl border shadow-sm"
+                                  style={{
+                                    borderColor: 'var(--border-crisp)',
+                                    backgroundColor: 'var(--bg-studio)',
+                                  }}
                                 />
                                 {productImages.length > 1 && (
                                   <span
                                     title={`${productImages.length} fotos cadastradas`}
-                                    className="absolute -bottom-1 -right-1 px-1.5 py-0.2 rounded-md bg-rose-600 text-white font-mono font-black text-[9px] border border-zinc-950 shadow"
+                                    className="absolute -bottom-1 -right-1 px-1.5 py-0.2 rounded-md bg-rose-600 text-white font-mono font-black text-[9px] border shadow"
+                                    style={{ borderColor: 'var(--bg-surface)' }}
                                   >
                                     +{productImages.length - 1}
                                   </span>
                                 )}
                               </div>
                             ) : (
-                              <div className="w-11 h-11 rounded-xl bg-zinc-900 flex items-center justify-center text-zinc-500 border border-zinc-800">
+                              <div
+                                className="w-11 h-11 rounded-xl flex items-center justify-center border"
+                                style={{
+                                  borderColor: 'var(--border-crisp)',
+                                  backgroundColor: 'var(--bg-studio)',
+                                  color: 'var(--text-muted)',
+                                }}
+                              >
                                 <ImageIcon className="w-5 h-5" />
                               </div>
                             )}
                           </td>
-                          <td className="py-3.5 px-4 font-bold text-white">
+                          <td className="py-3 px-4 font-bold">
                             <div className="flex flex-wrap items-center gap-1.5">
                               <a
                                 href={`/produto/${p.slug}`}
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="text-sm font-extrabold hover:text-rose-400 transition-colors inline-flex items-center gap-1.5 group/link"
+                                className="text-xs sm:text-sm font-black hover:text-rose-600 dark:hover:text-rose-400 transition-colors inline-flex items-center gap-1.5 group/link"
+                                style={{ color: 'var(--text-primary)' }}
                                 title="Abrir página desta camisa em nova aba"
                               >
                                 <span>{p.name}</span>
-                                <ExternalLink className="w-3 h-3 text-zinc-500 group-hover/link:text-rose-400 opacity-60 group-hover/link:opacity-100 transition-opacity" />
+                                <ExternalLink
+                                  className="w-3 h-3 opacity-60 group-hover/link:opacity-100 transition-opacity"
+                                  style={{ color: 'var(--text-muted)' }}
+                                />
                               </a>
                               {preSaleInfo.isPreSale && (
-                                <span className="bg-amber-500/20 text-amber-300 border border-amber-500/40 px-2 py-0.5 rounded-md text-[10px] font-black uppercase inline-flex items-center gap-1">
+                                <span className="bg-amber-500/15 text-amber-700 dark:text-amber-300 border border-amber-500/30 px-2 py-0.5 rounded-full text-[10px] font-black uppercase inline-flex items-center gap-1">
                                   <Clock className="w-2.5 h-2.5" />
                                   Pré-Venda
                                 </span>
                               )}
                             </div>
-                            <span className="text-[11px] font-normal text-zinc-400 block mt-0.5">
+                            <span
+                              className="text-[11px] font-normal block mt-0.5"
+                              style={{ color: 'var(--text-muted)' }}
+                            >
                               {p.club} • {p.season}
                               {preSaleInfo.isPreSale && preSaleInfo.preSaleEta && (
-                                <span className="text-amber-300 font-semibold ml-1.5">
+                                <span className="text-amber-600 dark:text-amber-300 font-semibold ml-1.5">
                                   ({preSaleInfo.preSaleEta})
                                 </span>
                               )}
                             </span>
                           </td>
-                          <td className="py-3.5 px-3">
-                            <span className="bg-zinc-800 px-2 py-0.5 rounded text-[10px] font-bold text-zinc-200 mr-1 border border-zinc-700">
+                          <td className="py-3 px-3">
+                            <span
+                              className="px-2 py-0.5 rounded-md text-[10px] font-bold border mr-1 inline-block"
+                              style={{
+                                backgroundColor: 'var(--bg-studio)',
+                                borderColor: 'var(--border-crisp)',
+                                color: 'var(--text-secondary)',
+                              }}
+                            >
                               {p.league}
                             </span>
-                            <span className="text-zinc-400 text-[10px] block mt-1 font-mono">
+                            <span
+                              className="text-[10px] block mt-1 font-mono uppercase"
+                              style={{ color: 'var(--text-muted)' }}
+                            >
                               {p.type}
                             </span>
                           </td>
-                          <td className="py-3.5 px-3 font-mono font-black text-amber-400 text-sm">
-                            {formatCurrency(p.retailPrice)}
+                          <td className="py-3 px-3 font-mono font-black text-sm">
+                            <span style={{ color: 'var(--text-primary)' }}>
+                              {formatCurrency(p.retailPrice)}
+                            </span>
                           </td>
-                          <td className="py-3.5 px-3">
+                          <td className="py-3 px-3">
                             <div className="flex flex-wrap items-center gap-1 font-mono text-[10px]">
                               {(() => {
                                 const standardSizes = getStandardSizesForProduct(p);
@@ -1176,39 +1473,39 @@ export default function AdminDashboardClient({
                                 return sortedVariants.map((v: any) => (
                                   <span
                                     key={v.id || v.size}
-                                    className={`px-2 py-0.5 rounded border ${
+                                    className={`px-1.5 py-0.5 rounded border ${
                                       v.stockQuantity > 0
-                                        ? 'bg-zinc-900 border-zinc-800 text-zinc-300'
-                                        : 'bg-rose-950/40 border-rose-900/50 text-rose-400'
+                                        ? 'border-[var(--border-crisp)] bg-[var(--bg-studio)] text-[var(--text-secondary)]'
+                                        : 'bg-rose-500/10 border-rose-500/20 text-rose-600 dark:text-rose-400'
                                     }`}
                                   >
-                                    {v.size}: <strong className="text-white">{v.stockQuantity}</strong>
+                                    {v.size}: <strong style={{ color: 'var(--text-primary)' }}>{v.stockQuantity}</strong>
                                   </span>
                                 ));
                               })()}
                             </div>
                           </td>
-                          <td className="py-3.5 px-3 text-center">
+                          <td className="py-3 px-3 text-center">
                             <div className="flex flex-col items-center gap-1.5">
                               <button
                                 onClick={() => handleToggleActive(p)}
-                                className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full font-bold text-[10px] border transition-all ${
+                                className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full font-bold text-[10px] border tactile ${
                                   p.isActive
-                                    ? 'bg-emerald-500/15 border-emerald-500/40 text-emerald-400 hover:bg-emerald-500/25'
-                                    : 'bg-zinc-800/80 border-zinc-700 text-zinc-400 hover:bg-zinc-700'
+                                    ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-500/20'
+                                    : 'border-[var(--border-crisp)] bg-[var(--bg-studio)] text-[var(--text-muted)] hover:opacity-80'
                                 }`}
                                 title={p.isActive ? 'Clique para pausar esta camisa' : 'Clique para reativar'}
                               >
-                                {p.isActive ? <Eye className="w-3 h-3" /> : <EyeOff className="w-3 h-3" />}
+                                {p.isActive ? <Eye className="w-3 h-3 text-emerald-600 dark:text-emerald-400" /> : <EyeOff className="w-3 h-3" />}
                                 {p.isActive ? 'Ativo' : 'Pausado'}
                               </button>
 
                               <button
                                 onClick={() => handleTogglePreSale(p)}
-                                className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full font-bold text-[10px] border transition-all ${
+                                className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full font-bold text-[10px] border tactile ${
                                   preSaleInfo.isPreSale
-                                    ? 'bg-amber-500/20 border-amber-500/40 text-amber-300 hover:bg-amber-500/30'
-                                    : 'bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-white hover:border-zinc-700'
+                                    ? 'bg-amber-500/15 border-amber-500/30 text-amber-700 dark:text-amber-300 hover:bg-amber-500/25'
+                                    : 'border-[var(--border-crisp)] bg-[var(--bg-studio)] text-[var(--text-secondary)] hover:opacity-80'
                                 }`}
                                 title={
                                   preSaleInfo.isPreSale
@@ -1221,7 +1518,7 @@ export default function AdminDashboardClient({
                               </button>
                             </div>
                           </td>
-                          <td className="py-3.5 px-4 text-right">
+                          <td className="py-3 px-4 text-right">
                             <div className="flex items-center justify-end gap-1.5">
                               <button
                                 type="button"
@@ -1232,33 +1529,33 @@ export default function AdminDashboardClient({
                                     alert(`✓ Link copiado com sucesso para a área de transferência:\n${url}`);
                                   }
                                 }}
-                                className="p-2 rounded-xl bg-zinc-800 hover:bg-emerald-950/70 border border-transparent hover:border-emerald-500/40 text-zinc-300 hover:text-emerald-400 transition-colors"
+                                className="p-2 rounded-xl border border-[var(--border-crisp)] bg-[var(--bg-surface)] hover:bg-[var(--bg-studio)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] tactile"
                                 title="Copiar link desta camisa para enviar ao cliente"
                               >
-                                <Copy className="w-4 h-4" />
+                                <Copy className="w-3.5 h-3.5" />
                               </button>
                               <a
                                 href={`/produto/${p.slug}`}
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="p-2 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-300 hover:text-white transition-colors flex items-center justify-center"
+                                className="p-2 rounded-xl border border-[var(--border-crisp)] bg-[var(--bg-surface)] hover:bg-[var(--bg-studio)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] tactile flex items-center justify-center"
                                 title="Abrir página desta camisa em uma nova aba"
                               >
-                                <ExternalLink className="w-4 h-4" />
+                                <ExternalLink className="w-3.5 h-3.5" />
                               </a>
                               <button
                                 onClick={() => handleOpenEditModal(p)}
-                                className="p-2 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-200 hover:text-white transition-colors"
+                                className="p-2 rounded-xl border border-[var(--border-crisp)] bg-[var(--bg-surface)] hover:bg-[var(--bg-studio)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] tactile"
                                 title="Editar peça"
                               >
-                                <Edit2 className="w-4 h-4" />
+                                <Edit2 className="w-3.5 h-3.5" />
                               </button>
                               <button
                                 onClick={() => handleDeleteProduct(p.id, p.name)}
-                                className="p-2 rounded-xl bg-zinc-800 hover:bg-rose-950/70 border border-transparent hover:border-rose-500/40 text-zinc-400 hover:text-rose-300 transition-colors"
+                                className="p-2 rounded-xl border border-rose-500/20 bg-rose-500/10 hover:bg-rose-500/20 text-rose-600 dark:text-rose-400 tactile"
                                 title="Excluir peça"
                               >
-                                <Trash2 className="w-4 h-4" />
+                                <Trash2 className="w-3.5 h-3.5" />
                               </button>
                             </div>
                           </td>
@@ -1275,21 +1572,36 @@ export default function AdminDashboardClient({
         {/* ABA 2: LOTE PROMOCIONAL & METAS */}
         {activeTab === 'batch' && (
           <div className="space-y-6">
-            <div className="bg-zinc-900/90 border border-zinc-800/80 rounded-3xl p-6 shadow-2xl">
-              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6 pb-4 border-b border-zinc-800">
+            <div
+              className="rounded-2xl border p-5 sm:p-6 shadow-sm"
+              style={{
+                backgroundColor: 'var(--bg-surface)',
+                borderColor: 'var(--border-crisp)',
+              }}
+            >
+              <div
+                className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6 pb-4 border-b"
+                style={{ borderColor: 'var(--border-crisp)' }}
+              >
                 <div>
-                  <h2 className="text-xl font-black text-white flex items-center gap-2">
-                    <Flame className="w-6 h-6 text-amber-400" />
+                  <h2
+                    className="text-lg sm:text-xl font-black flex items-center gap-2 uppercase tracking-tight"
+                    style={{ color: 'var(--text-primary)' }}
+                  >
+                    <Flame className="w-5 h-5 text-amber-500" />
                     Controle do Lote Promocional ({batch?.code || 'LOTE-6000'})
                   </h2>
-                  <p className="text-xs text-zinc-400 mt-1">
+                  <p
+                    className="text-xs mt-1"
+                    style={{ color: 'var(--text-secondary)' }}
+                  >
                     Defina o saldo de peças promocionais exibido no topo da loja.
                   </p>
                 </div>
 
                 <button
                   onClick={handleResetTo6000}
-                  className="px-4 py-2 rounded-xl bg-zinc-800 hover:bg-amber-600/30 text-amber-300 hover:text-amber-200 border border-amber-500/30 text-xs font-bold flex items-center gap-1.5 transition-colors"
+                  className="px-3.5 py-2 rounded-xl border text-xs font-bold flex items-center gap-1.5 tactile bg-amber-500/10 text-amber-700 dark:text-amber-300 border-amber-500/30 hover:bg-amber-500/20"
                 >
                   <RefreshCw className="w-3.5 h-3.5" />
                   Resetar para 6.000 Camisas
@@ -1297,45 +1609,76 @@ export default function AdminDashboardClient({
               </div>
 
               {batchSuccessMsg && (
-                <div className="mb-4 p-3.5 bg-emerald-950/60 border border-emerald-500/40 rounded-xl text-xs text-emerald-300 font-bold flex items-center gap-2">
-                  <CheckCircle className="w-4 h-4" />
+                <div
+                  className="mb-4 p-3.5 bg-emerald-500/10 border border-emerald-500/30 rounded-xl text-xs text-emerald-700 dark:text-emerald-300 font-bold flex items-center gap-2"
+                >
+                  <CheckCircle className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
                   {batchSuccessMsg}
                 </div>
               )}
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs font-bold text-zinc-300 mb-1.5">
+                  <label
+                    className="block text-xs font-bold mb-1.5"
+                    style={{ color: 'var(--text-secondary)' }}
+                  >
                     Cota Restante no Contador (Peças)
                   </label>
                   <input
                     type="number"
                     value={remainingQuotaInput}
                     onChange={(e) => setRemainingQuotaInput(e.target.value)}
-                    className="w-full bg-zinc-950 border border-zinc-700/80 rounded-xl px-4 py-3 text-sm text-white font-mono focus:outline-none focus:border-rose-500 font-bold"
+                    className="w-full rounded-xl px-4 py-2.5 text-sm font-mono font-bold border focus:outline-none focus:ring-2 focus:ring-rose-600 tactile"
+                    style={{
+                      backgroundColor: 'var(--bg-studio)',
+                      borderColor: 'var(--border-crisp)',
+                      color: 'var(--text-primary)',
+                    }}
                   />
-                  <p className="text-[11px] text-zinc-500 mt-1">Exibido na barra promocional do topo da loja.</p>
+                  <p
+                    className="text-[11px] mt-1"
+                    style={{ color: 'var(--text-muted)' }}
+                  >
+                    Exibido na barra promocional do topo da loja.
+                  </p>
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold text-zinc-300 mb-1.5">
+                  <label
+                    className="block text-xs font-bold mb-1.5"
+                    style={{ color: 'var(--text-secondary)' }}
+                  >
                     Cota Total do Lote (Peças)
                   </label>
                   <input
                     type="number"
                     value={totalQuotaInput}
                     onChange={(e) => setTotalQuotaInput(e.target.value)}
-                    className="w-full bg-zinc-950 border border-zinc-700/80 rounded-xl px-4 py-3 text-sm text-white font-mono focus:outline-none focus:border-rose-500 font-bold"
+                    className="w-full rounded-xl px-4 py-2.5 text-sm font-mono font-bold border focus:outline-none focus:ring-2 focus:ring-rose-600 tactile"
+                    style={{
+                      backgroundColor: 'var(--bg-studio)',
+                      borderColor: 'var(--border-crisp)',
+                      color: 'var(--text-primary)',
+                    }}
                   />
-                  <p className="text-[11px] text-zinc-500 mt-1">Cota total de referência do lote promocional.</p>
+                  <p
+                    className="text-[11px] mt-1"
+                    style={{ color: 'var(--text-muted)' }}
+                  >
+                    Cota total de referência do lote promocional.
+                  </p>
                 </div>
               </div>
 
-              <div className="mt-6 pt-4 border-t border-zinc-800 flex justify-end">
+              <div
+                className="mt-6 pt-4 border-t flex justify-end"
+                style={{ borderColor: 'var(--border-crisp)' }}
+              >
                 <button
                   onClick={() => handleUpdateBatch()}
                   disabled={isUpdatingBatch}
-                  className="px-6 py-3 rounded-2xl bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold text-xs sm:text-sm flex items-center gap-2 shadow-lg shadow-emerald-950/60 transition-all"
+                  className="px-5 py-2.5 rounded-xl bg-zinc-950 text-white dark:bg-white dark:text-zinc-950 font-bold text-xs flex items-center gap-2 border border-zinc-950 dark:border-white shadow-sm tactile hover:opacity-90 disabled:opacity-50"
                 >
                   <Save className="w-4 h-4" />
                   {isUpdatingBatch ? 'Salvando...' : 'Salvar Alterações do Lote'}
@@ -1344,23 +1687,59 @@ export default function AdminDashboardClient({
             </div>
 
             {/* INFORMAÇÕES DE PREÇO */}
-            <div className="bg-zinc-900/90 border border-zinc-800/80 rounded-3xl p-6 shadow-2xl">
-              <h3 className="text-lg font-black text-white flex items-center gap-2 mb-4 pb-3 border-b border-zinc-800">
-                <Layers className="w-5 h-5 text-rose-500" />
+            <div
+              className="rounded-2xl border p-5 sm:p-6 shadow-sm"
+              style={{
+                backgroundColor: 'var(--bg-surface)',
+                borderColor: 'var(--border-crisp)',
+              }}
+            >
+              <h3
+                className="text-base sm:text-lg font-black flex items-center gap-2 mb-4 pb-3 border-b tracking-tight"
+                style={{
+                  color: 'var(--text-primary)',
+                  borderColor: 'var(--border-crisp)',
+                }}
+              >
+                <Layers className="w-5 h-5 text-rose-600 dark:text-rose-400" />
                 Política de Preços (Direto de Fábrica)
               </h3>
 
-              <div className="bg-zinc-950 border border-zinc-800 rounded-2xl p-5">
-                <div className="flex items-center justify-between text-xs text-zinc-400 mb-1">
-                  <span className="font-bold uppercase tracking-wider text-zinc-400">Preço Cadastrado do Produto</span>
-                  <span className="bg-zinc-800 text-zinc-300 px-2 py-0.5 rounded font-mono text-[10px]">
+              <div
+                className="rounded-xl border p-4 sm:p-5"
+                style={{
+                  backgroundColor: 'var(--bg-studio)',
+                  borderColor: 'var(--border-crisp)',
+                }}
+              >
+                <div className="flex items-center justify-between text-xs mb-1">
+                  <span
+                    className="font-bold uppercase tracking-wider text-[11px]"
+                    style={{ color: 'var(--text-secondary)' }}
+                  >
+                    Preço Cadastrado do Produto
+                  </span>
+                  <span
+                    className="px-2 py-0.5 rounded font-mono text-[10px] border"
+                    style={{
+                      backgroundColor: 'var(--bg-surface)',
+                      borderColor: 'var(--border-crisp)',
+                      color: 'var(--text-muted)',
+                    }}
+                  >
                     Sem desconto por quantidade
                   </span>
                 </div>
-                <h4 className="text-2xl font-black text-white mt-2">
+                <h4
+                  className="text-xl sm:text-2xl font-black mt-2 font-mono tabular-nums"
+                  style={{ color: 'var(--text-primary)' }}
+                >
                   Preço Individual Mantido
                 </h4>
-                <p className="text-[11px] text-zinc-400 mt-2">
+                <p
+                  className="text-xs mt-2 leading-relaxed"
+                  style={{ color: 'var(--text-secondary)' }}
+                >
                   Cada modelo cobra seu preço cadastrado específico (ex: Versões Torcedor R$ 60, Jogador R$ 80, etc.). Não há redução automática para R$ 55 ao atingir 50 peças.
                 </p>
               </div>
@@ -1372,72 +1751,129 @@ export default function AdminDashboardClient({
         {activeTab === 'orders' && (
           <div className="space-y-6">
             {/* CARDS DE RESUMO FINANCEIRO DOS PEDIDOS */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              <div className="bg-zinc-900/90 border border-zinc-800 rounded-2xl p-5 shadow-lg">
-                <span className="text-[11px] font-bold text-zinc-400 uppercase tracking-wider block">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
+              <div
+                className="p-4 sm:p-5 rounded-2xl border tactile"
+                style={{
+                  backgroundColor: 'var(--bg-surface)',
+                  borderColor: 'var(--border-crisp)',
+                }}
+              >
+                <span
+                  className="text-[10px] sm:text-[11px] font-mono font-bold uppercase tracking-wider block"
+                  style={{ color: 'var(--text-muted)' }}
+                >
                   Faturamento de Pedidos
                 </span>
-                <div className="flex items-baseline gap-2 mt-2">
-                  <span className="text-2xl sm:text-3xl font-black text-emerald-400">
+                <div className="flex items-baseline gap-2 mt-1.5">
+                  <span className="text-2xl sm:text-3xl font-black font-mono tabular-nums text-emerald-600 dark:text-emerald-400">
                     {formatCurrency(orderStats.totalRevenue)}
                   </span>
                 </div>
-                <span className="text-[11px] text-zinc-500 mt-1 block">
+                <span
+                  className="text-[11px] mt-1 block"
+                  style={{ color: 'var(--text-muted)' }}
+                >
                   Total acumulado de pedidos
                 </span>
               </div>
 
-              <div className="bg-zinc-900/90 border border-zinc-800 rounded-2xl p-5 shadow-lg">
-                <span className="text-[11px] font-bold text-zinc-400 uppercase tracking-wider block">
+              <div
+                className="p-4 sm:p-5 rounded-2xl border tactile"
+                style={{
+                  backgroundColor: 'var(--bg-surface)',
+                  borderColor: 'var(--border-crisp)',
+                }}
+              >
+                <span
+                  className="text-[10px] sm:text-[11px] font-mono font-bold uppercase tracking-wider block"
+                  style={{ color: 'var(--text-muted)' }}
+                >
                   Total de Camisas
                 </span>
-                <div className="flex items-baseline gap-2 mt-2">
-                  <span className="text-2xl sm:text-3xl font-black text-white">
+                <div className="flex items-baseline gap-2 mt-1.5">
+                  <span
+                    className="text-2xl sm:text-3xl font-black font-mono tabular-nums"
+                    style={{ color: 'var(--text-primary)' }}
+                  >
                     {orderStats.totalPieces.toLocaleString('pt-BR')}
                   </span>
-                  <span className="text-xs text-rose-400 font-bold">peças</span>
+                  <span className="text-xs text-rose-600 dark:text-rose-400 font-bold">peças</span>
                 </div>
-                <span className="text-[11px] text-zinc-500 mt-1 block">
+                <span
+                  className="text-[11px] mt-1 block"
+                  style={{ color: 'var(--text-muted)' }}
+                >
                   Somatório de todos os pedidos
                 </span>
               </div>
 
-              <div className="bg-zinc-900/90 border border-zinc-800 rounded-2xl p-5 shadow-lg">
-                <span className="text-[11px] font-bold text-zinc-400 uppercase tracking-wider block">
+              <div
+                className="p-4 sm:p-5 rounded-2xl border tactile"
+                style={{
+                  backgroundColor: 'var(--bg-surface)',
+                  borderColor: 'var(--border-crisp)',
+                }}
+              >
+                <span
+                  className="text-[10px] sm:text-[11px] font-mono font-bold uppercase tracking-wider block"
+                  style={{ color: 'var(--text-muted)' }}
+                >
                   Total de Pedidos
                 </span>
-                <div className="flex items-baseline gap-2 mt-2">
-                  <span className="text-2xl sm:text-3xl font-black text-white">
+                <div className="flex items-baseline gap-2 mt-1.5">
+                  <span
+                    className="text-2xl sm:text-3xl font-black font-mono tabular-nums"
+                    style={{ color: 'var(--text-primary)' }}
+                  >
                     {orderStats.total}
                   </span>
-                  <span className="text-xs text-amber-400 font-bold">registrados</span>
+                  <span className="text-xs text-amber-600 dark:text-amber-400 font-bold">registrados</span>
                 </div>
-                <span className="text-[11px] text-zinc-500 mt-1 block">
+                <span
+                  className="text-[11px] mt-1 block"
+                  style={{ color: 'var(--text-muted)' }}
+                >
                   {orderStats.delivered} entregues • {orderStats.shipped} enviados
                 </span>
               </div>
             </div>
 
             {/* TABELA PRINCIPAL DE GESTÃO DE PEDIDOS */}
-            <div className="bg-zinc-900/90 border border-zinc-800/80 rounded-3xl p-6 shadow-2xl overflow-hidden">
-              <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 mb-6 pb-5 border-b border-zinc-800">
+            <div
+              className="rounded-2xl border p-4 sm:p-6 shadow-sm overflow-hidden"
+              style={{
+                backgroundColor: 'var(--bg-surface)',
+                borderColor: 'var(--border-crisp)',
+              }}
+            >
+              <div
+                className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 mb-6 pb-5 border-b"
+                style={{ borderColor: 'var(--border-crisp)' }}
+              >
                 <div>
-                  <h2 className="text-xl font-black text-white flex items-center gap-2">
-                    <Layers className="w-6 h-6 text-emerald-400" />
+                  <h2
+                    className="text-lg sm:text-xl font-black flex items-center gap-2 uppercase tracking-tight"
+                    style={{ color: 'var(--text-primary)' }}
+                  >
+                    <Layers className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
                     Gestão & Controle de Pedidos
                   </h2>
-                  <p className="text-xs text-zinc-400 mt-1">
+                  <p
+                    className="text-xs mt-1"
+                    style={{ color: 'var(--text-secondary)' }}
+                  >
                     Acompanhe pedidos, altere status em tempo real e gere relatórios prontos para WhatsApp.
                   </p>
                 </div>
 
-                <div className="flex flex-wrap items-center gap-2.5">
+                <div className="flex flex-wrap items-center gap-2">
                   <button
                     type="button"
                     onClick={() => setIsGeneralReportModalOpen(true)}
-                    className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs sm:text-sm flex items-center gap-2 shadow-lg shadow-emerald-950/60 transition-all hover:scale-[1.02]"
+                    className="px-3.5 py-2 rounded-xl text-xs font-bold border tactile flex items-center gap-1.5 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border-emerald-500/30 hover:bg-emerald-500/20"
                   >
-                    <MessageCircle className="w-4 h-4" />
+                    <MessageCircle className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
                     Relatório Geral (WhatsApp)
                   </button>
 
@@ -1445,120 +1881,99 @@ export default function AdminDashboardClient({
                     type="button"
                     onClick={handleRefreshOrders}
                     disabled={isRefreshingOrders}
-                    className="px-3.5 py-2 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-300 hover:text-white text-xs font-bold flex items-center gap-1.5 transition-colors border border-zinc-700"
+                    className="px-3.5 py-2 rounded-xl border text-xs font-bold flex items-center gap-1.5 tactile border-[var(--border-crisp)] bg-[var(--bg-surface)] hover:bg-[var(--bg-studio)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
                     title="Atualizar lista de pedidos"
                   >
-                    <RefreshCw className={`w-4 h-4 ${isRefreshingOrders ? 'animate-spin text-emerald-400' : ''}`} />
+                    <RefreshCw className={`w-3.5 h-3.5 ${isRefreshingOrders ? 'animate-spin text-emerald-500' : ''}`} />
                     <span>Atualizar</span>
                   </button>
                 </div>
               </div>
 
-              {/* FILTROS POR STATUS */}
-              <div className="flex items-center gap-2 overflow-x-auto pb-3 mb-4 scrollbar-none">
-                <button
-                  type="button"
-                  onClick={() => setOrderStatusFilter('ALL')}
-                  className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all border whitespace-nowrap ${
-                    orderStatusFilter === 'ALL'
-                      ? 'bg-rose-600 text-white border-rose-500 shadow-md shadow-rose-950/50'
-                      : 'bg-zinc-950 text-zinc-400 border-zinc-800 hover:text-white hover:border-zinc-700'
-                  }`}
-                >
-                  Todos ({orders.length})
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => setOrderStatusFilter('PENDING')}
-                  className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all border whitespace-nowrap ${
-                    orderStatusFilter === 'PENDING'
-                      ? 'bg-amber-500/30 text-amber-200 border-amber-500'
-                      : 'bg-zinc-950 text-zinc-400 border-zinc-800 hover:text-amber-300 hover:border-amber-500/40'
-                  }`}
-                >
-                  ⏳ Pendentes ({orderStats.pending})
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => setOrderStatusFilter('PROCESSAMENTO')}
-                  className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all border whitespace-nowrap ${
-                    orderStatusFilter === 'PROCESSAMENTO'
-                      ? 'bg-blue-500/30 text-blue-200 border-blue-500'
-                      : 'bg-zinc-950 text-zinc-400 border-zinc-800 hover:text-blue-300 hover:border-blue-500/40'
-                  }`}
-                >
-                  ⚙️ Em Processamento ({orderStats.processing})
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => setOrderStatusFilter('PAGAMENTO_CONFIRMADO')}
-                  className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all border whitespace-nowrap ${
-                    orderStatusFilter === 'PAGAMENTO_CONFIRMADO'
-                      ? 'bg-emerald-500/30 text-emerald-200 border-emerald-500'
-                      : 'bg-zinc-950 text-zinc-400 border-zinc-800 hover:text-emerald-300 hover:border-emerald-500/40'
-                  }`}
-                >
-                  ✅ Pagamento Confirmado ({orderStats.confirmed})
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => setOrderStatusFilter('ENVIADO')}
-                  className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all border whitespace-nowrap ${
-                    orderStatusFilter === 'ENVIADO'
-                      ? 'bg-purple-500/30 text-purple-200 border-purple-500'
-                      : 'bg-zinc-950 text-zinc-400 border-zinc-800 hover:text-purple-300 hover:border-purple-500/40'
-                  }`}
-                >
-                  🚚 Enviados ({orderStats.shipped})
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => setOrderStatusFilter('ENTREGUE')}
-                  className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all border whitespace-nowrap ${
-                    orderStatusFilter === 'ENTREGUE'
-                      ? 'bg-teal-500/30 text-teal-200 border-teal-500'
-                      : 'bg-zinc-950 text-zinc-400 border-zinc-800 hover:text-teal-300 hover:border-teal-500/40'
-                  }`}
-                >
-                  📦 Entregues ({orderStats.delivered})
-                </button>
+              {/* FILTROS POR STATUS NO MODELO DE PÍLULAS */}
+              <div className="flex items-center gap-1.5 overflow-x-auto pb-3 mb-4 scrollbar-none">
+                {[
+                  { key: 'ALL', label: `Todos (${orders.length})` },
+                  { key: 'PENDING', label: `⏳ Pendentes (${orderStats.pending})` },
+                  { key: 'PROCESSAMENTO', label: `⚙️ Processamento (${orderStats.processing})` },
+                  { key: 'PAGAMENTO_CONFIRMADO', label: `✅ Pagos (${orderStats.confirmed})` },
+                  { key: 'ENVIADO', label: `🚚 Enviados (${orderStats.shipped})` },
+                  { key: 'ENTREGUE', label: `📦 Entregues (${orderStats.delivered})` },
+                ].map((s) => {
+                  const isSelected = orderStatusFilter === s.key;
+                  return (
+                    <button
+                      key={s.key}
+                      type="button"
+                      onClick={() => setOrderStatusFilter(s.key)}
+                      className={`px-3 py-1.5 rounded-full text-xs font-bold whitespace-nowrap tactile border shrink-0 ${
+                        isSelected
+                          ? 'bg-zinc-950 text-white border-zinc-950 dark:bg-white dark:text-zinc-950 dark:border-white shadow-sm'
+                          : 'hover:opacity-80'
+                      }`}
+                      style={
+                        !isSelected
+                          ? {
+                              backgroundColor: 'var(--bg-studio)',
+                              borderColor: 'var(--border-crisp)',
+                              color: 'var(--text-secondary)',
+                            }
+                          : undefined
+                      }
+                    >
+                      {s.label}
+                    </button>
+                  );
+                })}
               </div>
 
               {/* BUSCA DE PEDIDOS */}
-              <div className="bg-zinc-950/80 border border-zinc-800 rounded-2xl p-3 mb-6">
+              <div
+                className="rounded-2xl border p-3 mb-6"
+                style={{
+                  backgroundColor: 'var(--bg-studio)',
+                  borderColor: 'var(--border-crisp)',
+                }}
+              >
                 <div className="relative w-full">
-                  <Search className="w-4 h-4 text-emerald-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                  <Search
+                    className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none"
+                    style={{ color: 'var(--text-muted)' }}
+                  />
                   <input
                     type="text"
                     value={orderSearch}
                     onChange={(e) => setOrderSearch(e.target.value)}
                     placeholder="Buscar pedido por número (#RUBY...), nome do cliente, WhatsApp, CPF ou cidade..."
-                    className="w-full bg-zinc-900 border border-zinc-800 rounded-xl pl-10 pr-20 py-2.5 text-xs sm:text-sm text-white placeholder-zinc-500 focus:outline-none focus:border-emerald-500 transition-colors"
+                    className="w-full rounded-xl pl-10 pr-20 py-2.5 text-xs sm:text-sm font-medium border focus:outline-none focus:ring-2 focus:ring-rose-600 tactile"
+                    style={{
+                      backgroundColor: 'var(--bg-surface)',
+                      borderColor: 'var(--border-crisp)',
+                      color: 'var(--text-primary)',
+                    }}
                   />
                   {orderSearch && (
                     <button
                       type="button"
                       onClick={() => setOrderSearch('')}
-                      className="absolute right-2.5 top-1/2 -translate-y-1/2 text-xs text-zinc-400 hover:text-white bg-zinc-800 px-2 py-1 rounded-md"
+                      className="absolute right-2.5 top-1/2 -translate-y-1/2 text-xs px-2 py-1 rounded-md border border-[var(--border-crisp)] bg-[var(--bg-studio)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
                     >
                       Limpar
                     </button>
                   )}
                 </div>
-                <div className="flex items-center justify-between text-[11px] text-zinc-400 mt-2 px-1">
+                <div
+                  className="flex items-center justify-between text-[11px] mt-2 px-1"
+                  style={{ color: 'var(--text-muted)' }}
+                >
                   <span>
-                    Exibindo <strong className="text-white">{filteredOrders.length}</strong> de <strong className="text-white">{orders.length}</strong> pedidos
+                    Exibindo <strong style={{ color: 'var(--text-primary)' }}>{filteredOrders.length}</strong> de <strong style={{ color: 'var(--text-primary)' }}>{orders.length}</strong> pedidos
                   </span>
                   {orderStatusFilter !== 'ALL' && (
                     <button
                       type="button"
                       onClick={() => setOrderStatusFilter('ALL')}
-                      className="text-rose-400 hover:underline"
+                      className="text-rose-600 dark:text-rose-400 font-semibold hover:underline"
                     >
                       Remover filtro de status
                     </button>
@@ -1568,10 +1983,25 @@ export default function AdminDashboardClient({
 
               {/* TABELA DE PEDIDOS */}
               {filteredOrders.length === 0 ? (
-                <div className="py-16 text-center text-zinc-500 bg-zinc-950/40 rounded-2xl border border-zinc-800/60">
-                  <Package className="w-12 h-12 mx-auto text-zinc-600 mb-3" />
-                  <p className="font-bold text-base text-zinc-300">Nenhum pedido encontrado</p>
-                  <p className="text-xs text-zinc-500 mt-1 max-w-sm mx-auto">
+                <div
+                  className="py-16 text-center rounded-2xl border"
+                  style={{
+                    backgroundColor: 'var(--bg-studio)',
+                    borderColor: 'var(--border-crisp)',
+                    color: 'var(--text-muted)',
+                  }}
+                >
+                  <Package className="w-12 h-12 mx-auto mb-3 opacity-40" />
+                  <p
+                    className="font-bold text-sm sm:text-base"
+                    style={{ color: 'var(--text-primary)' }}
+                  >
+                    Nenhum pedido encontrado
+                  </p>
+                  <p
+                    className="text-xs mt-1 max-w-sm mx-auto"
+                    style={{ color: 'var(--text-secondary)' }}
+                  >
                     {orderSearch || orderStatusFilter !== 'ALL'
                       ? 'Tente ajustar os filtros ou o termo de busca para visualizar os pedidos.'
                       : 'Nenhum pedido foi registrado ainda no banco de dados.'}
@@ -1583,27 +2013,43 @@ export default function AdminDashboardClient({
                         setOrderSearch('');
                         setOrderStatusFilter('ALL');
                       }}
-                      className="mt-4 px-4 py-2 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-xs font-bold text-white transition-colors"
+                      className="mt-4 px-4 py-2 rounded-xl text-xs font-bold border border-[var(--border-crisp)] bg-[var(--bg-surface)] text-[var(--text-primary)] hover:bg-[var(--bg-studio)] tactile"
                     >
                       Limpar Filtros
                     </button>
                   )}
                 </div>
               ) : (
-                <div className="overflow-x-auto rounded-2xl border border-zinc-800">
-                  <table className="w-full text-left text-xs text-zinc-300">
-                    <thead className="bg-zinc-950 text-zinc-400 uppercase text-[10px] font-bold tracking-wider border-b border-zinc-800">
+                <div
+                  className="overflow-x-auto rounded-2xl border"
+                  style={{
+                    backgroundColor: 'var(--bg-surface)',
+                    borderColor: 'var(--border-crisp)',
+                  }}
+                >
+                  <table className="w-full text-left text-xs">
+                    <thead
+                      className="uppercase text-[10px] font-mono font-bold tracking-wider border-b"
+                      style={{
+                        backgroundColor: 'var(--bg-studio)',
+                        borderColor: 'var(--border-crisp)',
+                        color: 'var(--text-muted)',
+                      }}
+                    >
                       <tr>
-                        <th className="py-3.5 px-4">Pedido # & Data</th>
-                        <th className="py-3.5 px-4">Cliente & Local</th>
-                        <th className="py-3.5 px-3">WhatsApp</th>
-                        <th className="py-3.5 px-3 text-center">Peças</th>
-                        <th className="py-3.5 px-3">Total</th>
-                        <th className="py-3.5 px-3">Mudar Status</th>
-                        <th className="py-3.5 px-4 text-right">Ações</th>
+                        <th className="py-3 px-4">Pedido # & Data</th>
+                        <th className="py-3 px-4">Cliente & Local</th>
+                        <th className="py-3 px-3">WhatsApp</th>
+                        <th className="py-3 px-3 text-center">Peças</th>
+                        <th className="py-3 px-3">Total</th>
+                        <th className="py-3 px-3">Mudar Status</th>
+                        <th className="py-3 px-4 text-right">Ações</th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-zinc-800">
+                    <tbody
+                      className="divide-y"
+                      style={{ borderColor: 'var(--border-crisp)' }}
+                    >
                       {filteredOrders.map((order) => {
                         const statusInfo = getStatusInfo(order.status);
                         const cleanPhone = (order.phone || '').replace(/\D/g, '');
@@ -1622,110 +2068,136 @@ export default function AdminDashboardClient({
                         const isUpdating = updatingOrderId === order.id;
 
                         return (
-                          <tr key={order.id} className="hover:bg-zinc-800/40 transition-colors">
-                            <td className="py-3.5 px-4">
-                              <span className="font-mono font-bold text-white block">
+                          <tr
+                            key={order.id}
+                            className="hover:bg-[var(--bg-studio)] transition-colors"
+                          >
+                            <td className="py-3 px-4">
+                              <span
+                                className="font-mono font-bold block"
+                                style={{ color: 'var(--text-primary)' }}
+                              >
                                 #{order.orderNumber}
                               </span>
-                              <span className="text-[10px] text-zinc-500 flex items-center gap-1 mt-0.5">
-                                <Clock className="w-3 h-3 text-zinc-600" />
+                              <span
+                                className="text-[10px] flex items-center gap-1 mt-0.5 font-mono"
+                                style={{ color: 'var(--text-muted)' }}
+                              >
+                                <Clock className="w-3 h-3" />
                                 {dateFormatted}
                               </span>
                             </td>
 
-                            <td className="py-3.5 px-4">
-                              <strong className="text-white block font-bold">
+                            <td className="py-3 px-4">
+                              <strong
+                                className="block font-bold"
+                                style={{ color: 'var(--text-primary)' }}
+                              >
                                 {order.customerName}
                               </strong>
-                              <span className="text-[10px] text-zinc-400 block font-normal">
+                              <span
+                                className="text-[10px] block font-normal mt-0.5"
+                                style={{ color: 'var(--text-muted)' }}
+                              >
                                 {order.city ? `${order.city}/${order.state}` : 'Local não informado'}
                               </span>
                             </td>
 
-                            <td className="py-3.5 px-3">
+                            <td className="py-3 px-3">
                               {waUrl ? (
                                 <a
                                   href={waUrl}
                                   target="_blank"
                                   rel="noopener noreferrer"
-                                  className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 text-xs font-mono font-semibold border border-emerald-500/20 transition-colors"
+                                  className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 text-xs font-mono font-semibold border border-emerald-500/20 transition-colors"
                                   title="Conversar com o cliente no WhatsApp"
                                 >
-                                  <MessageCircle className="w-3.5 h-3.5 text-emerald-400" />
+                                  <MessageCircle className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
                                   <span>{order.phone}</span>
                                 </a>
                               ) : (
-                                <span className="font-mono text-zinc-500 text-[11px]">
+                                <span
+                                  className="font-mono text-[11px]"
+                                  style={{ color: 'var(--text-muted)' }}
+                                >
                                   {order.phone || 'S/N'}
                                 </span>
                               )}
                             </td>
 
-                            <td className="py-3.5 px-3 text-center">
-                              <span className="font-black text-white text-xs block">
+                            <td className="py-3 px-3 text-center">
+                              <span
+                                className="font-bold font-mono text-xs block"
+                                style={{ color: 'var(--text-primary)' }}
+                              >
                                 {order.totalQuantity} un
                               </span>
                               <span
-                                className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full inline-block ${
+                                className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full inline-block mt-0.5 ${
                                   order.isWholesale
-                                    ? 'bg-rose-500/20 text-rose-300'
-                                    : 'bg-zinc-800 text-zinc-400'
+                                    ? 'bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20'
+                                    : 'border border-[var(--border-crisp)] bg-[var(--bg-studio)] text-[var(--text-muted)]'
                                 }`}
                               >
                                 {order.isWholesale ? 'Atacado' : 'Varejo'}
                               </span>
                             </td>
 
-                            <td className="py-3.5 px-3">
-                              <span className="font-mono font-black text-emerald-400 text-sm block">
+                            <td className="py-3 px-3">
+                              <span className="font-mono font-black text-emerald-600 dark:text-emerald-400 text-sm block">
                                 {formatCurrency(order.finalTotal)}
                               </span>
-                              <span className="text-[10px] text-zinc-500 block truncate max-w-[140px]" title={order.shippingService || 'Melhor Envio'}>
+                              <span
+                                className="text-[10px] block truncate max-w-[140px]"
+                                style={{ color: 'var(--text-muted)' }}
+                                title={order.shippingService || 'Melhor Envio'}
+                              >
                                 {order.shippingService ? `${order.shippingService} (${formatCurrency(order.shippingCost || 0)})` : `Frete ${formatCurrency(order.shippingCost || 0)}`}
                               </span>
                             </td>
 
-                            <td className="py-3.5 px-3">
+                            <td className="py-3 px-3">
                               <div className="relative inline-flex items-center gap-1.5">
                                 <select
                                   value={order.status || 'PENDING'}
                                   disabled={isUpdating}
                                   onChange={(e) => handleUpdateOrderStatus(order.id, e.target.value)}
-                                  className={`text-xs font-bold rounded-xl px-2.5 py-1.5 border appearance-none pr-7 cursor-pointer focus:outline-none focus:ring-1 focus:ring-emerald-500 bg-zinc-950 transition-all ${
+                                  className={`text-xs font-bold rounded-xl px-2.5 py-1.5 border appearance-none pr-7 cursor-pointer focus:outline-none focus:ring-2 focus:ring-rose-600 tactile ${
                                     statusInfo.badge
                                   } ${isUpdating ? 'opacity-50 cursor-wait' : ''}`}
+                                  style={{ backgroundColor: 'var(--bg-surface)' }}
                                 >
-                                  <option value="PROCESSAMENTO" className="bg-zinc-900 text-blue-300">
+                                  <option value="PROCESSAMENTO">
                                     ⚙️ Em Processamento
                                   </option>
-                                  <option value="PAGAMENTO_CONFIRMADO" className="bg-zinc-900 text-emerald-300">
+                                  <option value="PAGAMENTO_CONFIRMADO">
                                     ✅ Pagamento Confirmado
                                   </option>
-                                  <option value="ENVIADO" className="bg-zinc-900 text-purple-300">
+                                  <option value="ENVIADO">
                                     🚚 Enviado
                                   </option>
-                                  <option value="ENTREGUE" className="bg-zinc-900 text-teal-300">
+                                  <option value="ENTREGUE">
                                     📦 Entregue
                                   </option>
-                                  <option value="PENDING" className="bg-zinc-900 text-amber-300">
+                                  <option value="PENDING">
                                     ⏳ Pendente
                                   </option>
-                                  <option value="CANCELADO" className="bg-zinc-900 text-rose-300">
+                                  <option value="CANCELADO">
                                     ❌ Cancelado
                                   </option>
                                 </select>
                                 {isUpdating && (
-                                  <Loader2 className="w-3.5 h-3.5 animate-spin text-emerald-400" />
+                                  <Loader2 className="w-3.5 h-3.5 animate-spin text-emerald-500" />
                                 )}
                               </div>
                             </td>
 
-                            <td className="py-3.5 px-4 text-right">
+                            <td className="py-3 px-4 text-right">
                               <div className="flex items-center justify-end gap-1.5">
                                 <button
                                   type="button"
                                   onClick={() => setSelectedOrder(order)}
-                                  className="px-2.5 py-1.5 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-200 hover:text-white text-xs font-bold flex items-center gap-1 transition-colors border border-zinc-700"
+                                  className="px-2.5 py-1.5 rounded-xl border border-[var(--border-crisp)] bg-[var(--bg-surface)] hover:bg-[var(--bg-studio)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] text-xs font-bold flex items-center gap-1 tactile"
                                   title="Ver todos os detalhes deste pedido"
                                 >
                                   <Eye className="w-3.5 h-3.5 text-zinc-400" />
@@ -1738,13 +2210,13 @@ export default function AdminDashboardClient({
                                     const report = buildOrderWhatsAppReport(order);
                                     copyToClipboard(report, `order-${order.id}`);
                                   }}
-                                  className="px-2 py-1.5 rounded-xl bg-emerald-950/60 hover:bg-emerald-900/80 border border-emerald-500/40 text-emerald-300 text-xs font-bold flex items-center gap-1 transition-colors"
+                                  className="px-2 py-1.5 rounded-xl border border-emerald-500/30 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 text-xs font-bold flex items-center gap-1 tactile"
                                   title="Copiar relatório formatado para WhatsApp"
                                 >
                                   {copiedKey === `order-${order.id}` ? (
-                                    <Check className="w-3.5 h-3.5 text-emerald-400" />
+                                    <Check className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
                                   ) : (
-                                    <Copy className="w-3.5 h-3.5 text-emerald-400" />
+                                    <Copy className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
                                   )}
                                   <span className="hidden sm:inline">Zap</span>
                                 </button>
@@ -1762,22 +2234,33 @@ export default function AdminDashboardClient({
         )}
       </main>
 
-      {/* MODAL ADICIONAR / EDITAR PEÇA */}
+      {/* MODAL ADICIONAR / EDITAR PEÇA NO MODELO BOUTIQUE CLIENTE */}
       {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md overflow-y-auto">
-          <div className="bg-zinc-900 border border-zinc-800 rounded-3xl max-w-2xl w-full p-6 sm:p-8 shadow-2xl relative my-8">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm overflow-y-auto">
+          <div
+            className="border rounded-2xl max-w-2xl w-full p-5 sm:p-7 shadow-2xl relative my-8 max-h-[92vh] overflow-y-auto"
+            style={{
+              backgroundColor: 'var(--bg-surface)',
+              borderColor: 'var(--border-crisp)',
+              color: 'var(--text-primary)',
+            }}
+          >
             <button
               onClick={() => setIsModalOpen(false)}
-              className="absolute top-6 right-6 text-zinc-400 hover:text-white p-1 rounded-xl hover:bg-zinc-800 transition-colors"
+              className="absolute top-5 right-5 p-1.5 rounded-xl border border-[var(--border-crisp)] bg-[var(--bg-studio)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] tactile"
+              aria-label="Fechar modal"
             >
-              <X className="w-5 h-5" />
+              <X className="w-4 h-4" />
             </button>
 
-            <h3 className="text-xl font-black text-white flex items-center gap-2 mb-1">
+            <h3
+              className="text-lg sm:text-xl font-black flex items-center gap-2 mb-1 tracking-tight"
+              style={{ color: 'var(--text-primary)' }}
+            >
               {formData.isPreSale ? (
-                <CalendarClock className="w-6 h-6 text-amber-400" />
+                <CalendarClock className="w-5 h-5 text-amber-500" />
               ) : (
-                <Package className="w-6 h-6 text-rose-500" />
+                <Package className="w-5 h-5 text-rose-600 dark:text-rose-400" />
               )}
               {isEditing
                 ? 'Editar Peça'
@@ -1785,7 +2268,10 @@ export default function AdminDashboardClient({
                 ? 'Adicionar Modelo em Pré-Venda (Irá Chegar)'
                 : 'Adicionar Nova Camisa ao Catálogo'}
             </h3>
-            <p className="text-xs text-zinc-400 mb-5">
+            <p
+              className="text-xs mb-5"
+              style={{ color: 'var(--text-secondary)' }}
+            >
               {formData.isPreSale
                 ? 'Cadastre um lançamento ou reposição que irá chegar para liberar reservas antecipadas na loja.'
                 : 'Preencha os dados da camisa para disponibilizar no catálogo oficial.'}
@@ -1793,22 +2279,31 @@ export default function AdminDashboardClient({
 
             <form onSubmit={handleSaveProduct} className="space-y-4">
               {/* SELETOR DE MODO: PRONTA ENTREGA vs PRÉ-VENDA */}
-              <div className="p-3.5 rounded-2xl bg-zinc-950 border border-zinc-800 space-y-3">
-                <label className="block text-xs font-bold text-zinc-300">
+              <div
+                className="p-3.5 rounded-2xl border space-y-3"
+                style={{
+                  backgroundColor: 'var(--bg-studio)',
+                  borderColor: 'var(--border-crisp)',
+                }}
+              >
+                <label
+                  className="block text-xs font-bold"
+                  style={{ color: 'var(--text-secondary)' }}
+                >
                   Disponibilidade do Modelo:
                 </label>
                 <div className="grid grid-cols-2 gap-2">
                   <button
                     type="button"
                     onClick={() => setFormData({ ...formData, isPreSale: false })}
-                    className={`py-2.5 px-3 rounded-xl text-xs font-extrabold flex items-center justify-center gap-2 border transition-all ${
+                    className={`py-2 px-3 rounded-xl text-xs font-bold flex items-center justify-center gap-2 border tactile ${
                       !formData.isPreSale
-                        ? 'bg-emerald-600 text-white border-emerald-500 shadow-md shadow-emerald-950/50'
-                        : 'bg-zinc-900 text-zinc-400 border-zinc-800 hover:text-white'
+                        ? 'bg-emerald-600 text-white border-emerald-500 shadow-sm'
+                        : 'border-[var(--border-crisp)] bg-[var(--bg-surface)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
                     }`}
                   >
                     <CheckCircle className="w-4 h-4" />
-                    Pronta Entrega (Em Estoque)
+                    <span>Pronta Entrega</span>
                   </button>
 
                   <button
@@ -1820,20 +2315,23 @@ export default function AdminDashboardClient({
                         preSaleEta: formData.preSaleEta || 'Chega em 15 dias',
                       })
                     }
-                    className={`py-2.5 px-3 rounded-xl text-xs font-extrabold flex items-center justify-center gap-2 border transition-all ${
+                    className={`py-2 px-3 rounded-xl text-xs font-bold flex items-center justify-center gap-2 border tactile ${
                       formData.isPreSale
-                        ? 'bg-amber-500 text-zinc-950 border-amber-400 shadow-md shadow-amber-950/50'
-                        : 'bg-zinc-900 text-zinc-400 border-zinc-800 hover:text-amber-300'
+                        ? 'bg-amber-400 text-zinc-950 border-amber-400 shadow-sm'
+                        : 'border-[var(--border-crisp)] bg-[var(--bg-surface)] text-[var(--text-secondary)] hover:text-amber-600 dark:hover:text-amber-300'
                     }`}
                   >
                     <CalendarClock className="w-4 h-4" />
-                    ⏳ Pré-Venda (Irá Chegar)
+                    <span>Pré-Venda</span>
                   </button>
                 </div>
 
                 {formData.isPreSale && (
-                  <div className="pt-2 border-t border-zinc-800/80">
-                    <label className="block text-xs font-bold text-amber-300 mb-1">
+                  <div
+                    className="pt-2 border-t"
+                    style={{ borderColor: 'var(--border-crisp)' }}
+                  >
+                    <label className="block text-xs font-bold text-amber-700 dark:text-amber-300 mb-1">
                       Previsão de Chegada / Aviso da Pré-Venda (Exibido para o cliente)
                     </label>
                     <input
@@ -1841,15 +2339,23 @@ export default function AdminDashboardClient({
                       placeholder="Ex: Chega em 15 dias, Lote de Novembro, Em trânsito..."
                       value={formData.preSaleEta}
                       onChange={(e) => setFormData({ ...formData, preSaleEta: e.target.value })}
-                      className="w-full bg-zinc-900 border border-amber-500/40 rounded-xl px-3.5 py-2 text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-amber-400"
+                      className="w-full rounded-xl px-3.5 py-2 text-xs border focus:outline-none focus:ring-2 focus:ring-amber-500 tactile"
+                      style={{
+                        backgroundColor: 'var(--bg-surface)',
+                        borderColor: 'var(--border-crisp)',
+                        color: 'var(--text-primary)',
+                      }}
                     />
                   </div>
                 )}
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                 <div className="sm:col-span-2">
-                  <label className="block text-xs font-bold text-zinc-300 mb-1">
+                  <label
+                    className="block text-xs font-bold mb-1"
+                    style={{ color: 'var(--text-secondary)' }}
+                  >
                     Nome da Camisa / Peça *
                   </label>
                   <input
@@ -1858,28 +2364,53 @@ export default function AdminDashboardClient({
                     placeholder="Ex: Camisa Real Madrid I 25/26 - Torcedor"
                     value={formData.name}
                     onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                    className="w-full bg-zinc-950 border border-zinc-700/80 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-rose-500"
+                    className="w-full rounded-xl px-3.5 py-2 text-xs border focus:outline-none focus:ring-2 focus:ring-rose-600 tactile"
+                    style={{
+                      backgroundColor: 'var(--bg-studio)',
+                      borderColor: 'var(--border-crisp)',
+                      color: 'var(--text-primary)',
+                    }}
                   />
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold text-zinc-300 mb-1">Clube / Time *</label>
+                  <label
+                    className="block text-xs font-bold mb-1"
+                    style={{ color: 'var(--text-secondary)' }}
+                  >
+                    Clube / Time *
+                  </label>
                   <input
                     type="text"
                     required
                     placeholder="Ex: Real Madrid, Flamengo, Brasil"
                     value={formData.club}
                     onChange={(e) => setFormData({ ...formData, club: e.target.value })}
-                    className="w-full bg-zinc-950 border border-zinc-700/80 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-rose-500"
+                    className="w-full rounded-xl px-3.5 py-2 text-xs border focus:outline-none focus:ring-2 focus:ring-rose-600 tactile"
+                    style={{
+                      backgroundColor: 'var(--bg-studio)',
+                      borderColor: 'var(--border-crisp)',
+                      color: 'var(--text-primary)',
+                    }}
                   />
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold text-zinc-300 mb-1">Liga / Categoria *</label>
+                  <label
+                    className="block text-xs font-bold mb-1"
+                    style={{ color: 'var(--text-secondary)' }}
+                  >
+                    Liga / Categoria *
+                  </label>
                   <select
                     value={formData.league}
                     onChange={(e) => setFormData({ ...formData, league: e.target.value })}
-                    className="w-full bg-zinc-950 border border-zinc-700/80 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-rose-500"
+                    className="w-full rounded-xl px-3.5 py-2 text-xs border focus:outline-none focus:ring-2 focus:ring-rose-600 tactile"
+                    style={{
+                      backgroundColor: 'var(--bg-studio)',
+                      borderColor: 'var(--border-crisp)',
+                      color: 'var(--text-primary)',
+                    }}
                   >
                     <option value="Brasileirão">Brasileirão</option>
                     <option value="Premier League">Premier League</option>
@@ -1893,19 +2424,34 @@ export default function AdminDashboardClient({
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold text-zinc-300 mb-1">Temporada *</label>
+                  <label
+                    className="block text-xs font-bold mb-1"
+                    style={{ color: 'var(--text-secondary)' }}
+                  >
+                    Temporada *
+                  </label>
                   <input
                     type="text"
                     required
                     placeholder="Ex: 25/26 ou 1998"
                     value={formData.season}
                     onChange={(e) => setFormData({ ...formData, season: e.target.value })}
-                    className="w-full bg-zinc-950 border border-zinc-700/80 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-rose-500"
+                    className="w-full rounded-xl px-3.5 py-2 text-xs border focus:outline-none focus:ring-2 focus:ring-rose-600 tactile"
+                    style={{
+                      backgroundColor: 'var(--bg-studio)',
+                      borderColor: 'var(--border-crisp)',
+                      color: 'var(--text-primary)',
+                    }}
                   />
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold text-zinc-300 mb-1">Tipo de Modelo</label>
+                  <label
+                    className="block text-xs font-bold mb-1"
+                    style={{ color: 'var(--text-secondary)' }}
+                  >
+                    Tipo de Modelo
+                  </label>
                   <select
                     value={formData.type}
                     onChange={(e) => {
@@ -1924,7 +2470,12 @@ export default function AdminDashboardClient({
                       }));
                       setFormData({ ...formData, type: newType, variants: updatedVariants });
                     }}
-                    className="w-full bg-zinc-950 border border-zinc-700/80 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-rose-500"
+                    className="w-full rounded-xl px-3.5 py-2 text-xs border focus:outline-none focus:ring-2 focus:ring-rose-600 tactile"
+                    style={{
+                      backgroundColor: 'var(--bg-studio)',
+                      borderColor: 'var(--border-crisp)',
+                      color: 'var(--text-primary)',
+                    }}
                   >
                     <option value="TORCEDOR">Torcedor (Standard)</option>
                     <option value="JOGADOR">Jogador (Player Version)</option>
@@ -1935,7 +2486,12 @@ export default function AdminDashboardClient({
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold text-zinc-300 mb-1">Preço Base Unitário (R$) *</label>
+                  <label
+                    className="block text-xs font-bold mb-1"
+                    style={{ color: 'var(--text-secondary)' }}
+                  >
+                    Preço Base Unitário (R$) *
+                  </label>
                   <input
                     type="number"
                     step="0.01"
@@ -1943,19 +2499,34 @@ export default function AdminDashboardClient({
                     placeholder="60.00"
                     value={formData.retailPrice}
                     onChange={(e) => setFormData({ ...formData, retailPrice: e.target.value })}
-                    className="w-full bg-zinc-950 border border-zinc-700/80 rounded-xl px-4 py-2.5 text-xs text-white font-mono focus:outline-none focus:border-rose-500"
+                    className="w-full rounded-xl px-3.5 py-2 text-xs font-mono font-bold border focus:outline-none focus:ring-2 focus:ring-rose-600 tactile"
+                    style={{
+                      backgroundColor: 'var(--bg-studio)',
+                      borderColor: 'var(--border-crisp)',
+                      color: 'var(--text-primary)',
+                    }}
                   />
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold text-zinc-300 mb-1">Valor Personalização (R$)</label>
+                  <label
+                    className="block text-xs font-bold mb-1"
+                    style={{ color: 'var(--text-secondary)' }}
+                  >
+                    Valor Personalização (R$)
+                  </label>
                   <input
                     type="number"
                     step="0.01"
                     placeholder="15.00"
                     value={formData.customPrice}
                     onChange={(e) => setFormData({ ...formData, customPrice: e.target.value })}
-                    className="w-full bg-zinc-950 border border-zinc-700/80 rounded-xl px-4 py-2.5 text-xs text-white font-mono focus:outline-none focus:border-rose-500"
+                    className="w-full rounded-xl px-3.5 py-2 text-xs font-mono font-bold border focus:outline-none focus:ring-2 focus:ring-rose-600 tactile"
+                    style={{
+                      backgroundColor: 'var(--bg-studio)',
+                      borderColor: 'var(--border-crisp)',
+                      color: 'var(--text-primary)',
+                    }}
                   />
                 </div>
 
@@ -1963,60 +2534,81 @@ export default function AdminDashboardClient({
                 <div className="sm:col-span-2 space-y-3">
                   <div className="flex flex-wrap items-center justify-between gap-2">
                     <div>
-                      <label className="block text-xs font-bold text-zinc-300">
+                      <label
+                        className="block text-xs font-bold"
+                        style={{ color: 'var(--text-primary)' }}
+                      >
                         Fotos da Peça *{' '}
-                        <span className="text-rose-400 font-mono">
+                        <span className="text-rose-600 dark:text-rose-400 font-mono">
                           ({formData.images.length}{' '}
                           {formData.images.length === 1 ? 'foto adicionada' : 'fotos adicionadas'})
                         </span>
                       </label>
-                      <span className="text-[11px] text-zinc-400 block">
+                      <span
+                        className="text-[11px] block mt-0.5"
+                        style={{ color: 'var(--text-muted)' }}
+                      >
                         Adicione uma ou mais fotos (frente, costas, detalhes). A primeira foto será a capa principal.
                       </span>
                     </div>
-                    <div className="flex items-center gap-1 bg-zinc-950 p-0.5 rounded-lg border border-zinc-800">
+                    <div
+                      className="flex items-center gap-1 p-0.5 rounded-lg border"
+                      style={{
+                        backgroundColor: 'var(--bg-studio)',
+                        borderColor: 'var(--border-crisp)',
+                      }}
+                    >
                       <button
                         type="button"
                         onClick={() => setImageUploadMode('file')}
                         className={`px-2.5 py-1 text-[11px] font-bold rounded-md transition-colors flex items-center gap-1.5 ${
                           imageUploadMode === 'file'
-                            ? 'bg-rose-500 text-white shadow-sm'
-                            : 'text-zinc-400 hover:text-white'
+                            ? 'bg-zinc-950 text-white dark:bg-white dark:text-zinc-950 shadow-sm'
+                            : 'hover:opacity-80'
                         }`}
+                        style={imageUploadMode !== 'file' ? { color: 'var(--text-secondary)' } : undefined}
                       >
                         <UploadCloud className="w-3.5 h-3.5" />
-                        Subir Fotos Locais
+                        Fotos Locais
                       </button>
                       <button
                         type="button"
                         onClick={() => setImageUploadMode('url')}
                         className={`px-2.5 py-1 text-[11px] font-bold rounded-md transition-colors flex items-center gap-1.5 ${
                           imageUploadMode === 'url'
-                            ? 'bg-rose-500 text-white shadow-sm'
-                            : 'text-zinc-400 hover:text-white'
+                            ? 'bg-zinc-950 text-white dark:bg-white dark:text-zinc-950 shadow-sm'
+                            : 'hover:opacity-80'
                         }`}
+                        style={imageUploadMode !== 'url' ? { color: 'var(--text-secondary)' } : undefined}
                       >
                         <LinkIcon className="w-3.5 h-3.5" />
-                        Adicionar por Link
+                        Por Link
                       </button>
                     </div>
                   </div>
 
                   {/* GRADE DE FOTOS JÁ ADICIONADAS */}
                   {formData.images.length > 0 && (
-                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 bg-zinc-950/80 border border-zinc-800 p-3 rounded-2xl">
+                    <div
+                      className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 p-3 rounded-2xl border"
+                      style={{
+                        backgroundColor: 'var(--bg-studio)',
+                        borderColor: 'var(--border-crisp)',
+                      }}
+                    >
                       {formData.images.map((imgUrl, idx) => {
                         const isMain = idx === 0;
                         return (
                           <div
                             key={`${idx}-${imgUrl.slice(0, 24)}`}
-                            className={`relative group rounded-xl overflow-hidden border bg-zinc-900 flex flex-col justify-between ${
+                            className={`relative group rounded-xl overflow-hidden border flex flex-col justify-between ${
                               isMain
-                                ? 'border-rose-500 ring-1 ring-rose-500/40'
-                                : 'border-zinc-800 hover:border-zinc-700'
+                                ? 'border-rose-600 ring-2 ring-rose-600/30'
+                                : 'border-[var(--border-crisp)]'
                             }`}
+                            style={{ backgroundColor: 'var(--bg-surface)' }}
                           >
-                            <div className="relative aspect-[4/5] w-full bg-zinc-950 overflow-hidden">
+                            <div className="relative aspect-[4/5] w-full overflow-hidden">
                               <img
                                 src={imgUrl}
                                 alt={`Foto ${idx + 1}`}
@@ -2026,7 +2618,7 @@ export default function AdminDashboardClient({
                                 className={`absolute top-2 left-2 px-2 py-0.5 rounded-md text-[10px] font-black uppercase shadow ${
                                   isMain
                                     ? 'bg-rose-600 text-white'
-                                    : 'bg-zinc-950/85 text-zinc-300 border border-zinc-700'
+                                    : 'border border-[var(--border-crisp)] bg-[var(--bg-surface)] text-[var(--text-secondary)]'
                                 }`}
                               >
                                 {isMain ? '★ Capa' : `Foto #${idx + 1}`}
@@ -2035,7 +2627,7 @@ export default function AdminDashboardClient({
                                 type="button"
                                 onClick={() => handleRemoveGalleryImage(idx)}
                                 title="Remover esta foto"
-                                className="absolute top-2 right-2 w-6 h-6 rounded-lg bg-zinc-950/85 hover:bg-rose-600 text-zinc-300 hover:text-white border border-zinc-700 flex items-center justify-center transition-colors"
+                                className="absolute top-2 right-2 w-6 h-6 rounded-lg border border-[var(--border-crisp)] bg-[var(--bg-surface)] hover:bg-rose-600 hover:text-white text-[var(--text-secondary)] flex items-center justify-center transition-colors shadow"
                               >
                                 <Trash2 className="w-3.5 h-3.5" />
                               </button>
@@ -2045,7 +2637,7 @@ export default function AdminDashboardClient({
                               <button
                                 type="button"
                                 onClick={() => handleSetMainGalleryImage(idx)}
-                                className="w-full py-1.5 px-2 text-[10px] font-bold text-amber-300 hover:text-zinc-950 bg-zinc-900 hover:bg-amber-400 border-t border-zinc-800 transition-colors"
+                                className="w-full py-1.5 px-2 text-[10px] font-bold border-t border-[var(--border-crisp)] bg-[var(--bg-surface)] hover:bg-amber-400 hover:text-zinc-950 text-amber-600 dark:text-amber-300 transition-colors"
                               >
                                 Definir como Capa
                               </button>
@@ -2074,31 +2666,50 @@ export default function AdminDashboardClient({
                         onClick={() => fileInputRef.current?.click()}
                         className={`border-2 border-dashed rounded-2xl p-4 text-center cursor-pointer transition-all ${
                           isDragging
-                            ? 'border-rose-500 bg-rose-500/10'
-                            : 'border-zinc-800 hover:border-rose-500/60 hover:bg-zinc-950/90 bg-zinc-950/40'
+                            ? 'border-rose-600 bg-rose-500/10'
+                            : 'border-[var(--border-crisp)] hover:border-rose-500/60 bg-[var(--bg-studio)]'
                         }`}
                       >
                         {isProcessingImage ? (
                           <div className="flex flex-col items-center justify-center py-3">
-                            <Loader2 className="w-7 h-7 text-rose-500 animate-spin mb-2" />
-                            <p className="text-xs font-bold text-white">
+                            <Loader2 className="w-6 h-6 text-rose-600 animate-spin mb-2" />
+                            <p
+                              className="text-xs font-bold"
+                              style={{ color: 'var(--text-primary)' }}
+                            >
                               Otimizando e comprimindo foto(s)...
                             </p>
-                            <p className="text-[11px] text-zinc-400 mt-0.5">
-                              Convertendo para WebP de carregamento rápido
+                            <p
+                              className="text-[11px] mt-0.5"
+                              style={{ color: 'var(--text-muted)' }}
+                            >
+                              Convertendo para WebP de carregamento instantâneo
                             </p>
                           </div>
                         ) : (
                           <div className="flex flex-col items-center justify-center py-2 group">
-                            <div className="w-10 h-10 rounded-xl bg-zinc-900 border border-zinc-800 flex items-center justify-center text-rose-400 mb-2 group-hover:scale-110 transition-transform shadow-inner">
-                              <PlusCircle className="w-5 h-5" />
+                            <div
+                              className="w-9 h-9 rounded-xl border flex items-center justify-center mb-2 group-hover:scale-105 transition-transform"
+                              style={{
+                                borderColor: 'var(--border-crisp)',
+                                backgroundColor: 'var(--bg-surface)',
+                                color: 'var(--accent)',
+                              }}
+                            >
+                              <PlusCircle className="w-4 h-4" />
                             </div>
-                            <p className="text-xs font-bold text-white mb-0.5">
+                            <p
+                              className="text-xs font-bold mb-0.5"
+                              style={{ color: 'var(--text-primary)' }}
+                            >
                               {formData.images.length > 0
                                 ? 'Clique para adicionar mais fotos desta camisa'
-                                : 'Clique para escolher uma ou mais fotos do computador/celular'}
+                                : 'Clique para escolher uma ou mais fotos do dispositivo'}
                             </p>
-                            <p className="text-[11px] text-zinc-400">
+                            <p
+                              className="text-[11px]"
+                              style={{ color: 'var(--text-muted)' }}
+                            >
                               Você pode selecionar várias fotos de uma vez ou arrastar aqui (JPG, PNG, WEBP)
                             </p>
                           </div>
@@ -2118,16 +2729,21 @@ export default function AdminDashboardClient({
                             handleAddImageUrl();
                           }
                         }}
-                        className="flex-1 bg-zinc-950 border border-zinc-700/80 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-rose-500"
+                        className="flex-1 rounded-xl px-3.5 py-2 text-xs border focus:outline-none focus:ring-2 focus:ring-rose-600 tactile"
+                        style={{
+                          backgroundColor: 'var(--bg-studio)',
+                          borderColor: 'var(--border-crisp)',
+                          color: 'var(--text-primary)',
+                        }}
                       />
                       <button
                         type="button"
                         onClick={handleAddImageUrl}
                         disabled={!newImageUrlInput.trim()}
-                        className="px-4 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-500 disabled:opacity-40 text-white text-xs font-bold flex items-center gap-1.5 shrink-0 transition-colors"
+                        className="px-3.5 py-2 rounded-xl bg-zinc-950 text-white dark:bg-white dark:text-zinc-950 disabled:opacity-40 text-xs font-bold flex items-center gap-1.5 shrink-0 transition-opacity tactile"
                       >
-                        <PlusCircle className="w-4 h-4" />
-                        Adicionar Foto
+                        <PlusCircle className="w-3.5 h-3.5" />
+                        Adicionar
                       </button>
                     </div>
                   )}
@@ -2136,18 +2752,28 @@ export default function AdminDashboardClient({
 
               {/* GRADE DE ESTOQUE POR TAMANHO */}
               <div className="pt-2">
-                <label className="block text-xs font-bold text-zinc-300 mb-2">
+                <label
+                  className="block text-xs font-bold mb-2"
+                  style={{ color: 'var(--text-secondary)' }}
+                >
                   {formData.isPreSale
                     ? 'Grade de Vagas / Unidades p/ Reserva na Pré-Venda:'
                     : 'Grade de Estoque por Tamanho (Unidades):'}
                 </label>
                 <div className={`grid ${formData.variants.length > 5 ? 'grid-cols-4 sm:grid-cols-7' : 'grid-cols-5'} gap-2`}>
                   {formData.variants.map((v, idx) => (
-                    <div key={v.size} className="bg-zinc-950 p-2 rounded-xl border border-zinc-800 text-center">
-                      <span className="font-black text-xs text-rose-400 block mb-1">
+                    <div
+                      key={v.size}
+                      className="p-2 rounded-xl border text-center"
+                      style={{
+                        backgroundColor: 'var(--bg-studio)',
+                        borderColor: 'var(--border-crisp)',
+                      }}
+                    >
+                      <span className="font-black text-xs text-rose-600 dark:text-rose-400 block mb-1">
                         {v.size}
-                        {v.size === '3XL' && <span className="text-[9px] text-amber-300 block font-normal leading-tight">+R$6</span>}
-                        {v.size === '4XL' && <span className="text-[9px] text-amber-300 block font-normal leading-tight">+R$12</span>}
+                        {v.size === '3XL' && <span className="text-[9px] text-amber-600 dark:text-amber-300 block font-normal leading-tight">+R$6</span>}
+                        {v.size === '4XL' && <span className="text-[9px] text-amber-600 dark:text-amber-300 block font-normal leading-tight">+R$12</span>}
                       </span>
                       <input
                         type="number"
@@ -2159,7 +2785,12 @@ export default function AdminDashboardClient({
                           next[idx].stockQuantity = val;
                           setFormData({ ...formData, variants: next });
                         }}
-                        className="w-full bg-zinc-900 border border-zinc-700 rounded-lg py-1 px-1 text-center text-xs text-white font-mono focus:outline-none focus:border-rose-500"
+                        className="w-full border rounded-lg py-1 px-1 text-center text-xs font-mono font-bold focus:outline-none focus:ring-2 focus:ring-rose-600"
+                        style={{
+                          backgroundColor: 'var(--bg-surface)',
+                          borderColor: 'var(--border-crisp)',
+                          color: 'var(--text-primary)',
+                        }}
                       />
                     </div>
                   ))}
@@ -2167,42 +2798,51 @@ export default function AdminDashboardClient({
               </div>
 
               <div className="flex items-center gap-6 pt-2">
-                <label className="flex items-center gap-2 cursor-pointer text-xs text-zinc-300">
+                <label
+                  className="flex items-center gap-2 cursor-pointer text-xs"
+                  style={{ color: 'var(--text-secondary)' }}
+                >
                   <input
                     type="checkbox"
                     checked={formData.isActive}
                     onChange={(e) => setFormData({ ...formData, isActive: e.target.checked })}
-                    className="rounded bg-zinc-950 border-zinc-700 text-rose-500 focus:ring-0 w-4 h-4"
+                    className="rounded border-[var(--border-crisp)] text-rose-600 focus:ring-0 w-4 h-4"
                   />
                   Peça Ativa no Catálogo
                 </label>
 
-                <label className="flex items-center gap-2 cursor-pointer text-xs text-zinc-300">
+                <label
+                  className="flex items-center gap-2 cursor-pointer text-xs"
+                  style={{ color: 'var(--text-secondary)' }}
+                >
                   <input
                     type="checkbox"
                     checked={formData.allowCustom}
                     onChange={(e) => setFormData({ ...formData, allowCustom: e.target.checked })}
-                    className="rounded bg-zinc-950 border-zinc-700 text-rose-500 focus:ring-0 w-4 h-4"
+                    className="rounded border-[var(--border-crisp)] text-rose-600 focus:ring-0 w-4 h-4"
                   />
                   Permitir Personalização (Nome + Número)
                 </label>
               </div>
 
-              <div className="flex justify-end gap-3 pt-5 border-t border-zinc-800">
+              <div
+                className="flex justify-end gap-3 pt-4 border-t"
+                style={{ borderColor: 'var(--border-crisp)' }}
+              >
                 <button
                   type="button"
                   onClick={() => setIsModalOpen(false)}
-                  className="px-5 py-2.5 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-xs font-bold text-zinc-300 transition-colors"
+                  className="px-4 py-2 rounded-xl border border-[var(--border-crisp)] bg-[var(--bg-studio)] hover:bg-[var(--bg-surface)] text-xs font-bold text-[var(--text-secondary)] hover:text-[var(--text-primary)] tactile"
                 >
                   Cancelar
                 </button>
                 <button
                   type="submit"
                   disabled={isSavingProduct || isProcessingImage}
-                  className={`px-6 py-2.5 rounded-xl font-bold text-xs sm:text-sm flex items-center gap-2 shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed ${
+                  className={`px-5 py-2 rounded-xl font-bold text-xs sm:text-sm flex items-center gap-2 border shadow-sm tactile disabled:opacity-50 disabled:cursor-not-allowed ${
                     formData.isPreSale
-                      ? 'bg-amber-500 hover:bg-amber-400 text-zinc-950 shadow-amber-950/50'
-                      : 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-emerald-950/60'
+                      ? 'bg-amber-400 text-zinc-950 border-amber-400 hover:bg-amber-300'
+                      : 'bg-zinc-950 text-white dark:bg-white dark:text-zinc-950 border-zinc-950 dark:border-white hover:opacity-90'
                   }`}
                 >
                   {isProcessingImage ? (
@@ -2229,22 +2869,36 @@ export default function AdminDashboardClient({
         </div>
       )}
 
-      {/* MODAL DETALHES DO PEDIDO */}
+      {/* MODAL DETALHES DO PEDIDO NO MODELO CLIENTE */}
       {selectedOrder && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md overflow-y-auto">
-          <div className="bg-zinc-900 border border-zinc-800 rounded-3xl max-w-3xl w-full p-6 sm:p-8 shadow-2xl relative my-8 text-zinc-100 max-h-[90vh] overflow-y-auto">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm overflow-y-auto">
+          <div
+            className="border rounded-2xl max-w-3xl w-full p-5 sm:p-7 shadow-2xl relative my-8 max-h-[92vh] overflow-y-auto"
+            style={{
+              backgroundColor: 'var(--bg-surface)',
+              borderColor: 'var(--border-crisp)',
+              color: 'var(--text-primary)',
+            }}
+          >
             <button
               onClick={() => setSelectedOrder(null)}
-              className="absolute top-6 right-6 text-zinc-400 hover:text-white p-1 rounded-xl hover:bg-zinc-800 transition-colors"
+              className="absolute top-5 right-5 p-1.5 rounded-xl border border-[var(--border-crisp)] bg-[var(--bg-studio)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] tactile"
+              aria-label="Fechar modal"
             >
-              <X className="w-5 h-5" />
+              <X className="w-4 h-4" />
             </button>
 
             {/* CABEÇALHO DO MODAL */}
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-zinc-800 pb-4 mb-6">
+            <div
+              className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b pb-4 mb-5"
+              style={{ borderColor: 'var(--border-crisp)' }}
+            >
               <div>
                 <div className="flex items-center gap-2">
-                  <h3 className="text-xl sm:text-2xl font-black text-white">
+                  <h3
+                    className="text-lg sm:text-xl font-black font-mono tracking-tight"
+                    style={{ color: 'var(--text-primary)' }}
+                  >
                     Pedido #{selectedOrder.orderNumber}
                   </h3>
                   <span
@@ -2256,8 +2910,11 @@ export default function AdminDashboardClient({
                     {getStatusInfo(selectedOrder.status).label}
                   </span>
                 </div>
-                <p className="text-xs text-zinc-400 mt-1 flex items-center gap-1.5">
-                  <Clock className="w-3.5 h-3.5 text-zinc-500" />
+                <p
+                  className="text-xs mt-1 flex items-center gap-1.5 font-mono"
+                  style={{ color: 'var(--text-muted)' }}
+                >
+                  <Clock className="w-3.5 h-3.5" />
                   Realizado em:{' '}
                   {new Date(selectedOrder.createdAt).toLocaleDateString('pt-BR', {
                     day: '2-digit',
@@ -2269,23 +2926,37 @@ export default function AdminDashboardClient({
                 </p>
               </div>
 
-              <div className="text-right sm:pr-8">
-                <span className="text-xs text-zinc-400 block">Total do Pedido</span>
-                <span className="text-xl font-black text-emerald-400">
+              <div className="text-left sm:text-right sm:pr-8">
+                <span
+                  className="text-[11px] block font-mono uppercase"
+                  style={{ color: 'var(--text-muted)' }}
+                >
+                  Total do Pedido
+                </span>
+                <span className="text-xl font-black font-mono tabular-nums text-emerald-600 dark:text-emerald-400">
                   {formatCurrency(selectedOrder.finalTotal)}
                 </span>
               </div>
             </div>
 
             {/* SELETOR RÁPIDO DE STATUS */}
-            <div className="bg-zinc-950 p-4 rounded-2xl border border-zinc-800 mb-6">
-              <span className="text-xs font-bold text-zinc-300 uppercase tracking-wider block mb-3">
+            <div
+              className="p-3.5 rounded-xl border mb-5"
+              style={{
+                backgroundColor: 'var(--bg-studio)',
+                borderColor: 'var(--border-crisp)',
+              }}
+            >
+              <span
+                className="text-xs font-bold uppercase tracking-wider block mb-2.5"
+                style={{ color: 'var(--text-secondary)' }}
+              >
                 Alterar Status do Pedido:
               </span>
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                 {[
-                  { key: 'PROCESSAMENTO', label: 'Em Processamento', emoji: '⚙️' },
-                  { key: 'PAGAMENTO_CONFIRMADO', label: 'Pagamento Confirmado', emoji: '✅' },
+                  { key: 'PROCESSAMENTO', label: 'Processamento', emoji: '⚙️' },
+                  { key: 'PAGAMENTO_CONFIRMADO', label: 'Pago', emoji: '✅' },
                   { key: 'ENVIADO', label: 'Enviado', emoji: '🚚' },
                   { key: 'ENTREGUE', label: 'Entregue', emoji: '📦' },
                 ].map((s) => {
@@ -2298,10 +2969,10 @@ export default function AdminDashboardClient({
                       type="button"
                       disabled={isUpdating}
                       onClick={() => handleUpdateOrderStatus(selectedOrder.id, s.key)}
-                      className={`px-3 py-2.5 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-all border ${
+                      className={`px-3 py-2 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 border tactile ${
                         isCurrent
-                          ? 'bg-emerald-600 text-white border-emerald-400 shadow-lg shadow-emerald-950/60 ring-2 ring-emerald-500/50 scale-[1.02]'
-                          : 'bg-zinc-900 text-zinc-300 border-zinc-800 hover:border-zinc-700 hover:text-white'
+                          ? 'bg-zinc-950 text-white border-zinc-950 dark:bg-white dark:text-zinc-950 dark:border-white shadow-sm'
+                          : 'border-[var(--border-crisp)] bg-[var(--bg-surface)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-studio)]'
                       } ${isUpdating ? 'opacity-50 cursor-wait' : ''}`}
                     >
                       <span>{s.emoji}</span>
@@ -2313,48 +2984,67 @@ export default function AdminDashboardClient({
             </div>
 
             {/* DADOS DO CLIENTE E ENTREGA */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-              <div className="bg-zinc-950/70 p-4 rounded-2xl border border-zinc-800/80">
-                <span className="text-[11px] font-black uppercase text-rose-400 tracking-wider block mb-2.5">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4 mb-5">
+              <div
+                className="p-4 rounded-xl border"
+                style={{
+                  backgroundColor: 'var(--bg-studio)',
+                  borderColor: 'var(--border-crisp)',
+                }}
+              >
+                <span
+                  className="text-[11px] font-mono font-bold uppercase tracking-wider block mb-2 text-rose-600 dark:text-rose-400"
+                >
                   Dados do Cliente
                 </span>
                 <div className="space-y-1.5 text-xs">
                   <p>
-                    <span className="text-zinc-500">Nome:</span>{' '}
-                    <strong className="text-white font-bold">{selectedOrder.customerName}</strong>
+                    <span style={{ color: 'var(--text-muted)' }}>Nome:</span>{' '}
+                    <strong style={{ color: 'var(--text-primary)' }}>{selectedOrder.customerName}</strong>
                   </p>
                   <p>
-                    <span className="text-zinc-500">Documento:</span>{' '}
-                    <span className="text-zinc-300 font-mono">
+                    <span style={{ color: 'var(--text-muted)' }}>Documento:</span>{' '}
+                    <span className="font-mono" style={{ color: 'var(--text-secondary)' }}>
                       {selectedOrder.document || 'Não informado'} ({selectedOrder.customerType || 'PF'})
                     </span>
                   </p>
                   <p>
-                    <span className="text-zinc-500">E-mail:</span>{' '}
-                    <span className="text-zinc-300">{selectedOrder.email || 'Não informado'}</span>
+                    <span style={{ color: 'var(--text-muted)' }}>E-mail:</span>{' '}
+                    <span style={{ color: 'var(--text-secondary)' }}>{selectedOrder.email || 'Não informado'}</span>
                   </p>
                   <div className="pt-1.5 flex items-center justify-between">
-                    <span className="text-zinc-500">WhatsApp:</span>
+                    <span style={{ color: 'var(--text-muted)' }}>WhatsApp:</span>
                     <a
                       href={`https://wa.me/55${(selectedOrder.phone || '').replace(/\D/g, '')}?text=${encodeURIComponent(
                         `Olá ${selectedOrder.customerName}, sobre o seu pedido #${selectedOrder.orderNumber} na Ruby Brasil:`
                       )}`}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-400 font-bold border border-emerald-500/30 transition-colors"
+                      className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 font-bold border border-emerald-500/30 transition-colors text-xs font-mono"
                     >
-                      <MessageCircle className="w-3.5 h-3.5" />
+                      <MessageCircle className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
                       <span>{selectedOrder.phone}</span>
                     </a>
                   </div>
                 </div>
               </div>
 
-              <div className="bg-zinc-950/70 p-4 rounded-2xl border border-zinc-800/80">
-                <span className="text-[11px] font-black uppercase text-amber-400 tracking-wider block mb-2.5">
+              <div
+                className="p-4 rounded-xl border"
+                style={{
+                  backgroundColor: 'var(--bg-studio)',
+                  borderColor: 'var(--border-crisp)',
+                }}
+              >
+                <span
+                  className="text-[11px] font-mono font-bold uppercase tracking-wider block mb-2 text-amber-600 dark:text-amber-400"
+                >
                   Endereço de Entrega
                 </span>
-                <div className="space-y-1.5 text-xs text-zinc-300">
+                <div
+                  className="space-y-1.5 text-xs"
+                  style={{ color: 'var(--text-secondary)' }}
+                >
                   <p>
                     {selectedOrder.street}, {selectedOrder.number}
                     {selectedOrder.complement ? ` (${selectedOrder.complement})` : ''}
@@ -2363,19 +3053,35 @@ export default function AdminDashboardClient({
                   <p>
                     {selectedOrder.city} - {selectedOrder.state}
                   </p>
-                  <p className="font-mono text-zinc-400">CEP: {selectedOrder.zipCode || 'Não informado'}</p>
+                  <p className="font-mono">CEP: {selectedOrder.zipCode || 'Não informado'}</p>
                 </div>
               </div>
             </div>
 
             {/* ITENS DO PEDIDO */}
-            <div className="mb-6">
-              <span className="text-xs font-bold text-zinc-300 uppercase tracking-wider block mb-3">
+            <div className="mb-5">
+              <span
+                className="text-xs font-bold uppercase tracking-wider block mb-2.5"
+                style={{ color: 'var(--text-secondary)' }}
+              >
                 Grade de Camisas ({selectedOrder.totalQuantity} peças):
               </span>
-              <div className="overflow-x-auto rounded-2xl border border-zinc-800 bg-zinc-950/60">
+              <div
+                className="overflow-x-auto rounded-xl border"
+                style={{
+                  backgroundColor: 'var(--bg-surface)',
+                  borderColor: 'var(--border-crisp)',
+                }}
+              >
                 <table className="w-full text-left text-xs">
-                  <thead className="bg-zinc-950 text-zinc-400 uppercase text-[10px] font-bold border-b border-zinc-800">
+                  <thead
+                    className="uppercase text-[10px] font-mono font-bold border-b"
+                    style={{
+                      backgroundColor: 'var(--bg-studio)',
+                      borderColor: 'var(--border-crisp)',
+                      color: 'var(--text-muted)',
+                    }}
+                  >
                     <tr>
                       <th className="py-2.5 px-3">Camisa</th>
                       <th className="py-2.5 px-2 text-center">Tam</th>
@@ -2384,38 +3090,53 @@ export default function AdminDashboardClient({
                       <th className="py-2.5 px-3 text-right">Total</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-zinc-800 text-zinc-300">
+                  <tbody
+                    className="divide-y"
+                    style={{ borderColor: 'var(--border-crisp)' }}
+                  >
                     {(selectedOrder.items || []).map((item: any, idx: number) => {
                       const preSaleInfo = getProductPreSaleInfo(item.product);
                       return (
-                        <tr key={idx} className="hover:bg-zinc-900/50">
+                        <tr
+                          key={idx}
+                          className="hover:bg-[var(--bg-studio)] transition-colors"
+                        >
                           <td className="py-2.5 px-3">
                             <div className="flex flex-wrap items-center gap-1.5">
-                              <strong className="text-white font-bold">
+                              <strong style={{ color: 'var(--text-primary)' }}>
                                 {item.product?.name || 'Camisa de Futebol'}
                               </strong>
                               {preSaleInfo.isPreSale && (
-                                <span className="bg-amber-500/20 text-amber-300 border border-amber-500/40 px-1.5 py-0.5 rounded text-[9px] font-black uppercase">
+                                <span className="bg-amber-500/15 text-amber-700 dark:text-amber-300 border border-amber-500/30 px-1.5 py-0.5 rounded text-[9px] font-black uppercase">
                                   ⏳ Pré-Venda
                                 </span>
                               )}
                             </div>
                             {item.customName && (
-                              <span className="text-[10px] text-amber-300 font-mono block">
+                              <span className="text-[10px] text-amber-600 dark:text-amber-300 font-mono block mt-0.5">
                                 Personalizada: {item.customName} #{item.customNumber || 'S/N'} (+R$ 15,00)
                               </span>
                             )}
                           </td>
-                          <td className="py-2.5 px-2 text-center font-bold text-zinc-200">
+                          <td
+                            className="py-2.5 px-2 text-center font-bold font-mono"
+                            style={{ color: 'var(--text-secondary)' }}
+                          >
                             {item.size}
                           </td>
-                          <td className="py-2.5 px-2 text-center font-bold text-white">
+                          <td
+                            className="py-2.5 px-2 text-center font-bold font-mono"
+                            style={{ color: 'var(--text-primary)' }}
+                          >
                             {item.quantity}
                           </td>
-                          <td className="py-2.5 px-3 text-right font-mono text-zinc-400">
+                          <td
+                            className="py-2.5 px-3 text-right font-mono"
+                            style={{ color: 'var(--text-muted)' }}
+                          >
                             {formatCurrency(item.unitPriceApplied)}
                           </td>
-                          <td className="py-2.5 px-3 text-right font-mono font-bold text-emerald-400">
+                          <td className="py-2.5 px-3 text-right font-mono font-bold text-emerald-600 dark:text-emerald-400">
                             {formatCurrency(item.totalItemPrice)}
                           </td>
                         </tr>
@@ -2426,20 +3147,40 @@ export default function AdminDashboardClient({
               </div>
 
               {/* RESUMO DE VALORES */}
-              <div className="bg-zinc-950 p-3 rounded-xl border border-zinc-800/80 mt-3 text-xs space-y-1">
-                <div className="flex justify-between text-zinc-400">
+              <div
+                className="p-3.5 rounded-xl border mt-3 text-xs space-y-1.5"
+                style={{
+                  backgroundColor: 'var(--bg-studio)',
+                  borderColor: 'var(--border-crisp)',
+                }}
+              >
+                <div
+                  className="flex justify-between"
+                  style={{ color: 'var(--text-secondary)' }}
+                >
                   <span>Subtotal de Camisas:</span>
-                  <span className="font-mono text-white">{formatCurrency(selectedOrder.subtotal)}</span>
+                  <span className="font-mono font-bold" style={{ color: 'var(--text-primary)' }}>
+                    {formatCurrency(selectedOrder.subtotal)}
+                  </span>
                 </div>
-                <div className="flex justify-between text-zinc-400">
+                <div
+                  className="flex justify-between"
+                  style={{ color: 'var(--text-secondary)' }}
+                >
                   <span>Frete ({selectedOrder.shippingService || 'Melhor Envio'}):</span>
-                  <span className="font-mono text-emerald-400">
+                  <span className="font-mono font-bold text-emerald-600 dark:text-emerald-400">
                     {formatCurrency(selectedOrder.shippingCost || 0)}
                   </span>
                 </div>
-                <div className="flex justify-between font-black text-sm text-white pt-2 border-t border-zinc-800">
+                <div
+                  className="flex justify-between font-black text-sm pt-2 border-t"
+                  style={{
+                    borderColor: 'var(--border-crisp)',
+                    color: 'var(--text-primary)',
+                  }}
+                >
                   <span>Total Final:</span>
-                  <span className="font-mono text-emerald-400">
+                  <span className="font-mono text-emerald-600 dark:text-emerald-400">
                     {formatCurrency(selectedOrder.finalTotal)}
                   </span>
                 </div>
@@ -2447,36 +3188,57 @@ export default function AdminDashboardClient({
             </div>
 
             {/* SEÇÃO RELATÓRIO DO PEDIDO PARA WHATSAPP */}
-            <div className="bg-zinc-950 p-4 rounded-2xl border border-zinc-800">
+            <div
+              className="p-4 rounded-xl border"
+              style={{
+                backgroundColor: 'var(--bg-studio)',
+                borderColor: 'var(--border-crisp)',
+              }}
+            >
               <div className="flex items-center justify-between mb-2">
-                <span className="text-xs font-bold text-emerald-400 uppercase tracking-wider flex items-center gap-1.5">
-                  <MessageCircle className="w-4 h-4 text-emerald-400" />
+                <span className="text-xs font-bold text-emerald-700 dark:text-emerald-400 uppercase tracking-wider flex items-center gap-1.5">
+                  <MessageCircle className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
                   Relatório para Envio via WhatsApp
                 </span>
-                <span className="text-[10px] text-zinc-500">Mensagem pronta com status e dados</span>
+                <span
+                  className="text-[10px]"
+                  style={{ color: 'var(--text-muted)' }}
+                >
+                  Mensagem pronta com status e dados
+                </span>
               </div>
 
-              <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-3 text-[11px] font-mono text-zinc-300 max-h-36 overflow-y-auto whitespace-pre-wrap leading-relaxed">
+              <div
+                className="border rounded-xl p-3 text-[11px] font-mono max-h-36 overflow-y-auto whitespace-pre-wrap leading-relaxed shadow-inner"
+                style={{
+                  backgroundColor: 'var(--bg-surface)',
+                  borderColor: 'var(--border-crisp)',
+                  color: 'var(--text-secondary)',
+                }}
+              >
                 {buildOrderWhatsAppReport(selectedOrder)}
               </div>
 
-              <div className="flex flex-col sm:flex-row items-center justify-end gap-2.5 mt-3 pt-3 border-t border-zinc-800/80">
+              <div
+                className="flex flex-col sm:flex-row items-center justify-end gap-2.5 mt-3 pt-3 border-t"
+                style={{ borderColor: 'var(--border-crisp)' }}
+              >
                 <button
                   type="button"
                   onClick={() => {
                     const report = buildOrderWhatsAppReport(selectedOrder);
                     copyToClipboard(report, `modal-order-${selectedOrder.id}`);
                   }}
-                  className="w-full sm:w-auto px-4 py-2.5 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-200 text-xs font-bold flex items-center justify-center gap-1.5 transition-colors border border-zinc-700"
+                  className="w-full sm:w-auto px-4 py-2 rounded-xl border border-[var(--border-crisp)] bg-[var(--bg-surface)] hover:bg-[var(--bg-studio)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] text-xs font-bold flex items-center justify-center gap-1.5 tactile"
                 >
                   {copiedKey === `modal-order-${selectedOrder.id}` ? (
                     <>
-                      <Check className="w-4 h-4 text-emerald-400" />
+                      <Check className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
                       <span>Copiado com Sucesso!</span>
                     </>
                   ) : (
                     <>
-                      <Copy className="w-4 h-4 text-zinc-300" />
+                      <Copy className="w-4 h-4" />
                       <span>Copiar Relatório</span>
                     </>
                   )}
@@ -2489,20 +3251,23 @@ export default function AdminDashboardClient({
                     )}`}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold flex items-center justify-center gap-1.5 transition-all shadow-lg shadow-emerald-950/60"
+                    className="w-full sm:w-auto px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold flex items-center justify-center gap-1.5 shadow-sm tactile"
                   >
-                    <Send className="w-4 h-4" />
+                    <Send className="w-3.5 h-3.5" />
                     <span>Enviar para WhatsApp do Cliente</span>
                   </a>
                 )}
               </div>
             </div>
 
-            <div className="flex justify-end pt-5 mt-6 border-t border-zinc-800">
+            <div
+              className="flex justify-end pt-4 mt-5 border-t"
+              style={{ borderColor: 'var(--border-crisp)' }}
+            >
               <button
                 type="button"
                 onClick={() => setSelectedOrder(null)}
-                className="px-5 py-2 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-xs font-bold text-zinc-300 transition-colors"
+                className="px-4 py-2 rounded-xl border border-[var(--border-crisp)] bg-[var(--bg-studio)] hover:bg-[var(--bg-surface)] text-xs font-bold text-[var(--text-secondary)] hover:text-[var(--text-primary)] tactile"
               >
                 Fechar
               </button>
@@ -2513,36 +3278,62 @@ export default function AdminDashboardClient({
 
       {/* MODAL RELATÓRIO GERAL DE PEDIDOS (WHATSAPP) */}
       {isGeneralReportModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md overflow-y-auto">
-          <div className="bg-zinc-900 border border-zinc-800 rounded-3xl max-w-2xl w-full p-6 sm:p-8 shadow-2xl relative my-8 text-zinc-100">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm overflow-y-auto">
+          <div
+            className="border rounded-2xl max-w-2xl w-full p-5 sm:p-7 shadow-2xl relative my-8"
+            style={{
+              backgroundColor: 'var(--bg-surface)',
+              borderColor: 'var(--border-crisp)',
+              color: 'var(--text-primary)',
+            }}
+          >
             <button
               onClick={() => setIsGeneralReportModalOpen(false)}
-              className="absolute top-6 right-6 text-zinc-400 hover:text-white p-1 rounded-xl hover:bg-zinc-800 transition-colors"
+              className="absolute top-5 right-5 p-1.5 rounded-xl border border-[var(--border-crisp)] bg-[var(--bg-studio)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] tactile"
+              aria-label="Fechar modal"
             >
-              <X className="w-5 h-5" />
+              <X className="w-4 h-4" />
             </button>
 
             <div className="flex items-center gap-3 mb-2">
-              <div className="w-10 h-10 rounded-xl bg-emerald-500/20 border border-emerald-500/30 flex items-center justify-center text-emerald-400">
-                <FileText className="w-5 h-5" />
+              <div className="w-9 h-9 rounded-xl bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-600 dark:text-emerald-400">
+                <FileText className="w-4 h-4" />
               </div>
               <div>
-                <h3 className="text-xl font-black text-white">Relatório Geral para WhatsApp</h3>
-                <p className="text-xs text-zinc-400">
+                <h3
+                  className="text-lg font-black tracking-tight"
+                  style={{ color: 'var(--text-primary)' }}
+                >
+                  Relatório Geral para WhatsApp
+                </h3>
+                <p
+                  className="text-xs"
+                  style={{ color: 'var(--text-secondary)' }}
+                >
                   Resumo de faturamento, peças e contagem por status para compartilhar.
                 </p>
               </div>
             </div>
 
-            <div className="bg-zinc-950 border border-zinc-800 rounded-2xl p-4 my-4 font-mono text-xs text-zinc-300 max-h-80 overflow-y-auto whitespace-pre-wrap leading-relaxed shadow-inner">
+            <div
+              className="border rounded-xl p-4 my-4 font-mono text-xs max-h-80 overflow-y-auto whitespace-pre-wrap leading-relaxed shadow-inner"
+              style={{
+                backgroundColor: 'var(--bg-studio)',
+                borderColor: 'var(--border-crisp)',
+                color: 'var(--text-secondary)',
+              }}
+            >
               {buildGeneralOrdersReport(orders)}
             </div>
 
-            <div className="flex flex-col sm:flex-row items-center justify-end gap-2.5 pt-4 border-t border-zinc-800">
+            <div
+              className="flex flex-col sm:flex-row items-center justify-end gap-2.5 pt-4 border-t"
+              style={{ borderColor: 'var(--border-crisp)' }}
+            >
               <button
                 type="button"
                 onClick={() => setIsGeneralReportModalOpen(false)}
-                className="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-xs font-bold text-zinc-300 transition-colors"
+                className="w-full sm:w-auto px-4 py-2 rounded-xl border border-[var(--border-crisp)] bg-[var(--bg-studio)] hover:bg-[var(--bg-surface)] text-xs font-bold text-[var(--text-secondary)] hover:text-[var(--text-primary)] tactile"
               >
                 Fechar
               </button>
@@ -2553,16 +3344,16 @@ export default function AdminDashboardClient({
                   const report = buildGeneralOrdersReport(orders);
                   copyToClipboard(report, 'general-report');
                 }}
-                className="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-200 text-xs font-bold flex items-center justify-center gap-1.5 transition-colors border border-zinc-700"
+                className="w-full sm:w-auto px-4 py-2 rounded-xl border border-[var(--border-crisp)] bg-[var(--bg-surface)] hover:bg-[var(--bg-studio)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] text-xs font-bold flex items-center justify-center gap-1.5 tactile"
               >
                 {copiedKey === 'general-report' ? (
                   <>
-                    <Check className="w-4 h-4 text-emerald-400" />
+                    <Check className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
                     <span>Copiado com Sucesso!</span>
                   </>
                 ) : (
                   <>
-                    <Copy className="w-4 h-4 text-zinc-300" />
+                    <Copy className="w-4 h-4" />
                     <span>Copiar Relatório</span>
                   </>
                 )}
@@ -2572,9 +3363,9 @@ export default function AdminDashboardClient({
                 href={`https://wa.me/?text=${encodeURIComponent(buildGeneralOrdersReport(orders))}`}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold flex items-center justify-center gap-1.5 transition-all shadow-lg shadow-emerald-950/60"
+                className="w-full sm:w-auto px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold flex items-center justify-center gap-1.5 shadow-sm tactile"
               >
-                <Send className="w-4 h-4" />
+                <Send className="w-3.5 h-3.5" />
                 <span>Abrir no WhatsApp</span>
               </a>
             </div>
