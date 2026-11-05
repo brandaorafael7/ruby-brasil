@@ -9,6 +9,8 @@ import {
   Copy,
   CheckCircle2,
   Clock,
+  ChevronLeft,
+  ChevronRight,
 } from 'lucide-react';
 import { Product } from '@/types';
 import { useCartStore } from '@/store';
@@ -17,6 +19,7 @@ import {
   getSizeSurcharge,
   getStandardSizesForProduct,
   getProductPreSaleInfo,
+  getProductGalleryImages,
 } from '@/lib/utils';
 import CustomizationModal from './CustomizationModal';
 
@@ -34,6 +37,7 @@ export default function ProductCard({ product }: Props) {
     product.name?.toLowerCase().includes('kids');
 
   const { isPreSale, preSaleEta } = getProductPreSaleInfo(product);
+  const galleryImages = getProductGalleryImages(product);
 
   const standardSizes = getStandardSizesForProduct(product);
 
@@ -68,10 +72,14 @@ export default function ProductCard({ product }: Props) {
     return standardSizes[0] || 'M';
   });
 
+  const [activeImageIdx, setActiveImageIdx] = useState(0);
   const [isCustomOpen, setIsCustomOpen] = useState(false);
   const [justAdded, setJustAdded] = useState(false);
   const [copiedLink, setCopiedLink] = useState(false);
   const [imgError, setImgError] = useState(false);
+
+  const currentImageUrl =
+    galleryImages[activeImageIdx] || galleryImages[0] || product.imageUrl || '';
 
   const selectedInfo = sizeInfoList.find((s) => s.size === selectedSize);
   const inCartForSelectedSize = items
@@ -119,6 +127,24 @@ export default function ProductCard({ product }: Props) {
     }
   };
 
+  const handlePrevImage = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setImgError(false);
+    setActiveImageIdx((prev) =>
+      prev === 0 ? galleryImages.length - 1 : prev - 1
+    );
+  };
+
+  const handleNextImage = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setImgError(false);
+    setActiveImageIdx((prev) =>
+      prev === galleryImages.length - 1 ? 0 : prev + 1
+    );
+  };
+
   const versionLabel = isKids
     ? 'KIT INFANTIL'
     : product.type === 'JOGADOR'
@@ -152,10 +178,10 @@ export default function ProductCard({ product }: Props) {
               className="absolute inset-0 block cursor-pointer overflow-hidden"
               title={product.name}
             >
-              {!imgError && product.imageUrl ? (
+              {!imgError && currentImageUrl ? (
                 <Image
-                  src={product.imageUrl}
-                  alt={product.name}
+                  src={currentImageUrl}
+                  alt={`${product.name} - Foto ${activeImageIdx + 1}`}
                   fill
                   unoptimized
                   loading="lazy"
@@ -173,6 +199,28 @@ export default function ProductCard({ product }: Props) {
                 </div>
               )}
             </Link>
+
+            {/* Controles de Galeria Múltipla (quando houver 2+ fotos) */}
+            {galleryImages.length > 1 && (
+              <>
+                <button
+                  type="button"
+                  onClick={handlePrevImage}
+                  aria-label="Foto anterior"
+                  className="absolute left-2 top-1/2 -translate-y-1/2 z-20 w-7 h-7 rounded-full bg-zinc-950/75 hover:bg-zinc-950 text-white border border-white/15 flex items-center justify-center opacity-85 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity shadow-md"
+                >
+                  <ChevronLeft className="w-4 h-4" />
+                </button>
+                <button
+                  type="button"
+                  onClick={handleNextImage}
+                  aria-label="Próxima foto"
+                  className="absolute right-2 top-1/2 -translate-y-1/2 z-20 w-7 h-7 rounded-full bg-zinc-950/75 hover:bg-zinc-950 text-white border border-white/15 flex items-center justify-center opacity-85 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity shadow-md"
+                >
+                  <ChevronRight className="w-4 h-4" />
+                </button>
+              </>
+            )}
 
             {/* Linha Superior Discreta: Status Pré-Venda ou Versão + Personalizar */}
             <div className="relative z-10 flex items-center justify-between gap-2">
@@ -212,10 +260,10 @@ export default function ProductCard({ product }: Props) {
               )}
             </div>
 
-            {/* Rodapé Discreto da Moldura: Clube/Liga & Temporada */}
+            {/* Rodapé Discreto da Moldura: Clube/Liga, Indicador de Fotos & Temporada */}
             <div className="relative z-10 flex items-center justify-between gap-2 pointer-events-none">
               <span
-                className="px-2 py-0.5 rounded text-[10px] font-mono font-semibold uppercase backdrop-blur-md border truncate max-w-[70%]"
+                className="px-2 py-0.5 rounded text-[10px] font-mono font-semibold uppercase backdrop-blur-md border truncate max-w-[60%]"
                 style={{
                   backgroundColor: 'color-mix(in srgb, var(--bg-surface) 88%, transparent)',
                   borderColor: 'var(--border-crisp)',
@@ -224,6 +272,30 @@ export default function ProductCard({ product }: Props) {
               >
                 {product.club || product.league || 'Oficial 1:1'}
               </span>
+
+              {galleryImages.length > 1 && (
+                <div className="flex items-center gap-1 px-2 py-1 rounded-full bg-zinc-950/75 border border-white/15 backdrop-blur-md pointer-events-auto">
+                  {galleryImages.map((_, idx) => (
+                    <button
+                      key={idx}
+                      type="button"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        setImgError(false);
+                        setActiveImageIdx(idx);
+                      }}
+                      aria-label={`Ver foto ${idx + 1}`}
+                      className={`h-1.5 rounded-full transition-all ${
+                        idx === activeImageIdx
+                          ? 'w-3.5 bg-white'
+                          : 'w-1.5 bg-white/45 hover:bg-white/75'
+                      }`}
+                    />
+                  ))}
+                </div>
+              )}
+
               {product.season && (
                 <span
                   className="px-2 py-0.5 rounded text-[10px] font-mono font-semibold backdrop-blur-md border shrink-0"

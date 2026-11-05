@@ -74,9 +74,49 @@ export function getProductPreSaleInfo(
   };
 }
 
+/**
+ * Retorna todas as fotos do produto (a foto principal `imageUrl` seguida das fotos
+ * extras salvas em `gallery`), sem duplicatas.
+ */
+export function getProductGalleryImages(
+  product?: {
+    imageUrl?: string | null;
+    gallery?: string | null;
+  } | null
+): string[] {
+  if (!product) return [];
+
+  const result: string[] = [];
+  const addUnique = (url?: string | null) => {
+    if (!url || typeof url !== 'string') return;
+    const trimmed = url.trim();
+    if (!trimmed) return;
+    if (!result.includes(trimmed)) {
+      result.push(trimmed);
+    }
+  };
+
+  addUnique(product.imageUrl);
+
+  if (product.gallery) {
+    try {
+      const parsed = JSON.parse(product.gallery);
+      if (Array.isArray(parsed)) {
+        parsed.forEach((item) => addUnique(item));
+      } else if (parsed && typeof parsed === 'object' && Array.isArray(parsed.images)) {
+        parsed.images.forEach((item: any) => addUnique(item));
+      }
+    } catch {
+      // ignore invalid JSON
+    }
+  }
+
+  return result;
+}
+
 export function serializeProductPreSaleGallery(
   existingGallery: string | null | undefined,
-  meta: { isPreSale: boolean; preSaleEta?: string | null }
+  meta: { isPreSale: boolean; preSaleEta?: string | null; images?: string[] }
 ): string {
   let baseObj: Record<string, any> = {};
   if (existingGallery) {
@@ -94,6 +134,10 @@ export function serializeProductPreSaleGallery(
 
   baseObj.isPreSale = Boolean(meta.isPreSale);
   baseObj.preSaleEta = meta.preSaleEta ? String(meta.preSaleEta).trim() : '';
+
+  if (Array.isArray(meta.images)) {
+    baseObj.images = meta.images.map((u) => String(u).trim()).filter(Boolean);
+  }
 
   return JSON.stringify(baseObj);
 }

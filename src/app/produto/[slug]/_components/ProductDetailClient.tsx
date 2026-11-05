@@ -19,6 +19,8 @@ import {
   CheckCircle2,
   Clock,
   CalendarClock,
+  ChevronLeft,
+  ChevronRight,
 } from 'lucide-react';
 import { Product } from '@/types';
 import { useCartStore } from '@/store';
@@ -27,6 +29,7 @@ import {
   getSizeSurcharge,
   getStandardSizesForProduct,
   getProductPreSaleInfo,
+  getProductGalleryImages,
 } from '@/lib/utils';
 import CustomizationModal from '@/components/product/CustomizationModal';
 import ProductCard from '@/components/product/ProductCard';
@@ -46,6 +49,7 @@ export default function ProductDetailClient({ product, relatedProducts }: Props)
     product.name?.toLowerCase().includes('kids');
 
   const { isPreSale, preSaleEta } = getProductPreSaleInfo(product);
+  const galleryImages = getProductGalleryImages(product);
 
   const standardSizes = getStandardSizesForProduct(product);
 
@@ -75,10 +79,14 @@ export default function ProductDetailClient({ product, relatedProducts }: Props)
     return standardSizes[0] || 'M';
   });
 
+  const [activeImageIdx, setActiveImageIdx] = useState(0);
   const [quantity, setQuantity] = useState(1);
   const [isCustomOpen, setIsCustomOpen] = useState(false);
   const [justAdded, setJustAdded] = useState(false);
   const [copiedLink, setCopiedLink] = useState(false);
+
+  const currentImageUrl =
+    galleryImages[activeImageIdx] || galleryImages[0] || product.imageUrl || '';
 
   const selectedInfo = sizeInfoList.find((s) => s.size === selectedSize);
   const inCartForSelectedSize = items
@@ -197,18 +205,47 @@ export default function ProductDetailClient({ product, relatedProducts }: Props)
 
         {/* CONTAINER PRINCIPAL DO PRODUTO */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 bg-zinc-900/40 border border-zinc-800/80 rounded-3xl p-4 sm:p-8 backdrop-blur-sm shadow-2xl">
-          {/* COLUNA ESQUERDA: FOTO GRANDE DA PEÇA */}
+          {/* COLUNA ESQUERDA: FOTO GRANDE DA PEÇA + MINIATURAS DA GALERIA */}
           <div className="lg:col-span-6 flex flex-col gap-4">
             <div className="relative aspect-[4/3] sm:aspect-square w-full rounded-2xl bg-zinc-950 overflow-hidden border border-zinc-800 shadow-inner group">
               <Image
-                src={product.imageUrl}
-                alt={product.name}
+                src={currentImageUrl}
+                alt={`${product.name} - Foto ${activeImageIdx + 1}`}
                 fill
                 priority
-                unoptimized={product.imageUrl?.startsWith('data:')}
+                unoptimized
                 className="object-cover group-hover:scale-105 transition-transform duration-700"
               />
               <div className="absolute inset-0 bg-gradient-to-t from-zinc-950/70 via-transparent to-black/20 pointer-events-none" />
+
+              {galleryImages.length > 1 && (
+                <>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setActiveImageIdx((prev) =>
+                        prev === 0 ? galleryImages.length - 1 : prev - 1
+                      )
+                    }
+                    aria-label="Foto anterior"
+                    className="absolute left-3 top-1/2 -translate-y-1/2 z-20 w-9 h-9 rounded-full bg-zinc-950/80 hover:bg-zinc-900 text-white border border-white/15 flex items-center justify-center transition-all shadow-lg"
+                  >
+                    <ChevronLeft className="w-5 h-5" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setActiveImageIdx((prev) =>
+                        prev === galleryImages.length - 1 ? 0 : prev + 1
+                      )
+                    }
+                    aria-label="Próxima foto"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 z-20 w-9 h-9 rounded-full bg-zinc-950/80 hover:bg-zinc-900 text-white border border-white/15 flex items-center justify-center transition-all shadow-lg"
+                  >
+                    <ChevronRight className="w-5 h-5" />
+                  </button>
+                </>
+              )}
 
               {/* BADGES NO TOPO DA IMAGEM */}
               <div className="absolute top-4 left-4 flex flex-wrap gap-2 z-10">
@@ -228,7 +265,12 @@ export default function ProductDetailClient({ product, relatedProducts }: Props)
                 )}
               </div>
 
-              <div className="absolute top-4 right-4 z-10">
+              <div className="absolute top-4 right-4 z-10 flex items-center gap-2">
+                {galleryImages.length > 1 && (
+                  <span className="bg-zinc-950/90 text-zinc-200 text-[11px] font-mono font-bold px-2.5 py-1 rounded-lg border border-zinc-700 shadow-md">
+                    {activeImageIdx + 1} / {galleryImages.length}
+                  </span>
+                )}
                 {isPreSale ? (
                   <span className="bg-amber-500 text-zinc-950 text-xs font-black uppercase px-3 py-1 rounded-lg border border-amber-300 shadow-md inline-flex items-center gap-1.5">
                     <Clock className="w-3.5 h-3.5 stroke-[2.5]" />
@@ -251,6 +293,35 @@ export default function ProductDetailClient({ product, relatedProducts }: Props)
                 </span>
               </div>
             </div>
+
+            {/* MINIATURAS DA GALERIA (QUANDO HOUVER 2 OU MAIS FOTOS) */}
+            {galleryImages.length > 1 && (
+              <div className="flex items-center gap-2.5 overflow-x-auto pb-1">
+                {galleryImages.map((imgUrl, idx) => {
+                  const isSelected = idx === activeImageIdx;
+                  return (
+                    <button
+                      key={idx}
+                      type="button"
+                      onClick={() => setActiveImageIdx(idx)}
+                      className={`relative w-16 h-16 sm:w-20 sm:h-20 rounded-xl overflow-hidden border-2 shrink-0 transition-all ${
+                        isSelected
+                          ? 'border-rose-500 ring-2 ring-rose-500/40 scale-[1.03]'
+                          : 'border-zinc-800 opacity-65 hover:opacity-100 hover:border-zinc-600'
+                      }`}
+                    >
+                      <Image
+                        src={imgUrl}
+                        alt={`${product.name} - Miniatura ${idx + 1}`}
+                        fill
+                        unoptimized
+                        className="object-cover"
+                      />
+                    </button>
+                  );
+                })}
+              </div>
+            )}
 
             {/* BARRA DE VANTAGENS */}
             <div className="grid grid-cols-2 gap-3 pt-1">

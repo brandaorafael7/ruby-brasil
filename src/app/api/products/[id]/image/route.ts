@@ -4,7 +4,7 @@ import fs from 'fs';
 import path from 'path';
 
 export async function GET(
-  _request: Request,
+  request: Request,
   { params }: { params: { id: string } }
 ) {
   try {
@@ -13,13 +13,16 @@ export async function GET(
       return new NextResponse('ID inválido', { status: 400 });
     }
 
-    // 1. Tenta buscar da tabela binária ProductImage
+    const { searchParams } = new URL(request.url);
+    const slot = Math.max(0, parseInt(searchParams.get('slot') || '0', 10) || 0);
+
+    // 1. Tenta buscar da tabela binária ProductImage no slot solicitado
     const rows = await prisma.$queryRaw<
       Array<{ mimeType: string; data: Buffer }>
     >`
       SELECT "mimeType", "data"
       FROM "public"."ProductImage"
-      WHERE "productId" = ${productId}
+      WHERE "productId" = ${productId} AND "slot" = ${slot}
       LIMIT 1
     `;
 
@@ -35,17 +38,19 @@ export async function GET(
       });
     }
 
-    // 2. Fallback: se existir arquivo estático em public/uploads/products/<id>.webp
-    const staticPath = path.join(process.cwd(), 'public', 'uploads', 'products', `${productId}.webp`);
-    if (fs.existsSync(staticPath)) {
-      const fileBuffer = fs.readFileSync(staticPath);
-      return new NextResponse(new Uint8Array(fileBuffer), {
-        status: 200,
-        headers: {
-          'Content-Type': 'image/webp',
-          'Cache-Control': 'public, max-age=31536000, s-maxage=31536000, immutable',
-        },
-      });
+    // 2. Fallback para slot 0: se existir arquivo estático em public/uploads/products/<id>.webp
+    if (slot === 0) {
+      const staticPath = path.join(process.cwd(), 'public', 'uploads', 'products', `${productId}.webp`);
+      if (fs.existsSync(staticPath)) {
+        const fileBuffer = fs.readFileSync(staticPath);
+        return new NextResponse(new Uint8Array(fileBuffer), {
+          status: 200,
+          headers: {
+            'Content-Type': 'image/webp',
+            'Cache-Control': 'public, max-age=31536000, s-maxage=31536000, immutable',
+          },
+        });
+      }
     }
 
     // 3. Fallback: caso o produto ainda tenha uma URL externa ou data URL na coluna imageUrl
@@ -72,10 +77,9 @@ export async function GET(
       }
     }
 
-    return NextResponse.redirect(new URL('/ruby-brasil-icon.png', _request.url));
+    return NextResponse.redirect(new URL('/ruby-brasil-icon.png', request.url));
   } catch (error) {
     console.error('Erro ao servir imagem do produto:', error);
     return new NextResponse('Erro interno', { status: 500 });
   }
 }
-

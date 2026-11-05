@@ -2,8 +2,12 @@ import { NextResponse } from 'next/server';
 import { revalidatePath, revalidateTag } from 'next/cache';
 import { prisma } from '@/lib/prisma';
 import { getAdminSessionFromRequest } from '@/lib/auth';
-import { getProductPreSaleInfo, serializeProductPreSaleGallery } from '@/lib/utils';
-import { isDataUrlImage, persistProductImageIfNeeded } from '@/lib/product-images';
+import {
+  getProductPreSaleInfo,
+  getProductGalleryImages,
+  serializeProductPreSaleGallery,
+} from '@/lib/utils';
+import { persistProductGalleryImages } from '@/lib/product-images';
 import { getCachedCatalogProducts, getFastCatalogProducts } from '@/lib/fast-queries';
 
 // Revalida a cada 1 minuto para reduzir egress no Supabase
@@ -63,6 +67,7 @@ export async function POST(request: Request) {
       season,
       type = 'TORCEDOR',
       imageUrl,
+      images,
       retailPrice,
       description = '',
       isActive = true,
@@ -81,9 +86,15 @@ export async function POST(request: Request) {
       ],
     } = body;
 
-    if (!name || !club || !league || !season || !imageUrl || !retailPrice) {
+    const rawImagesList: string[] = Array.isArray(images) && images.length > 0
+      ? images.filter(Boolean)
+      : imageUrl
+      ? [imageUrl]
+      : [];
+
+    if (!name || !club || !league || !season || rawImagesList.length === 0 || !retailPrice) {
       return NextResponse.json(
-        { error: 'Preencha todos os campos obrigatórios (Nome, Clube, Liga, Temporada, Foto e Preço).' },
+        { error: 'Preencha todos os campos obrigatórios (Nome, Clube, Liga, Temporada, pelo menos 1 Foto e Preço).' },
         { status: 400 }
       );
     }
@@ -97,12 +108,11 @@ export async function POST(request: Request) {
       .replace(/(^-|-$)/g, '');
     const slug = `${baseSlug}-${Date.now().toString().slice(-4)}`;
 
-    const gallery = serializeProductPreSaleGallery(null, {
+    const initialGallery = serializeProductPreSaleGallery(null, {
       isPreSale: Boolean(isPreSale),
       preSaleEta: preSaleEta ? String(preSaleEta) : '',
+      images: [],
     });
-
-    const isBase64Upload = isDataUrlImage(imageUrl);
 
     let product = await prisma.product.create({
       data: {
@@ -112,8 +122,8 @@ export async function POST(request: Request) {
         league,
         season,
         type,
-        imageUrl: isBase64Upload ? '/ruby-brasil-icon.png' : imageUrl,
-        gallery,
+        imageUrl: '/ruby-brasil-icon.png',
+        gallery: initialGallery,
         retailPrice: Number(retailPrice),
         description,
         isActive: Boolean(isActive),
@@ -131,14 +141,25 @@ export async function POST(request: Request) {
       },
     });
 
-    if (isBase64Upload) {
-      const cleanImageUrl = await persistProductImageIfNeeded(product.id, imageUrl);
-      product = await prisma.product.update({
-        where: { id: product.id },
-        data: { imageUrl: cleanImageUrl },
-        include: { variants: true },
-      });
-    }
+    const { mainImageUrl, galleryImages } = await persistProductGalleryImages(
+      product.id,
+      rawImagesList
+    );
+
+    const finalGallery = serializeProductPreSaleGallery(initialGallery, {
+      isPreSale: Boolean(isPreSale),
+      preSaleEta: preSaleEta ? String(preSaleEta) : '',
+      images: galleryImages,
+    });
+
+    product = await prisma.product.update({
+      where: { id: product.id },
+      data: {
+        imageUrl: mainImageUrl,
+        gallery: finalGallery,
+      },
+      include: { variants: true },
+    });
 
     revalidateTag('catalog-products');
     revalidatePath('/');
@@ -174,6 +195,7 @@ export async function PUT(request: Request) {
       season,
       type,
       imageUrl,
+      images,
       retailPrice,
       description,
       isActive,
@@ -188,22 +210,46 @@ export async function PUT(request: Request) {
       return NextResponse.json({ error: 'ID do produto é obrigatório' }, { status: 400 });
     }
 
-    let updatedGallery: string | undefined = undefined;
-    if (isPreSale !== undefined || preSaleEta !== undefined) {
-      const existing = await prisma.product.findUnique({
-        where: { id },
-        select: { gallery: true, league: true, type: true, name: true },
-      });
-      const currentPreSale = getProductPreSaleInfo(existing);
-      updatedGallery = serializeProductPreSaleGallery(existing?.gallery, {
-        isPreSale: isPreSale !== undefined ? Boolean(isPreSale) : currentPreSale.isPreSale,
-        preSaleEta: preSaleEta !== undefined ? String(preSaleEta || '') : currentPreSale.preSaleEta,
-      });
+    const existing = await prisma.product.findUnique({
+      where: { id },
+      select: { imageUrl: true, gallery: true, league: true, type: true, name: true },
+    });
+
+    if (!existing) {
+      return NextResponse.json({ error: 'Produto não encontrado' }, { status: 404 });
     }
 
-    const finalImageUrl = imageUrl
-      ? await persistProductImageIfNeeded(id, imageUrl)
-      : undefined;
+    let finalImageUrl: string | undefined = undefined;
+    let finalGalleryImages: string[] | undefined = undefined;
+
+    if (Array.isArray(images) && images.length > 0) {
+      const persisted = await persistProductGalleryImages(id, images);
+      finalImageUrl = persisted.mainImageUrl;
+      finalGalleryImages = persisted.galleryImages;
+    } else if (imageUrl) {
+      const existingList = getProductGalleryImages(existing);
+      const mergedList = [
+        imageUrl,
+        ...existingList.filter((u) => u !== existing.imageUrl && u !== imageUrl),
+      ];
+      const persisted = await persistProductGalleryImages(id, mergedList);
+      finalImageUrl = persisted.mainImageUrl;
+      finalGalleryImages = persisted.galleryImages;
+    }
+
+    let updatedGallery: string | undefined = undefined;
+    if (
+      isPreSale !== undefined ||
+      preSaleEta !== undefined ||
+      finalGalleryImages !== undefined
+    ) {
+      const currentPreSale = getProductPreSaleInfo(existing);
+      updatedGallery = serializeProductPreSaleGallery(existing.gallery, {
+        isPreSale: isPreSale !== undefined ? Boolean(isPreSale) : currentPreSale.isPreSale,
+        preSaleEta: preSaleEta !== undefined ? String(preSaleEta || '') : currentPreSale.preSaleEta,
+        ...(finalGalleryImages !== undefined ? { images: finalGalleryImages } : {}),
+      });
+    }
 
     // Atualiza dados principais da camisa
     await prisma.product.update({

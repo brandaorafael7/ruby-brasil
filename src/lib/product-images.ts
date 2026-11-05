@@ -8,12 +8,13 @@ export function isDataUrlImage(url?: string | null): boolean {
 
 /**
  * Se `imageUrl` for um Data URL Base64 (`data:image/...`), salva os bytes binários
- * na tabela `ProductImage` e retorna uma URL leve cacheável (`/api/products/[id]/image?v=...`).
+ * na tabela `ProductImage` no `slot` indicado e retorna uma URL leve cacheável.
  * Isso evita armazenar ou trafegar megabytes de Base64 na tabela `Product`.
  */
 export async function persistProductImageIfNeeded(
   productId: string,
-  imageUrl: string
+  imageUrl: string,
+  slot = 0
 ): Promise<string> {
   if (!isDataUrlImage(imageUrl)) {
     return imageUrl;
@@ -29,15 +30,51 @@ export async function persistProductImageIfNeeded(
   const buffer = Buffer.from(base64Data, 'base64');
 
   await prisma.$executeRaw`
-    INSERT INTO "public"."ProductImage" ("productId", "mimeType", "data", "updatedAt")
-    VALUES (${productId}, ${mimeType}, ${buffer}, NOW())
-    ON CONFLICT ("productId")
+    INSERT INTO "public"."ProductImage" ("productId", "slot", "mimeType", "data", "updatedAt")
+    VALUES (${productId}, ${slot}, ${mimeType}, ${buffer}, NOW())
+    ON CONFLICT ("productId", "slot")
     DO UPDATE SET
       "mimeType" = EXCLUDED."mimeType",
       "data" = EXCLUDED."data",
       "updatedAt" = NOW()
   `;
 
-  return `/api/products/${productId}/image?v=${Date.now()}`;
+  if (slot === 0) {
+    return `/api/products/${productId}/image?v=${Date.now()}`;
+  }
+  return `/api/products/${productId}/image?slot=${slot}&v=${Date.now()}`;
 }
 
+/**
+ * Processa uma lista de fotos do produto (1 ou mais fotos), convertendo qualquer
+ * imagem Base64 em registro binário na tabela `ProductImage` com slot único e
+ * retornando URLs leves.
+ */
+export async function persistProductGalleryImages(
+  productId: string,
+  rawImages: string[]
+): Promise<{ mainImageUrl: string; galleryImages: string[] }> {
+  const cleaned = rawImages
+    .map((u) => (typeof u === 'string' ? u.trim() : ''))
+    .filter(Boolean);
+
+  if (cleaned.length === 0) {
+    return { mainImageUrl: '/ruby-brasil-icon.png', galleryImages: [] };
+  }
+
+  const baseSlot = Math.floor((Date.now() % 100000000) * 10) + 1;
+  const galleryImages: string[] = [];
+
+  for (let i = 0; i < cleaned.length; i++) {
+    const slot = baseSlot + i;
+    const url = await persistProductImageIfNeeded(productId, cleaned[i], slot);
+    if (!galleryImages.includes(url)) {
+      galleryImages.push(url);
+    }
+  }
+
+  return {
+    mainImageUrl: galleryImages[0] || '/ruby-brasil-icon.png',
+    galleryImages,
+  };
+}

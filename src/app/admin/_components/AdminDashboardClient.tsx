@@ -37,6 +37,7 @@ import {
   formatCurrency,
   getStandardSizesForProduct,
   getProductPreSaleInfo,
+  getProductGalleryImages,
 } from '@/lib/utils';
 import { PromotionalBatch, WholesaleTier } from '@/types';
 
@@ -268,39 +269,56 @@ export default function AdminDashboardClient({
   const [updatingOrderId, setUpdatingOrderId] = useState<string | null>(null);
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
 
-  // Estados de Upload de Imagem
+  // Estados de Upload de Imagem (Suporta 1 ou mais fotos por produto)
   const [imageUploadMode, setImageUploadMode] = useState<'file' | 'url'>('file');
   const [isDragging, setIsDragging] = useState(false);
   const [isProcessingImage, setIsProcessingImage] = useState(false);
+  const [newImageUrlInput, setNewImageUrlInput] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const processImageFile = async (file: File) => {
-    if (!file.type.startsWith('image/')) {
-      alert('Por favor selecione um arquivo de imagem válido (PNG, JPG, WEBP).');
-      return;
-    }
+  const processImageFiles = async (fileList: FileList | File[]) => {
+    const files = Array.from(fileList);
+    if (files.length === 0) return;
 
-    if (file.size > 25 * 1024 * 1024) {
-      alert('A imagem é muito grande. Escolha uma foto de até 25MB.');
-      return;
-    }
+    const validFiles = files.filter((file) => {
+      if (!file.type.startsWith('image/')) {
+        alert(`O arquivo "${file.name}" não é uma imagem válida (PNG, JPG, WEBP).`);
+        return false;
+      }
+      if (file.size > 25 * 1024 * 1024) {
+        alert(`A imagem "${file.name}" é muito grande (máx 25MB).`);
+        return false;
+      }
+      return true;
+    });
+
+    if (validFiles.length === 0) return;
 
     setIsProcessingImage(true);
     try {
-      const compressed = await compressAndConvertImage(file);
-      setFormData((prev) => ({ ...prev, imageUrl: compressed }));
+      const compressedList = await Promise.all(
+        validFiles.map((file) => compressAndConvertImage(file))
+      );
+      setFormData((prev) => {
+        const nextImages = [...(prev.images || []), ...compressedList];
+        return {
+          ...prev,
+          images: nextImages,
+          imageUrl: nextImages[0] || '',
+        };
+      });
     } catch (err) {
       console.error(err);
       alert('Erro ao processar imagem no navegador. Tente outra foto.');
     } finally {
       setIsProcessingImage(false);
+      if (fileInputRef.current) fileInputRef.current.value = '';
     }
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      processImageFile(file);
+    if (e.target.files && e.target.files.length > 0) {
+      processImageFiles(e.target.files);
     }
   };
 
@@ -317,10 +335,51 @@ export default function AdminDashboardClient({
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault();
     setIsDragging(false);
-    const file = e.dataTransfer.files?.[0];
-    if (file) {
-      processImageFile(file);
+    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+      processImageFiles(e.dataTransfer.files);
     }
+  };
+
+  const handleAddImageUrl = () => {
+    const clean = newImageUrlInput.trim();
+    if (!clean) return;
+    setFormData((prev) => {
+      const nextImages = prev.images.includes(clean)
+        ? prev.images
+        : [...prev.images, clean];
+      return {
+        ...prev,
+        images: nextImages,
+        imageUrl: nextImages[0] || '',
+      };
+    });
+    setNewImageUrlInput('');
+  };
+
+  const handleRemoveGalleryImage = (idxToRemove: number) => {
+    setFormData((prev) => {
+      const nextImages = prev.images.filter((_, idx) => idx !== idxToRemove);
+      return {
+        ...prev,
+        images: nextImages,
+        imageUrl: nextImages[0] || '',
+      };
+    });
+  };
+
+  const handleSetMainGalleryImage = (idxToPromote: number) => {
+    if (idxToPromote <= 0) return;
+    setFormData((prev) => {
+      const chosen = prev.images[idxToPromote];
+      if (!chosen) return prev;
+      const rest = prev.images.filter((_, idx) => idx !== idxToPromote);
+      const nextImages = [chosen, ...rest];
+      return {
+        ...prev,
+        images: nextImages,
+        imageUrl: nextImages[0] || '',
+      };
+    });
   };
 
   // Formulário de Peça
@@ -332,6 +391,7 @@ export default function AdminDashboardClient({
     season: '24/25',
     type: 'TORCEDOR',
     imageUrl: '',
+    images: [] as string[],
     retailPrice: '60.00',
     description: '',
     isActive: true,
@@ -474,6 +534,7 @@ export default function AdminDashboardClient({
   const handleOpenCreateModal = (defaultPreSale = false) => {
     setIsEditing(false);
     setImageUploadMode('file');
+    setNewImageUrlInput('');
     if (fileInputRef.current) fileInputRef.current.value = '';
     setFormData({
       id: '',
@@ -483,6 +544,7 @@ export default function AdminDashboardClient({
       season: '25/26',
       type: 'TORCEDOR',
       imageUrl: '',
+      images: [],
       retailPrice: '60.00',
       description: '',
       isActive: true,
@@ -505,13 +567,8 @@ export default function AdminDashboardClient({
 
   const handleOpenEditModal = (p: any) => {
     setIsEditing(true);
-    if (p.imageUrl?.startsWith('data:')) {
-      setImageUploadMode('file');
-    } else if (p.imageUrl?.startsWith('http')) {
-      setImageUploadMode('url');
-    } else {
-      setImageUploadMode('file');
-    }
+    setImageUploadMode('file');
+    setNewImageUrlInput('');
     if (fileInputRef.current) fileInputRef.current.value = '';
     const standardSizes = getStandardSizesForProduct(p);
     const currentVariants = standardSizes.map((size) => {
@@ -520,6 +577,7 @@ export default function AdminDashboardClient({
     });
 
     const preSaleInfo = getProductPreSaleInfo(p);
+    const existingImages = getProductGalleryImages(p);
 
     setFormData({
       id: p.id,
@@ -528,7 +586,8 @@ export default function AdminDashboardClient({
       league: p.league || 'Brasileirão',
       season: p.season || '24/25',
       type: p.type || 'TORCEDOR',
-      imageUrl: p.imageUrl || '',
+      imageUrl: existingImages[0] || p.imageUrl || '',
+      images: existingImages,
       retailPrice: String(p.retailPrice || '60.00'),
       description: p.description || '',
       isActive: p.isActive,
@@ -544,8 +603,15 @@ export default function AdminDashboardClient({
   const handleSaveProduct = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!formData.imageUrl || formData.imageUrl.trim() === '') {
-      alert('Por favor adicione uma foto para a peça (enviando um arquivo local ou inserindo um link).');
+    const finalImages =
+      formData.images && formData.images.length > 0
+        ? formData.images
+        : formData.imageUrl && formData.imageUrl.trim() !== ''
+        ? [formData.imageUrl.trim()]
+        : [];
+
+    if (finalImages.length === 0) {
+      alert('Por favor adicione pelo menos uma foto para a peça (enviando arquivo local ou inserindo link).');
       return;
     }
 
@@ -558,7 +624,11 @@ export default function AdminDashboardClient({
       const res = await fetch(url, {
         method,
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData),
+        body: JSON.stringify({
+          ...formData,
+          imageUrl: finalImages[0],
+          images: finalImages,
+        }),
       });
 
       const data = await res.json();
@@ -1022,15 +1092,26 @@ export default function AdminDashboardClient({
                   ) : (
                     filteredProducts.map((p) => {
                       const preSaleInfo = getProductPreSaleInfo(p);
+                      const productImages = getProductGalleryImages(p);
                       return (
                         <tr key={p.id} className="hover:bg-zinc-800/40 transition-colors">
                           <td className="py-3.5 px-4">
                             {p.imageUrl ? (
-                              <img
-                                src={p.imageUrl}
-                                alt={p.name}
-                                className="w-11 h-11 object-cover rounded-xl bg-zinc-900 border border-zinc-700/80 shadow-sm"
-                              />
+                              <div className="relative w-11 h-11">
+                                <img
+                                  src={p.imageUrl}
+                                  alt={p.name}
+                                  className="w-11 h-11 object-cover rounded-xl bg-zinc-900 border border-zinc-700/80 shadow-sm"
+                                />
+                                {productImages.length > 1 && (
+                                  <span
+                                    title={`${productImages.length} fotos cadastradas`}
+                                    className="absolute -bottom-1 -right-1 px-1.5 py-0.2 rounded-md bg-rose-600 text-white font-mono font-black text-[9px] border border-zinc-950 shadow"
+                                  >
+                                    +{productImages.length - 1}
+                                  </span>
+                                )}
+                              </div>
                             ) : (
                               <div className="w-11 h-11 rounded-xl bg-zinc-900 flex items-center justify-center text-zinc-500 border border-zinc-800">
                                 <ImageIcon className="w-5 h-5" />
@@ -1878,12 +1959,21 @@ export default function AdminDashboardClient({
                   />
                 </div>
 
-                {/* UPLOAD DA IMAGEM DA PEÇA */}
-                <div className="sm:col-span-2 space-y-2">
-                  <div className="flex items-center justify-between">
-                    <label className="block text-xs font-bold text-zinc-300">
-                      Foto da Peça *
-                    </label>
+                {/* UPLOAD DE UMA OU MAIS IMAGENS DA PEÇA */}
+                <div className="sm:col-span-2 space-y-3">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <div>
+                      <label className="block text-xs font-bold text-zinc-300">
+                        Fotos da Peça *{' '}
+                        <span className="text-rose-400 font-mono">
+                          ({formData.images.length}{' '}
+                          {formData.images.length === 1 ? 'foto adicionada' : 'fotos adicionadas'})
+                        </span>
+                      </label>
+                      <span className="text-[11px] text-zinc-400 block">
+                        Adicione uma ou mais fotos (frente, costas, detalhes). A primeira foto será a capa principal.
+                      </span>
+                    </div>
                     <div className="flex items-center gap-1 bg-zinc-950 p-0.5 rounded-lg border border-zinc-800">
                       <button
                         type="button"
@@ -1895,7 +1985,7 @@ export default function AdminDashboardClient({
                         }`}
                       >
                         <UploadCloud className="w-3.5 h-3.5" />
-                        Subir Foto Local
+                        Subir Fotos Locais
                       </button>
                       <button
                         type="button"
@@ -1907,15 +1997,70 @@ export default function AdminDashboardClient({
                         }`}
                       >
                         <LinkIcon className="w-3.5 h-3.5" />
-                        Colar Link
+                        Adicionar por Link
                       </button>
                     </div>
                   </div>
+
+                  {/* GRADE DE FOTOS JÁ ADICIONADAS */}
+                  {formData.images.length > 0 && (
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 bg-zinc-950/80 border border-zinc-800 p-3 rounded-2xl">
+                      {formData.images.map((imgUrl, idx) => {
+                        const isMain = idx === 0;
+                        return (
+                          <div
+                            key={`${idx}-${imgUrl.slice(0, 24)}`}
+                            className={`relative group rounded-xl overflow-hidden border bg-zinc-900 flex flex-col justify-between ${
+                              isMain
+                                ? 'border-rose-500 ring-1 ring-rose-500/40'
+                                : 'border-zinc-800 hover:border-zinc-700'
+                            }`}
+                          >
+                            <div className="relative aspect-[4/5] w-full bg-zinc-950 overflow-hidden">
+                              <img
+                                src={imgUrl}
+                                alt={`Foto ${idx + 1}`}
+                                className="w-full h-full object-cover"
+                              />
+                              <span
+                                className={`absolute top-2 left-2 px-2 py-0.5 rounded-md text-[10px] font-black uppercase shadow ${
+                                  isMain
+                                    ? 'bg-rose-600 text-white'
+                                    : 'bg-zinc-950/85 text-zinc-300 border border-zinc-700'
+                                }`}
+                              >
+                                {isMain ? '★ Capa' : `Foto #${idx + 1}`}
+                              </span>
+                              <button
+                                type="button"
+                                onClick={() => handleRemoveGalleryImage(idx)}
+                                title="Remover esta foto"
+                                className="absolute top-2 right-2 w-6 h-6 rounded-lg bg-zinc-950/85 hover:bg-rose-600 text-zinc-300 hover:text-white border border-zinc-700 flex items-center justify-center transition-colors"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
+
+                            {!isMain && (
+                              <button
+                                type="button"
+                                onClick={() => handleSetMainGalleryImage(idx)}
+                                className="w-full py-1.5 px-2 text-[10px] font-bold text-amber-300 hover:text-zinc-950 bg-zinc-900 hover:bg-amber-400 border-t border-zinc-800 transition-colors"
+                              >
+                                Definir como Capa
+                              </button>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
 
                   {imageUploadMode === 'file' ? (
                     <div>
                       <input
                         type="file"
+                        multiple
                         ref={fileInputRef}
                         onChange={handleFileChange}
                         accept="image/png, image/jpeg, image/webp, image/jpg"
@@ -1927,97 +2072,63 @@ export default function AdminDashboardClient({
                         onDragLeave={handleDragLeave}
                         onDrop={handleDrop}
                         onClick={() => fileInputRef.current?.click()}
-                        className={`border-2 border-dashed rounded-2xl p-5 text-center cursor-pointer transition-all ${
+                        className={`border-2 border-dashed rounded-2xl p-4 text-center cursor-pointer transition-all ${
                           isDragging
                             ? 'border-rose-500 bg-rose-500/10'
-                            : formData.imageUrl
-                            ? 'border-zinc-700 hover:border-zinc-500 bg-zinc-950/70'
                             : 'border-zinc-800 hover:border-rose-500/60 hover:bg-zinc-950/90 bg-zinc-950/40'
                         }`}
                       >
                         {isProcessingImage ? (
-                          <div className="flex flex-col items-center justify-center py-4">
-                            <Loader2 className="w-8 h-8 text-rose-500 animate-spin mb-2" />
-                            <p className="text-xs font-bold text-white">Otimizando e comprimindo foto...</p>
-                            <p className="text-[11px] text-zinc-400 mt-0.5">Preparando imagem para carregamento ultra rápido</p>
-                          </div>
-                        ) : formData.imageUrl ? (
-                          <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-                            <div className="flex items-center gap-3.5">
-                              <img
-                                src={formData.imageUrl}
-                                alt="Preview"
-                                className="w-16 h-16 object-cover rounded-xl border border-zinc-700 shadow-md bg-zinc-900"
-                              />
-                              <div className="text-left">
-                                <span className="text-xs font-extrabold text-white flex items-center gap-1.5">
-                                  <CheckCircle className="w-4 h-4 text-emerald-400" /> Imagem Carregada com Sucesso
-                                </span>
-                                <span className="text-[11px] text-zinc-400 block mt-0.5">
-                                  Clique ou solte outro arquivo para trocar a foto
-                                </span>
-                                <span className="text-[10px] text-zinc-500 font-mono">
-                                  {formData.imageUrl.startsWith('data:') ? '✓ Formato WebP otimizado' : '✓ Imagem vinculada'}
-                                </span>
-                              </div>
-                            </div>
-                            <button
-                              type="button"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setFormData({ ...formData, imageUrl: '' });
-                                if (fileInputRef.current) fileInputRef.current.value = '';
-                              }}
-                              className="px-3 py-1.5 text-xs text-rose-400 hover:text-rose-300 hover:bg-rose-500/10 border border-rose-500/30 rounded-lg transition-colors flex items-center gap-1 self-center"
-                            >
-                              <Trash2 className="w-3.5 h-3.5" /> Remover
-                            </button>
+                          <div className="flex flex-col items-center justify-center py-3">
+                            <Loader2 className="w-7 h-7 text-rose-500 animate-spin mb-2" />
+                            <p className="text-xs font-bold text-white">
+                              Otimizando e comprimindo foto(s)...
+                            </p>
+                            <p className="text-[11px] text-zinc-400 mt-0.5">
+                              Convertendo para WebP de carregamento rápido
+                            </p>
                           </div>
                         ) : (
-                          <div className="flex flex-col items-center justify-center py-4 group">
-                            <div className="w-12 h-12 rounded-2xl bg-zinc-900 border border-zinc-800 flex items-center justify-center text-rose-400 mb-2 group-hover:scale-110 transition-transform shadow-inner">
-                              <UploadCloud className="w-6 h-6" />
+                          <div className="flex flex-col items-center justify-center py-2 group">
+                            <div className="w-10 h-10 rounded-xl bg-zinc-900 border border-zinc-800 flex items-center justify-center text-rose-400 mb-2 group-hover:scale-110 transition-transform shadow-inner">
+                              <PlusCircle className="w-5 h-5" />
                             </div>
                             <p className="text-xs font-bold text-white mb-0.5">
-                              Clique para escolher a foto do computador ou celular
+                              {formData.images.length > 0
+                                ? 'Clique para adicionar mais fotos desta camisa'
+                                : 'Clique para escolher uma ou mais fotos do computador/celular'}
                             </p>
                             <p className="text-[11px] text-zinc-400">
-                              Ou arraste e solte o arquivo aqui (JPG, PNG ou WEBP)
+                              Você pode selecionar várias fotos de uma vez ou arrastar aqui (JPG, PNG, WEBP)
                             </p>
                           </div>
                         )}
                       </div>
                     </div>
                   ) : (
-                    <div>
+                    <div className="flex gap-2">
                       <input
-                        type="text"
+                        type="url"
                         placeholder="https://exemplo.com/foto-camisa.jpg"
-                        value={formData.imageUrl}
-                        onChange={(e) => setFormData({ ...formData, imageUrl: e.target.value })}
-                        className="w-full bg-zinc-950 border border-zinc-700/80 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-rose-500"
+                        value={newImageUrlInput}
+                        onChange={(e) => setNewImageUrlInput(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                            e.preventDefault();
+                            handleAddImageUrl();
+                          }
+                        }}
+                        className="flex-1 bg-zinc-950 border border-zinc-700/80 rounded-xl px-4 py-2.5 text-xs text-white focus:outline-none focus:border-rose-500"
                       />
-                      {formData.imageUrl && (
-                        <div className="mt-2 p-3 bg-zinc-950 border border-zinc-800 rounded-xl flex items-center gap-3">
-                          <img
-                            src={formData.imageUrl}
-                            alt="Preview"
-                            className="w-12 h-12 object-cover rounded-lg border border-zinc-700 bg-zinc-900"
-                            onError={(e) => ((e.target as any).style.display = 'none')}
-                          />
-                          <div className="text-xs text-zinc-400 flex-1">
-                            <span className="font-bold text-white block">Preview da Imagem</span>
-                            URL informada e pronta para cadastro
-                          </div>
-                          <button
-                            type="button"
-                            onClick={() => setFormData({ ...formData, imageUrl: '' })}
-                            className="text-xs text-rose-400 hover:text-rose-300 px-2 py-1"
-                          >
-                            Limpar
-                          </button>
-                        </div>
-                      )}
+                      <button
+                        type="button"
+                        onClick={handleAddImageUrl}
+                        disabled={!newImageUrlInput.trim()}
+                        className="px-4 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-500 disabled:opacity-40 text-white text-xs font-bold flex items-center gap-1.5 shrink-0 transition-colors"
+                      >
+                        <PlusCircle className="w-4 h-4" />
+                        Adicionar Foto
+                      </button>
                     </div>
                   )}
                 </div>
