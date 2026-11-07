@@ -172,6 +172,8 @@ export async function POST(req: Request) {
 
       return {
         productId: item.productId,
+        productName: item.name || null,
+        imageUrl: item.imageUrl || null,
         size: item.size,
         quantity: item.quantity,
         unitPriceApplied: unitPrice,

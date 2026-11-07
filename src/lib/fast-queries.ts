@@ -174,6 +174,8 @@ export async function getFastAdminDashboardData() {
                   'id', oi."id",
                   'orderId', oi."orderId",
                   'productId', oi."productId",
+                  'productName', oi."productName",
+                  'imageUrl', oi."imageUrl",
                   'size', oi."size",
                   'quantity', oi."quantity",
                   'unitPriceApplied', oi."unitPriceApplied",
@@ -185,7 +187,7 @@ export async function getFastAdminDashboardData() {
                   'product', (
                     SELECT row_to_json(pr)
                     FROM (
-                      SELECT "id", "name", "club", "season", "league", "type", "gallery"
+                      SELECT "id", "name", "club", "season", "league", "type", "imageUrl", "gallery"
                       FROM "public"."Product"
                       WHERE "id" = oi."productId"
                     ) pr

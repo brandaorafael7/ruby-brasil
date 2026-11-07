@@ -125,11 +125,13 @@ export function buildOrderWhatsAppReport(order: any): string {
         ? ` [⏳ PRÉ-VENDA${preSale.preSaleEta ? `: ${preSale.preSaleEta}` : ''}]`
         : '';
       const rawImg =
+        item.imageUrl ||
         item.product?.imageUrl ||
         (item.product?.gallery ? getProductGalleryImages(item.product)[0] : '');
+      const itemName = item.productName || item.product?.name || 'Camisa';
       const photoUrl = toAbsoluteUrl(rawImg);
       const photoLine = photoUrl ? `\n     ↳ 📸 Foto: ${photoUrl}` : '';
-      return `  ${idx + 1}. *${item.product?.name || 'Camisa'}*${preSaleLabel} [Tam: ${item.size}] x ${item.quantity}un - ${formatCurrency(item.totalItemPrice || 0)}${custom}${photoLine}`;
+      return `  ${idx + 1}. *${itemName}*${preSaleLabel} [Tam: ${item.size}] x ${item.quantity}un - ${formatCurrency(item.totalItemPrice || 0)}${custom}${photoLine}`;
     })
     .join('\n');
 
@@ -170,11 +172,11 @@ export function mapOrderToImageData(order: any): OrderImageData {
       const preSale = getProductPreSaleInfo(it.product);
       const gallery = getProductGalleryImages(it.product);
       return {
-        name: it.product?.name || 'Camisa Ruby Brasil',
+        name: it.productName || it.product?.name || 'Camisa Ruby Brasil',
         club: it.product?.club,
         size: it.size,
         quantity: it.quantity,
-        imageUrl: it.product?.imageUrl || gallery[0] || '',
+        imageUrl: it.imageUrl || it.product?.imageUrl || gallery[0] || '',
         customName: it.customName,
         customNumber: it.customNumber,
         isPreSale: preSale.isPreSale,
@@ -3220,7 +3222,8 @@ export default function AdminDashboardClient({
                     {(selectedOrder.items || []).map((item: any, idx: number) => {
                       const preSaleInfo = getProductPreSaleInfo(item.product);
                       const itemGallery = getProductGalleryImages(item.product);
-                      const itemImg = item.product?.imageUrl || itemGallery[0] || '';
+                      const itemImg = item.imageUrl || item.product?.imageUrl || itemGallery[0] || '';
+                      const itemName = item.productName || item.product?.name || 'Camisa de Futebol';
 
                       return (
                         <tr
@@ -3234,7 +3237,7 @@ export default function AdminDashboardClient({
                                   {/* eslint-disable-next-line @next/next/no-img-element */}
                                   <img
                                     src={itemImg}
-                                    alt={item.product?.name || 'Camisa'}
+                                    alt={itemName}
                                     className="w-full h-full object-cover"
                                   />
                                 </div>
@@ -3246,7 +3249,7 @@ export default function AdminDashboardClient({
                               <div className="min-w-0 flex-1">
                                 <div className="flex flex-wrap items-center gap-1.5">
                                   <strong style={{ color: 'var(--text-primary)' }}>
-                                    {item.product?.name || 'Camisa de Futebol'}
+                                    {itemName}
                                   </strong>
                                   {preSaleInfo.isPreSale && (
                                     <span className="bg-amber-500/15 text-amber-700 dark:text-amber-300 border border-amber-500/30 px-1.5 py-0.5 rounded text-[9px] font-black uppercase">
