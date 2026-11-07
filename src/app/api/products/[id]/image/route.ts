@@ -3,6 +3,29 @@ import { prisma } from '@/lib/prisma';
 import fs from 'fs';
 import path from 'path';
 
+interface ImageCacheItem {
+  mimeType: string;
+  data: Buffer;
+}
+
+// Cache LRU em memória no processo Node para servir fotos em < 1ms sem consultar o banco
+const globalImageCache: Map<string, ImageCacheItem> =
+  (global as any).__rubyImageBufferCache || new Map<string, ImageCacheItem>();
+(global as any).__rubyImageBufferCache = globalImageCache;
+const MAX_CACHE_ENTRIES = 400;
+
+export function invalidateProductImageCache(productId?: string) {
+  if (!productId) {
+    globalImageCache.clear();
+    return;
+  }
+  for (const key of Array.from(globalImageCache.keys())) {
+    if (key.startsWith(`${productId}:`)) {
+      globalImageCache.delete(key);
+    }
+  }
+}
+
 export async function GET(
   request: Request,
   { params }: { params: { id: string } }
@@ -15,6 +38,20 @@ export async function GET(
 
     const { searchParams } = new URL(request.url);
     const slot = Math.max(0, parseInt(searchParams.get('slot') || '0', 10) || 0);
+    const cacheKey = `${productId}:${slot}`;
+
+    // 0. Retorno ultra-rápido do cache em memória RAM (< 1ms)
+    if (globalImageCache.has(cacheKey)) {
+      const cached = globalImageCache.get(cacheKey)!;
+      return new NextResponse(cached.data as unknown as BodyInit, {
+        status: 200,
+        headers: {
+          'Content-Type': cached.mimeType || 'image/webp',
+          'Cache-Control': 'public, max-age=31536000, s-maxage=31536000, immutable',
+          'X-Cache': 'HIT-RAM',
+        },
+      });
+    }
 
     // 1. Tenta buscar da tabela binária ProductImage no slot solicitado
     const rows = await prisma.$queryRaw<
@@ -28,12 +65,20 @@ export async function GET(
 
     if (rows.length > 0 && rows[0].data) {
       const { mimeType, data } = rows[0];
-      const uint8 = new Uint8Array(data);
-      return new NextResponse(uint8, {
+      const buffer = Buffer.isBuffer(data) ? data : Buffer.from(data);
+
+      if (globalImageCache.size >= MAX_CACHE_ENTRIES) {
+        const oldestKey = globalImageCache.keys().next().value;
+        if (oldestKey) globalImageCache.delete(oldestKey);
+      }
+      globalImageCache.set(cacheKey, { mimeType, data: buffer });
+
+      return new NextResponse(buffer as unknown as BodyInit, {
         status: 200,
         headers: {
           'Content-Type': mimeType || 'image/webp',
           'Cache-Control': 'public, max-age=31536000, s-maxage=31536000, immutable',
+          'X-Cache': 'MISS-DB',
         },
       });
     }
@@ -43,11 +88,19 @@ export async function GET(
       const staticPath = path.join(process.cwd(), 'public', 'uploads', 'products', `${productId}.webp`);
       if (fs.existsSync(staticPath)) {
         const fileBuffer = fs.readFileSync(staticPath);
-        return new NextResponse(new Uint8Array(fileBuffer), {
+
+        if (globalImageCache.size >= MAX_CACHE_ENTRIES) {
+          const oldestKey = globalImageCache.keys().next().value;
+          if (oldestKey) globalImageCache.delete(oldestKey);
+        }
+        globalImageCache.set(cacheKey, { mimeType: 'image/webp', data: fileBuffer });
+
+        return new NextResponse(fileBuffer as unknown as BodyInit, {
           status: 200,
           headers: {
             'Content-Type': 'image/webp',
             'Cache-Control': 'public, max-age=31536000, s-maxage=31536000, immutable',
+            'X-Cache': 'STATIC-FILE',
           },
         });
       }
@@ -64,10 +117,18 @@ export async function GET(
         const match = product.imageUrl.match(/^data:(image\/[a-zA-Z0-9.+-]+);base64,([\s\S]+)$/);
         if (match) {
           const buf = Buffer.from(match[2], 'base64');
-          return new NextResponse(new Uint8Array(buf), {
+          const mimeType = match[1] || 'image/webp';
+
+          if (globalImageCache.size >= MAX_CACHE_ENTRIES) {
+            const oldestKey = globalImageCache.keys().next().value;
+            if (oldestKey) globalImageCache.delete(oldestKey);
+          }
+          globalImageCache.set(cacheKey, { mimeType, data: buf });
+
+          return new NextResponse(buf as unknown as BodyInit, {
             status: 200,
             headers: {
-              'Content-Type': match[1] || 'image/webp',
+              'Content-Type': mimeType,
               'Cache-Control': 'public, max-age=31536000, s-maxage=31536000, immutable',
             },
           });

@@ -78,6 +78,27 @@ export default function ProductCard({ product }: Props) {
   const [copiedLink, setCopiedLink] = useState(false);
   const [imgError, setImgError] = useState(false);
 
+  // Pré-carrega todas as fotos da galeria no browser para troca instantânea (0ms)
+  React.useEffect(() => {
+    if (galleryImages.length > 1 && typeof window !== 'undefined') {
+      galleryImages.slice(1).forEach((src) => {
+        if (!src) return;
+        const img = new window.Image();
+        img.src = src;
+      });
+    }
+  }, [galleryImages]);
+
+  const handlePreloadImages = () => {
+    if (galleryImages.length > 1 && typeof window !== 'undefined') {
+      galleryImages.forEach((src) => {
+        if (!src) return;
+        const img = new window.Image();
+        img.src = src;
+      });
+    }
+  };
+
   const currentImageUrl =
     galleryImages[activeImageIdx] || galleryImages[0] || product.imageUrl || '';
 
@@ -156,6 +177,7 @@ export default function ProductCard({ product }: Props) {
   return (
     <>
       <article
+        onMouseEnter={handlePreloadImages}
         className="group rounded-2xl border overflow-hidden flex flex-col justify-between tactile"
         style={{
           backgroundColor: 'var(--bg-surface)',
@@ -171,24 +193,37 @@ export default function ProductCard({ product }: Props) {
               borderColor: 'var(--border-crisp)',
             }}
           >
-            {/* Imagem Oficial da Camisa ou Fallback Vetorial */}
+            {/* Imagem Oficial da Camisa ou Fallback Vetorial com troca instantânea */}
             <Link
               href={`/produto/${product.slug}`}
               prefetch={false}
               className="absolute inset-0 block cursor-pointer overflow-hidden"
               title={product.name}
             >
-              {!imgError && currentImageUrl ? (
-                <Image
-                  src={currentImageUrl}
-                  alt={`${product.name} - Foto ${activeImageIdx + 1}`}
-                  fill
-                  unoptimized
-                  loading="lazy"
-                  onError={() => setImgError(true)}
-                  sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 25vw"
-                  className="object-cover jersey-zoom"
-                />
+              {!imgError && galleryImages.length > 0 ? (
+                galleryImages.map((imgUrl, idx) => {
+                  const isCurrent = idx === activeImageIdx;
+                  return (
+                    <Image
+                      key={imgUrl || idx}
+                      src={imgUrl}
+                      alt={`${product.name} - Foto ${idx + 1}`}
+                      fill
+                      unoptimized
+                      priority={idx === 0}
+                      loading={idx === 0 ? 'lazy' : 'eager'}
+                      onError={() => {
+                        if (idx === 0) setImgError(true);
+                      }}
+                      sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 25vw"
+                      className={`object-cover jersey-zoom transition-opacity duration-200 ease-out ${
+                        isCurrent
+                          ? 'opacity-100 z-10'
+                          : 'opacity-0 z-0 pointer-events-none'
+                      }`}
+                    />
+                  );
+                })
               ) : (
                 <div className="w-full h-full flex items-center justify-center p-10 jersey-zoom">
                   <img
@@ -282,6 +317,10 @@ export default function ProductCard({ product }: Props) {
                       onClick={(e) => {
                         e.preventDefault();
                         e.stopPropagation();
+                        setImgError(false);
+                        setActiveImageIdx(idx);
+                      }}
+                      onMouseEnter={() => {
                         setImgError(false);
                         setActiveImageIdx(idx);
                       }}

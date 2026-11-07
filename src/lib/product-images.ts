@@ -39,6 +39,15 @@ export async function persistProductImageIfNeeded(
       "updatedAt" = NOW()
   `;
 
+  if ((global as any).__rubyImageBufferCache) {
+    const cache: Map<string, any> = (global as any).__rubyImageBufferCache;
+    for (const key of Array.from(cache.keys())) {
+      if (key.startsWith(`${productId}:`)) {
+        cache.delete(key);
+      }
+    }
+  }
+
   if (slot === 0) {
     return `/api/products/${productId}/image?v=${Date.now()}`;
   }

@@ -85,6 +85,17 @@ export default function ProductDetailClient({ product, relatedProducts }: Props)
   const [justAdded, setJustAdded] = useState(false);
   const [copiedLink, setCopiedLink] = useState(false);
 
+  // Pré-carrega todas as fotos da galeria no browser para troca instantânea (0ms)
+  React.useEffect(() => {
+    if (galleryImages.length > 1 && typeof window !== 'undefined') {
+      galleryImages.forEach((src) => {
+        if (!src) return;
+        const img = new window.Image();
+        img.src = src;
+      });
+    }
+  }, [galleryImages]);
+
   const currentImageUrl =
     galleryImages[activeImageIdx] || galleryImages[0] || product.imageUrl || '';
 
@@ -208,15 +219,37 @@ export default function ProductDetailClient({ product, relatedProducts }: Props)
           {/* COLUNA ESQUERDA: FOTO GRANDE DA PEÇA + MINIATURAS DA GALERIA */}
           <div className="lg:col-span-6 flex flex-col gap-4">
             <div className="relative aspect-[4/3] sm:aspect-square w-full rounded-2xl bg-zinc-950 overflow-hidden border border-zinc-800 shadow-inner group">
-              <Image
-                src={currentImageUrl}
-                alt={`${product.name} - Foto ${activeImageIdx + 1}`}
-                fill
-                priority
-                unoptimized
-                className="object-cover group-hover:scale-105 transition-transform duration-700"
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-zinc-950/70 via-transparent to-black/20 pointer-events-none" />
+              {galleryImages.length > 0 ? (
+                galleryImages.map((imgUrl, idx) => {
+                  const isCurrent = idx === activeImageIdx;
+                  return (
+                    <Image
+                      key={imgUrl || idx}
+                      src={imgUrl}
+                      alt={`${product.name} - Foto ${idx + 1}`}
+                      fill
+                      priority={idx === 0}
+                      loading={idx === 0 ? undefined : 'eager'}
+                      unoptimized
+                      className={`object-cover transition-opacity duration-200 ease-out group-hover:scale-105 transition-transform duration-700 ${
+                        isCurrent
+                          ? 'opacity-100 z-10'
+                          : 'opacity-0 z-0 pointer-events-none'
+                      }`}
+                    />
+                  );
+                })
+              ) : (
+                <Image
+                  src={currentImageUrl || '/ruby-brasil-icon.png'}
+                  alt={product.name}
+                  fill
+                  priority
+                  unoptimized
+                  className="object-cover group-hover:scale-105 transition-transform duration-700"
+                />
+              )}
+              <div className="absolute inset-0 bg-gradient-to-t from-zinc-950/70 via-transparent to-black/20 pointer-events-none z-10" />
 
               {galleryImages.length > 1 && (
                 <>
@@ -304,6 +337,7 @@ export default function ProductDetailClient({ product, relatedProducts }: Props)
                       key={idx}
                       type="button"
                       onClick={() => setActiveImageIdx(idx)}
+                      onMouseEnter={() => setActiveImageIdx(idx)}
                       className={`relative w-16 h-16 sm:w-20 sm:h-20 rounded-xl overflow-hidden border-2 shrink-0 transition-all ${
                         isSelected
                           ? 'border-rose-500 ring-2 ring-rose-500/40 scale-[1.03]'
