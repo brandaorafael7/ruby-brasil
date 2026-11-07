@@ -171,12 +171,19 @@ export function mapOrderToImageData(order: any): OrderImageData {
     items: (order.items || []).map((it: any) => {
       const preSale = getProductPreSaleInfo(it.product);
       const gallery = getProductGalleryImages(it.product);
+      const rawImage =
+        it.imageUrl ||
+        it.product?.imageUrl ||
+        gallery[0] ||
+        (it.productId ? `/api/products/${it.productId}/image` : '');
+
       return {
+        productId: it.productId || it.product?.id,
         name: it.productName || it.product?.name || 'Camisa Ruby Brasil',
         club: it.product?.club,
         size: it.size,
         quantity: it.quantity,
-        imageUrl: it.imageUrl || it.product?.imageUrl || gallery[0] || '',
+        imageUrl: rawImage,
         customName: it.customName,
         customNumber: it.customNumber,
         isPreSale: preSale.isPreSale,

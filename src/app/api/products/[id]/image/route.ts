@@ -48,6 +48,8 @@ export async function GET(
         headers: {
           'Content-Type': cached.mimeType || 'image/webp',
           'Cache-Control': 'public, max-age=31536000, s-maxage=31536000, immutable',
+          'Access-Control-Allow-Origin': '*',
+          'Access-Control-Allow-Methods': 'GET, HEAD, OPTIONS',
           'X-Cache': 'HIT-RAM',
         },
       });
@@ -78,6 +80,8 @@ export async function GET(
         headers: {
           'Content-Type': mimeType || 'image/webp',
           'Cache-Control': 'public, max-age=31536000, s-maxage=31536000, immutable',
+          'Access-Control-Allow-Origin': '*',
+          'Access-Control-Allow-Methods': 'GET, HEAD, OPTIONS',
           'X-Cache': 'MISS-DB',
         },
       });
@@ -100,6 +104,8 @@ export async function GET(
           headers: {
             'Content-Type': 'image/webp',
             'Cache-Control': 'public, max-age=31536000, s-maxage=31536000, immutable',
+            'Access-Control-Allow-Origin': '*',
+            'Access-Control-Allow-Methods': 'GET, HEAD, OPTIONS',
             'X-Cache': 'STATIC-FILE',
           },
         });
@@ -130,6 +136,8 @@ export async function GET(
             headers: {
               'Content-Type': mimeType,
               'Cache-Control': 'public, max-age=31536000, s-maxage=31536000, immutable',
+              'Access-Control-Allow-Origin': '*',
+              'Access-Control-Allow-Methods': 'GET, HEAD, OPTIONS',
             },
           });
         }

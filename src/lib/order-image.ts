@@ -4,6 +4,7 @@
  */
 
 export interface OrderImageItem {
+  productId?: string;
   name: string;
   club?: string;
   size: string;
@@ -32,44 +33,121 @@ export interface OrderImageData {
 }
 
 /**
- * Carrega uma imagem com timeout e suporte seguro a CORS
+ * Carrega e converte uma URL de imagem em elemento HTMLImageElement.
+ * Usa fetch() -> Blob -> ObjectURL para garantir que a imagem seja tratada
+ * como local, evitando SecurityError / canvas taint em canvas.toBlob().
  */
-function loadImage(src: string): Promise<HTMLImageElement | null> {
+async function fetchAndCreateImage(url: string): Promise<HTMLImageElement | null> {
+  if (!url || typeof url !== 'string') return null;
+  const cleanUrl = url.trim();
+  if (!cleanUrl) return null;
+
+  // 1. Data URLs em base64 carregam direto
+  if (cleanUrl.startsWith('data:image/')) {
+    return new Promise((resolve) => {
+      const img = new Image();
+      img.onload = () => resolve(img);
+      img.onerror = () => resolve(null);
+      img.src = cleanUrl;
+    });
+  }
+
+  // 2. Tenta via fetch() -> Blob -> ObjectURL (NUNCA mancha o canvas)
+  try {
+    const res = await fetch(cleanUrl, { mode: 'cors' }).catch(() => null);
+    if (res && res.ok) {
+      const blob = await res.blob();
+      if (blob && blob.size > 0) {
+        const objectUrl = URL.createObjectURL(blob);
+        return await new Promise<HTMLImageElement | null>((resolve) => {
+          const img = new Image();
+          img.onload = () => resolve(img);
+          img.onerror = () => {
+            URL.revokeObjectURL(objectUrl);
+            resolve(null);
+          };
+          img.src = objectUrl;
+        });
+      }
+    }
+  } catch {
+    // fallback
+  }
+
+  // 3. Fallback via Image element com crossOrigin
   return new Promise((resolve) => {
-    if (!src) return resolve(null);
     const img = new Image();
     img.crossOrigin = 'anonymous';
 
-    let resolved = false;
+    let done = false;
     const timer = setTimeout(() => {
-      if (!resolved) {
-        resolved = true;
+      if (!done) {
+        done = true;
         resolve(null);
       }
-    }, 4000);
+    }, 4500);
 
     img.onload = () => {
-      if (!resolved) {
-        resolved = true;
+      if (!done) {
+        done = true;
         clearTimeout(timer);
         resolve(img);
       }
     };
 
     img.onerror = () => {
-      if (!resolved) {
-        resolved = true;
+      if (!done) {
+        done = true;
         clearTimeout(timer);
-        // Tenta carregar sem crossOrigin caso o servidor não suporte CORS
-        const fallback = new Image();
-        fallback.onload = () => resolve(fallback);
-        fallback.onerror = () => resolve(null);
-        fallback.src = src;
+        resolve(null);
       }
     };
 
-    img.src = src;
+    img.src = cleanUrl;
   });
+}
+
+/**
+ * Carrega a foto da camisa com fallback em cascata:
+ * 1. URL informada (relativa ou absoluta)
+ * 2. URL com window.location.origin
+ * 3. Rota dinâmica `/api/products/${productId}/image` (caso exista productId)
+ */
+async function loadImage(
+  src?: string | null,
+  productId?: string
+): Promise<HTMLImageElement | null> {
+  const candidates: string[] = [];
+
+  if (src && typeof src === 'string' && src.trim()) {
+    const clean = src.trim();
+    candidates.push(clean);
+    if (clean.startsWith('/') && typeof window !== 'undefined' && window.location?.origin) {
+      candidates.push(`${window.location.origin}${clean}`);
+    }
+  }
+
+  if (productId && typeof productId === 'string' && productId.trim()) {
+    const cleanId = productId.trim();
+    const apiRoute = `/api/products/${cleanId}/image`;
+    candidates.push(apiRoute);
+    if (typeof window !== 'undefined' && window.location?.origin) {
+      candidates.push(`${window.location.origin}${apiRoute}`);
+    }
+  }
+
+  for (const candidate of candidates) {
+    try {
+      const img = await fetchAndCreateImage(candidate);
+      if (img && img.width > 0 && img.height > 0) {
+        return img;
+      }
+    } catch {
+      // tenta próxima URL candidata
+    }
+  }
+
+  return null;
 }
 
 /**
@@ -159,7 +237,9 @@ export async function generateOrderCardCanvas(data: OrderImageData): Promise<HTM
 
   // Carrega logotipo oficial e fotos dos produtos em paralelo
   const logoPromise = loadImage('/ruby-brasil-icon.png');
-  const itemsImagesPromises = data.items.map((item) => loadImage(item.imageUrl || ''));
+  const itemsImagesPromises = data.items.map((item) =>
+    loadImage(item.imageUrl, item.productId)
+  );
   const [logoImg, ...itemImages] = await Promise.all([logoPromise, ...itemsImagesPromises]);
 
   let currentY = padding;
