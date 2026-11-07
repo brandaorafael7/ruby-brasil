@@ -127,7 +127,8 @@ export function buildOrderWhatsAppReport(order: any): string {
       const rawImg =
         item.imageUrl ||
         item.product?.imageUrl ||
-        (item.product?.gallery ? getProductGalleryImages(item.product)[0] : '');
+        (item.product?.gallery ? getProductGalleryImages(item.product)[0] : '') ||
+        (item.productId ? `/api/products/${item.productId}/image` : '');
       const itemName = item.productName || item.product?.name || 'Camisa';
       const photoUrl = toAbsoluteUrl(rawImg);
       const photoLine = photoUrl ? `\n     ↳ 📸 Foto: ${photoUrl}` : '';
@@ -2241,6 +2242,39 @@ export default function AdminDashboardClient({
                             </td>
 
                             <td className="py-3 px-3 text-center">
+                              <div className="flex items-center justify-center gap-1.5 mb-1">
+                                {(order.items || []).slice(0, 3).map((it: any, tIdx: number) => {
+                                  const tGallery = getProductGalleryImages(it.product);
+                                  const tSrc =
+                                    it.imageUrl ||
+                                    it.product?.imageUrl ||
+                                    tGallery[0] ||
+                                    (it.productId ? `/api/products/${it.productId}/image` : '');
+                                  const tName = it.productName || it.product?.name || 'Camisa';
+                                  return tSrc ? (
+                                    <div
+                                      key={tIdx}
+                                      className="w-7 h-7 rounded-md bg-[var(--bg-studio)] border border-[var(--border-crisp)] overflow-hidden shrink-0"
+                                      title={`${tName} (${it.size})`}
+                                    >
+                                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                                      <img
+                                        src={tSrc}
+                                        alt={tName}
+                                        className="w-full h-full object-cover"
+                                      />
+                                    </div>
+                                  ) : null;
+                                })}
+                                {(order.items || []).length > 3 && (
+                                  <span
+                                    className="text-[10px] font-mono font-bold px-1 py-0.5 rounded border border-[var(--border-crisp)] bg-[var(--bg-studio)]"
+                                    style={{ color: 'var(--text-muted)' }}
+                                  >
+                                    +{(order.items || []).length - 3}
+                                  </span>
+                                )}
+                              </div>
                               <span
                                 className="font-bold font-mono text-xs block"
                                 style={{ color: 'var(--text-primary)' }}
@@ -3229,7 +3263,11 @@ export default function AdminDashboardClient({
                     {(selectedOrder.items || []).map((item: any, idx: number) => {
                       const preSaleInfo = getProductPreSaleInfo(item.product);
                       const itemGallery = getProductGalleryImages(item.product);
-                      const itemImg = item.imageUrl || item.product?.imageUrl || itemGallery[0] || '';
+                      const itemImg =
+                        item.imageUrl ||
+                        item.product?.imageUrl ||
+                        itemGallery[0] ||
+                        (item.productId ? `/api/products/${item.productId}/image` : '');
                       const itemName = item.productName || item.product?.name || 'Camisa de Futebol';
 
                       return (

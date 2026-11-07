@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { getSizeSurcharge, isValidCPF } from '@/lib/utils';
+import { getSizeSurcharge, isValidCPF, getProductGalleryImages } from '@/lib/utils';
 import { sanitizePostalCode } from '@/lib/melhor-envio';
 
 export async function POST(req: Request) {
@@ -98,6 +98,11 @@ export async function POST(req: Request) {
     const requestedVariants = Object.values(variantQuantities);
 
     // 2. Validação estrita de estoque no banco de dados antes de efetivar o pedido
+    const dbProductMap: Record<
+      string,
+      { name: string; imageUrl: string; gallery: string | null }
+    > = {};
+
     for (const reqVar of requestedVariants) {
       const variant = await prisma.productVariant.findUnique({
         where: {
@@ -108,7 +113,7 @@ export async function POST(req: Request) {
         },
         include: {
           product: {
-            select: { name: true },
+            select: { name: true, imageUrl: true, gallery: true },
           },
         },
       });
@@ -118,6 +123,10 @@ export async function POST(req: Request) {
           { error: `O produto no tamanho ${reqVar.size} não foi localizado no catálogo.` },
           { status: 400 }
         );
+      }
+
+      if (variant.product) {
+        dbProductMap[reqVar.productId] = variant.product;
       }
 
       if (variant.stockQuantity < reqVar.quantity) {
@@ -170,10 +179,19 @@ export async function POST(req: Request) {
       const totalItem = (unitPrice + customFee) * item.quantity;
       subtotal += totalItem;
 
+      const dbProd = item.productId ? dbProductMap[item.productId] : undefined;
+      const galleryImgs = dbProd ? getProductGalleryImages(dbProd) : [];
+      const resolvedImageUrl =
+        item.imageUrl ||
+        dbProd?.imageUrl ||
+        galleryImgs[0] ||
+        (item.productId ? `/api/products/${item.productId}/image` : null);
+      const resolvedProductName = item.name || dbProd?.name || 'Camisa Ruby Brasil';
+
       return {
         productId: item.productId,
-        productName: item.name || null,
-        imageUrl: item.imageUrl || null,
+        productName: resolvedProductName,
+        imageUrl: resolvedImageUrl,
         size: item.size,
         quantity: item.quantity,
         unitPriceApplied: unitPrice,
@@ -228,6 +246,7 @@ export async function POST(req: Request) {
       finalTotal: order.finalTotal,
       isFreeShipping: order.isFreeShipping,
       isWholesale: order.isWholesale,
+      savedItems: orderItemsData,
       remainingQuota: activeBatch ? Math.max(0, activeBatch.remainingQuota - totalQuantity) : null,
     });
   } catch (error) {

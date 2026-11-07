@@ -14,18 +14,6 @@ const globalImageCache: Map<string, ImageCacheItem> =
 (global as any).__rubyImageBufferCache = globalImageCache;
 const MAX_CACHE_ENTRIES = 400;
 
-export function invalidateProductImageCache(productId?: string) {
-  if (!productId) {
-    globalImageCache.clear();
-    return;
-  }
-  for (const key of Array.from(globalImageCache.keys())) {
-    if (key.startsWith(`${productId}:`)) {
-      globalImageCache.delete(key);
-    }
-  }
-}
-
 export async function GET(
   request: Request,
   { params }: { params: { id: string } }
