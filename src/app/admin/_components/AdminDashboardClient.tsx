@@ -28,6 +28,7 @@ import {
   CalendarClock,
   FileText,
   Copy,
+  Download,
   ExternalLink,
   MessageCircle,
   Send,
@@ -40,8 +41,16 @@ import {
   getStandardSizesForProduct,
   getProductPreSaleInfo,
   getProductGalleryImages,
+  toAbsoluteUrl,
 } from '@/lib/utils';
 import { PromotionalBatch, WholesaleTier } from '@/types';
+import {
+  copyOrderImageToClipboard,
+  downloadOrderImageFile,
+  copySingleProductImageToClipboard,
+  generateOrderCardBlob,
+  OrderImageData,
+} from '@/lib/order-image';
 
 export const ORDER_STATUS_MAP: Record<
   string,
@@ -115,7 +124,12 @@ export function buildOrderWhatsAppReport(order: any): string {
       const preSaleLabel = preSale.isPreSale
         ? ` [⏳ PRÉ-VENDA${preSale.preSaleEta ? `: ${preSale.preSaleEta}` : ''}]`
         : '';
-      return `  ${idx + 1}. *${item.product?.name || 'Camisa'}*${preSaleLabel} [Tam: ${item.size}] x ${item.quantity}un - ${formatCurrency(item.totalItemPrice || 0)}${custom}`;
+      const rawImg =
+        item.product?.imageUrl ||
+        (item.product?.gallery ? getProductGalleryImages(item.product)[0] : '');
+      const photoUrl = toAbsoluteUrl(rawImg);
+      const photoLine = photoUrl ? `\n     ↳ 📸 Foto: ${photoUrl}` : '';
+      return `  ${idx + 1}. *${item.product?.name || 'Camisa'}*${preSaleLabel} [Tam: ${item.size}] x ${item.quantity}un - ${formatCurrency(item.totalItemPrice || 0)}${custom}${photoLine}`;
     })
     .join('\n');
 
@@ -135,6 +149,40 @@ export function buildOrderWhatsAppReport(order: any): string {
   text += `Qualquer dúvida estamos à disposição! 🚀`;
 
   return text;
+}
+
+export function mapOrderToImageData(order: any): OrderImageData {
+  return {
+    orderNumber: order.orderNumber,
+    createdAt: order.createdAt,
+    customerName: order.customerName,
+    customerCity: order.city,
+    customerState: order.state,
+    customerPhone: order.phone,
+    totalQuantity:
+      order.totalQuantity ||
+      (order.items || []).reduce((acc: number, it: any) => acc + (it.quantity || 1), 0),
+    subtotal: order.subtotal || order.finalTotal,
+    shippingCost: order.shippingCost || order.shippingFee || 0,
+    shippingService: order.shippingService,
+    finalTotal: order.finalTotal,
+    items: (order.items || []).map((it: any) => {
+      const preSale = getProductPreSaleInfo(it.product);
+      const gallery = getProductGalleryImages(it.product);
+      return {
+        name: it.product?.name || 'Camisa Ruby Brasil',
+        club: it.product?.club,
+        size: it.size,
+        quantity: it.quantity,
+        imageUrl: it.product?.imageUrl || gallery[0] || '',
+        customName: it.customName,
+        customNumber: it.customNumber,
+        isPreSale: preSale.isPreSale,
+        preSaleEta: preSale.preSaleEta,
+        totalItemPrice: it.totalItemPrice,
+      };
+    }),
+  };
 }
 
 export function buildGeneralOrdersReport(ordersList: any[]): string {
@@ -296,6 +344,64 @@ export default function AdminDashboardClient({
   const [isGeneralReportModalOpen, setIsGeneralReportModalOpen] = useState(false);
   const [updatingOrderId, setUpdatingOrderId] = useState<string | null>(null);
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
+  const [copyingOrderImageId, setCopyingOrderImageId] = useState<string | null>(null);
+  const [copiedOrderImageId, setCopiedOrderImageId] = useState<string | null>(null);
+  const [copyingItemPhotoIdx, setCopyingItemPhotoIdx] = useState<number | null>(null);
+  const [copiedItemPhotoIdx, setCopiedItemPhotoIdx] = useState<number | null>(null);
+
+  const handleCopyOrderCardImage = async (order: any, keyId = `order-card-${order.id}`) => {
+    setCopyingOrderImageId(order.id);
+    try {
+      const data = mapOrderToImageData(order);
+      const res = await copyOrderImageToClipboard(data);
+      if (res.success) {
+        setCopiedOrderImageId(keyId);
+        setTimeout(() => setCopiedOrderImageId(null), 4000);
+      } else if (res.fallbackBlob) {
+        downloadOrderImageFile(res.fallbackBlob, `pedido-${order.orderNumber}.png`);
+        alert('A imagem do pedido foi baixada em PNG para você anexar no WhatsApp!');
+      } else {
+        alert(res.error || 'Não foi possível copiar a imagem do pedido.');
+      }
+    } catch (err: any) {
+      console.error(err);
+      alert('Erro ao processar imagem do pedido.');
+    } finally {
+      setCopyingOrderImageId(null);
+    }
+  };
+
+  const handleDownloadOrderCardImage = async (order: any) => {
+    setCopyingOrderImageId(order.id);
+    try {
+      const data = mapOrderToImageData(order);
+      const blob = await generateOrderCardBlob(data);
+      downloadOrderImageFile(blob, `pedido-${order.orderNumber}.png`);
+    } catch (err) {
+      console.error(err);
+      alert('Erro ao baixar imagem do pedido.');
+    } finally {
+      setCopyingOrderImageId(null);
+    }
+  };
+
+  const handleCopyProductItemImage = async (imgUrl: string, idx: number) => {
+    if (!imgUrl) return;
+    setCopyingItemPhotoIdx(idx);
+    try {
+      const res = await copySingleProductImageToClipboard(imgUrl);
+      if (res.success) {
+        setCopiedItemPhotoIdx(idx);
+        setTimeout(() => setCopiedItemPhotoIdx(null), 3000);
+      } else {
+        window.open(toAbsoluteUrl(imgUrl), '_blank');
+      }
+    } catch {
+      window.open(toAbsoluteUrl(imgUrl), '_blank');
+    } finally {
+      setCopyingItemPhotoIdx(null);
+    }
+  };
 
   // Estados de Upload de Imagem (Suporta 1 ou mais fotos por produto)
   const [imageUploadMode, setImageUploadMode] = useState<'file' | 'url'>('file');
@@ -2220,6 +2326,23 @@ export default function AdminDashboardClient({
                                   )}
                                   <span className="hidden sm:inline">Zap</span>
                                 </button>
+
+                                <button
+                                  type="button"
+                                  onClick={() => handleCopyOrderCardImage(order, `order-img-${order.id}`)}
+                                  disabled={copyingOrderImageId === order.id}
+                                  className="px-2 py-1.5 rounded-xl border border-rose-500/30 bg-rose-500/10 hover:bg-rose-500/20 text-rose-700 dark:text-rose-300 text-xs font-bold flex items-center gap-1 tactile"
+                                  title="Copiar imagem oficial com fotos das camisas para colar no WhatsApp"
+                                >
+                                  {copyingOrderImageId === order.id ? (
+                                    <Loader2 className="w-3.5 h-3.5 animate-spin text-rose-500" />
+                                  ) : copiedOrderImageId === `order-img-${order.id}` ? (
+                                    <Check className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+                                  ) : (
+                                    <ImageIcon className="w-3.5 h-3.5 text-rose-600 dark:text-rose-400" />
+                                  )}
+                                  <span className="hidden sm:inline">Foto</span>
+                                </button>
                               </div>
                             </td>
                           </tr>
@@ -3096,27 +3219,65 @@ export default function AdminDashboardClient({
                   >
                     {(selectedOrder.items || []).map((item: any, idx: number) => {
                       const preSaleInfo = getProductPreSaleInfo(item.product);
+                      const itemGallery = getProductGalleryImages(item.product);
+                      const itemImg = item.product?.imageUrl || itemGallery[0] || '';
+
                       return (
                         <tr
                           key={idx}
                           className="hover:bg-[var(--bg-studio)] transition-colors"
                         >
                           <td className="py-2.5 px-3">
-                            <div className="flex flex-wrap items-center gap-1.5">
-                              <strong style={{ color: 'var(--text-primary)' }}>
-                                {item.product?.name || 'Camisa de Futebol'}
-                              </strong>
-                              {preSaleInfo.isPreSale && (
-                                <span className="bg-amber-500/15 text-amber-700 dark:text-amber-300 border border-amber-500/30 px-1.5 py-0.5 rounded text-[9px] font-black uppercase">
-                                  ⏳ Pré-Venda
-                                </span>
+                            <div className="flex items-center gap-2.5">
+                              {itemImg ? (
+                                <div className="w-10 h-10 rounded-lg bg-[var(--bg-studio)] border border-[var(--border-crisp)] overflow-hidden shrink-0 flex items-center justify-center">
+                                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                                  <img
+                                    src={itemImg}
+                                    alt={item.product?.name || 'Camisa'}
+                                    className="w-full h-full object-cover"
+                                  />
+                                </div>
+                              ) : (
+                                <div className="w-10 h-10 rounded-lg bg-[var(--bg-studio)] border border-[var(--border-crisp)] flex items-center justify-center text-zinc-500 shrink-0">
+                                  <ImageIcon className="w-4 h-4" />
+                                </div>
+                              )}
+                              <div className="min-w-0 flex-1">
+                                <div className="flex flex-wrap items-center gap-1.5">
+                                  <strong style={{ color: 'var(--text-primary)' }}>
+                                    {item.product?.name || 'Camisa de Futebol'}
+                                  </strong>
+                                  {preSaleInfo.isPreSale && (
+                                    <span className="bg-amber-500/15 text-amber-700 dark:text-amber-300 border border-amber-500/30 px-1.5 py-0.5 rounded text-[9px] font-black uppercase">
+                                      ⏳ Pré-Venda
+                                    </span>
+                                  )}
+                                </div>
+                                {item.customName && (
+                                  <span className="text-[10px] text-amber-600 dark:text-amber-300 font-mono block mt-0.5">
+                                    Personalizada: {item.customName} #{item.customNumber || 'S/N'} (+R$ 15,00)
+                                  </span>
+                                )}
+                              </div>
+                              {itemImg && (
+                                <button
+                                  type="button"
+                                  onClick={() => handleCopyProductItemImage(itemImg, idx)}
+                                  disabled={copyingItemPhotoIdx === idx}
+                                  className="p-1.5 rounded-lg border border-[var(--border-crisp)] hover:border-zinc-500 bg-[var(--bg-studio)] text-[var(--text-muted)] hover:text-[var(--text-primary)] text-[10px] tactile shrink-0"
+                                  title="Copiar foto desta camisa para a área de transferência"
+                                >
+                                  {copyingItemPhotoIdx === idx ? (
+                                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                  ) : copiedItemPhotoIdx === idx ? (
+                                    <Check className="w-3.5 h-3.5 text-emerald-500" />
+                                  ) : (
+                                    <Copy className="w-3.5 h-3.5" />
+                                  )}
+                                </button>
                               )}
                             </div>
-                            {item.customName && (
-                              <span className="text-[10px] text-amber-600 dark:text-amber-300 font-mono block mt-0.5">
-                                Personalizada: {item.customName} #{item.customNumber || 'S/N'} (+R$ 15,00)
-                              </span>
-                            )}
                           </td>
                           <td
                             className="py-2.5 px-2 text-center font-bold font-mono"
@@ -3220,16 +3381,52 @@ export default function AdminDashboardClient({
               </div>
 
               <div
-                className="flex flex-col sm:flex-row items-center justify-end gap-2.5 mt-3 pt-3 border-t"
+                className="flex flex-col sm:flex-row flex-wrap items-center justify-end gap-2 mt-3 pt-3 border-t"
                 style={{ borderColor: 'var(--border-crisp)' }}
               >
+                <button
+                  type="button"
+                  onClick={() => handleCopyOrderCardImage(selectedOrder, 'modal-order-card')}
+                  disabled={copyingOrderImageId === selectedOrder.id}
+                  className="w-full sm:w-auto px-3.5 py-2 rounded-xl border border-rose-500/30 bg-rose-500/10 hover:bg-rose-500/20 text-rose-700 dark:text-rose-300 text-xs font-bold flex items-center justify-center gap-1.5 tactile"
+                  title="Copiar imagem oficial com fotos das camisas para a área de transferência"
+                >
+                  {copyingOrderImageId === selectedOrder.id ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin text-rose-500" />
+                      <span>Gerando Imagem...</span>
+                    </>
+                  ) : copiedOrderImageId === 'modal-order-card' ? (
+                    <>
+                      <Check className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                      <span>Imagem Copiada (Ctrl+V)!</span>
+                    </>
+                  ) : (
+                    <>
+                      <ImageIcon className="w-4 h-4 text-rose-600 dark:text-rose-400" />
+                      <span>Copiar Imagem do Pedido</span>
+                    </>
+                  )}
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => handleDownloadOrderCardImage(selectedOrder)}
+                  disabled={copyingOrderImageId === selectedOrder.id}
+                  className="w-full sm:w-auto px-3 py-2 rounded-xl border border-[var(--border-crisp)] bg-[var(--bg-surface)] hover:bg-[var(--bg-studio)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] text-xs font-bold flex items-center justify-center gap-1.5 tactile"
+                  title="Baixar imagem oficial em PNG"
+                >
+                  <Download className="w-4 h-4" />
+                  <span>Baixar PNG</span>
+                </button>
+
                 <button
                   type="button"
                   onClick={() => {
                     const report = buildOrderWhatsAppReport(selectedOrder);
                     copyToClipboard(report, `modal-order-${selectedOrder.id}`);
                   }}
-                  className="w-full sm:w-auto px-4 py-2 rounded-xl border border-[var(--border-crisp)] bg-[var(--bg-surface)] hover:bg-[var(--bg-studio)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] text-xs font-bold flex items-center justify-center gap-1.5 tactile"
+                  className="w-full sm:w-auto px-3.5 py-2 rounded-xl border border-[var(--border-crisp)] bg-[var(--bg-surface)] hover:bg-[var(--bg-studio)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] text-xs font-bold flex items-center justify-center gap-1.5 tactile"
                 >
                   {copiedKey === `modal-order-${selectedOrder.id}` ? (
                     <>

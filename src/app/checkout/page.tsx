@@ -12,6 +12,11 @@ import {
   ShoppingBag,
   Loader2,
   RotateCcw,
+  Copy,
+  Download,
+  Image as ImageIcon,
+  Check,
+  ExternalLink,
 } from 'lucide-react';
 import { useCartStore } from '@/store';
 import {
@@ -20,9 +25,17 @@ import {
   getSizeSurcharge,
   formatCPFOrCNPJ,
   isValidCPF,
+  toAbsoluteUrl,
 } from '@/lib/utils';
 import { CheckoutForm, ShippingOption } from '@/types';
 import { sanitizePostalCode } from '@/lib/melhor-envio';
+import {
+  copyOrderImageToClipboard,
+  downloadOrderImageFile,
+  copySingleProductImageToClipboard,
+  generateOrderCardBlob,
+  OrderImageData,
+} from '@/lib/order-image';
 
 export default function CheckoutPage() {
   const {
@@ -46,6 +59,10 @@ export default function CheckoutPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [completedOrder, setCompletedOrder] = useState<any>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [copyingImage, setCopyingImage] = useState(false);
+  const [imageCopied, setImageCopied] = useState(false);
+  const [copyingSingleIdx, setCopyingSingleIdx] = useState<number | null>(null);
+  const [singleCopiedIdx, setSingleCopiedIdx] = useState<number | null>(null);
 
   const initialLoadedRef = useRef(false);
 
@@ -318,9 +335,6 @@ export default function CheckoutPage() {
       const data = await res.json();
 
       if (res.ok && data.success) {
-        setCompletedOrder(data);
-        clearCart();
-
         // Enviar dados para o WhatsApp oficial com detalhes do Melhor Envio
         const message = buildWhatsAppOrderMessage({
           items,
@@ -334,6 +348,18 @@ export default function CheckoutPage() {
           shippingService: `${shippingServiceName} (${selectedShippingOption.deliveryTime} dias úteis)`,
           finalTotal: subtotal + selectedShippingOption.price,
         });
+
+        setCompletedOrder({
+          ...data,
+          items: items.map((i) => ({ ...i })),
+          form: payloadForm,
+          subtotal,
+          savings,
+          shippingCost: selectedShippingOption.price,
+          shippingService: `${shippingServiceName} (${selectedShippingOption.deliveryTime} dias úteis)`,
+          whatsappMessage: message,
+        });
+        clearCart();
 
         const url = `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(message)}`;
         window.open(url, '_blank');
@@ -351,9 +377,127 @@ export default function CheckoutPage() {
     }
   };
 
+  const handleCopyOrderImage = async () => {
+    if (!completedOrder) return;
+    setCopyingImage(true);
+    try {
+      const orderData: OrderImageData = {
+        orderNumber: completedOrder.orderNumber,
+        createdAt: new Date(),
+        customerName: completedOrder.form?.customerName || 'Cliente Ruby Brasil',
+        customerCity: completedOrder.form?.city,
+        customerState: completedOrder.form?.state,
+        customerPhone: completedOrder.form?.phone,
+        totalQuantity: (completedOrder.items || []).reduce(
+          (acc: number, item: any) => acc + (item.quantity || 1),
+          0
+        ),
+        subtotal: completedOrder.subtotal || 0,
+        shippingCost: completedOrder.shippingCost || 0,
+        shippingService: completedOrder.shippingService,
+        finalTotal: completedOrder.finalTotal || 0,
+        items: (completedOrder.items || []).map((it: any) => ({
+          name: it.name,
+          club: it.club,
+          size: it.size,
+          quantity: it.quantity,
+          imageUrl: it.imageUrl,
+          customName: it.customName,
+          customNumber: it.customNumber,
+          isPreSale: it.isPreSale,
+          preSaleEta: it.preSaleEta,
+          totalItemPrice: it.retailPrice ? it.retailPrice * it.quantity : undefined,
+        })),
+      };
+
+      const result = await copyOrderImageToClipboard(orderData);
+      if (result.success) {
+        setImageCopied(true);
+        setTimeout(() => setImageCopied(false), 5000);
+      } else if (result.fallbackBlob) {
+        downloadOrderImageFile(result.fallbackBlob, `pedido-${completedOrder.orderNumber}.png`);
+        alert('A imagem oficial do pedido foi baixada em PNG! Você pode anexá-la na conversa do WhatsApp.');
+      } else {
+        alert(result.error || 'Não foi possível copiar a imagem do pedido.');
+      }
+    } catch (err: any) {
+      console.error(err);
+      alert('Erro ao processar imagem do pedido.');
+    } finally {
+      setCopyingImage(false);
+    }
+  };
+
+  const handleDownloadOrderImage = async () => {
+    if (!completedOrder) return;
+    setCopyingImage(true);
+    try {
+      const orderData: OrderImageData = {
+        orderNumber: completedOrder.orderNumber,
+        createdAt: new Date(),
+        customerName: completedOrder.form?.customerName || 'Cliente Ruby Brasil',
+        customerCity: completedOrder.form?.city,
+        customerState: completedOrder.form?.state,
+        customerPhone: completedOrder.form?.phone,
+        totalQuantity: (completedOrder.items || []).reduce(
+          (acc: number, item: any) => acc + (item.quantity || 1),
+          0
+        ),
+        subtotal: completedOrder.subtotal || 0,
+        shippingCost: completedOrder.shippingCost || 0,
+        shippingService: completedOrder.shippingService,
+        finalTotal: completedOrder.finalTotal || 0,
+        items: (completedOrder.items || []).map((it: any) => ({
+          name: it.name,
+          club: it.club,
+          size: it.size,
+          quantity: it.quantity,
+          imageUrl: it.imageUrl,
+          customName: it.customName,
+          customNumber: it.customNumber,
+          isPreSale: it.isPreSale,
+          preSaleEta: it.preSaleEta,
+          totalItemPrice: it.retailPrice ? it.retailPrice * it.quantity : undefined,
+        })),
+      };
+
+      const blob = await generateOrderCardBlob(orderData);
+      downloadOrderImageFile(blob, `pedido-${completedOrder.orderNumber}.png`);
+    } catch (err) {
+      console.error(err);
+      alert('Erro ao baixar imagem do pedido.');
+    } finally {
+      setCopyingImage(false);
+    }
+  };
+
+  const handleCopySingleItem = async (imageUrl?: string, idx?: number) => {
+    if (!imageUrl || idx === undefined) return;
+    setCopyingSingleIdx(idx);
+    try {
+      const res = await copySingleProductImageToClipboard(imageUrl);
+      if (res.success) {
+        setSingleCopiedIdx(idx);
+        setTimeout(() => setSingleCopiedIdx(null), 3500);
+      } else {
+        window.open(toAbsoluteUrl(imageUrl), '_blank');
+      }
+    } catch {
+      window.open(toAbsoluteUrl(imageUrl), '_blank');
+    } finally {
+      setCopyingSingleIdx(null);
+    }
+  };
+
   if (completedOrder) {
+    const orderItems: any[] = completedOrder.items || [];
+    const cleanNumber = whatsappNumber.replace(/\D/g, '');
+    const waUrl = `https://wa.me/${cleanNumber}?text=${encodeURIComponent(
+      completedOrder.whatsappMessage || ''
+    )}`;
+
     return (
-      <div className="max-w-2xl mx-auto px-4 py-16 text-center">
+      <div className="max-w-3xl mx-auto px-4 py-12 text-center">
         <div className="w-16 h-16 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 flex items-center justify-center mx-auto mb-4 animate-bounce">
           <CheckCircle2 className="w-8 h-8" />
         </div>
@@ -366,15 +510,206 @@ export default function CheckoutPage() {
           Pedido #{completedOrder.orderNumber}
         </h1>
 
-        <p className="text-sm text-zinc-300 mt-2 max-w-md mx-auto">
-          Os dados do seu pedido e a cotação de frete foram preparados. Finalize agora com nosso consultor no WhatsApp oficial para confirmar o estoque e efetuar o pagamento.
+        <p className="text-sm text-zinc-300 mt-2 max-w-lg mx-auto">
+          Os dados do seu pedido e a cotação de frete foram preparados com fotos em alta definição das camisas escolhidas.
         </p>
 
-        <div className="mt-8 p-6 rounded-2xl bg-zinc-900 border border-zinc-800 text-left max-w-md mx-auto space-y-3">
+        {/* CARD PRINCIPAL DE IDENTIFICAÇÃO VISUAL & COPIAR IMAGEM */}
+        <div className="mt-8 p-6 rounded-2xl bg-gradient-to-b from-zinc-900 via-zinc-900 to-zinc-950 border border-emerald-500/30 text-left shadow-2xl">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-zinc-800">
+            <div className="flex items-center gap-2.5">
+              <div className="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-400">
+                <ImageIcon className="w-5 h-5" />
+              </div>
+              <div>
+                <strong className="block text-white text-base font-bold">
+                  Imagem do Pedido para o WhatsApp
+                </strong>
+                <span className="text-xs text-zinc-400">
+                  Envie o cartão visual com as fotos para o atendente identificar as camisas
+                </span>
+              </div>
+            </div>
+            <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-400 bg-emerald-500/10 px-2.5 py-1 rounded-md border border-emerald-500/20 w-fit">
+              Pronto para colar
+            </span>
+          </div>
+
+          <div className="mt-4 flex flex-col sm:flex-row items-center gap-3">
+            <button
+              type="button"
+              onClick={handleCopyOrderImage}
+              disabled={copyingImage}
+              className={`w-full sm:flex-1 px-5 py-3.5 rounded-xl font-black text-sm flex items-center justify-center gap-2 shadow-lg transition-all ${
+                imageCopied
+                  ? 'bg-emerald-600 text-white border border-emerald-400'
+                  : 'bg-emerald-500 hover:bg-emerald-400 text-zinc-950 shadow-emerald-500/20 active:scale-[0.98]'
+              }`}
+            >
+              {copyingImage ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  <span>Gerando Imagem...</span>
+                </>
+              ) : imageCopied ? (
+                <>
+                  <Check className="w-4 h-4 stroke-[3]" />
+                  <span>Imagem Copiada! Cole (Ctrl+V) no Zap</span>
+                </>
+              ) : (
+                <>
+                  <Copy className="w-4 h-4" />
+                  <span>Copiar Imagem do Pedido</span>
+                </>
+              )}
+            </button>
+
+            <button
+              type="button"
+              onClick={handleDownloadOrderImage}
+              disabled={copyingImage}
+              className="w-full sm:w-auto px-4 py-3.5 rounded-xl bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 text-zinc-200 hover:text-white font-bold text-xs flex items-center justify-center gap-2 transition-colors"
+              title="Baixar arquivo PNG da imagem do pedido"
+            >
+              <Download className="w-4 h-4" />
+              <span>Baixar PNG</span>
+            </button>
+
+            <a
+              href={waUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="w-full sm:w-auto px-5 py-3.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-black text-xs flex items-center justify-center gap-2 shadow-lg transition-colors"
+            >
+              <MessageCircle className="w-4 h-4 fill-current" />
+              <span>Abrir WhatsApp</span>
+            </a>
+          </div>
+
+          <div className="mt-4 p-3.5 rounded-xl bg-zinc-950/80 border border-zinc-800 text-xs text-zinc-300 leading-relaxed space-y-1.5">
+            <div className="font-bold text-emerald-400 flex items-center gap-1.5">
+              <span>💡 Como enviar a imagem junto com o pedido:</span>
+            </div>
+            <p className="text-[11px] text-zinc-400">
+              <strong>1.</strong> Clique no botão verde <strong>Copiar Imagem do Pedido</strong> acima.<br />
+              <strong>2.</strong> Clique em <strong>Abrir WhatsApp</strong> para iniciar a conversa.<br />
+              <strong>3.</strong> Na caixa de mensagem do WhatsApp, pressione <strong>Ctrl + V</strong> (ou toque e segure <strong>Colar</strong> no celular). A imagem completa com as fotos das camisas será colada e enviada!
+            </p>
+          </div>
+        </div>
+
+        {/* LISTAGEM VISUAL DE CAMISAS ESCOLHIDAS */}
+        {orderItems.length > 0 && (
+          <div className="mt-8 text-left">
+            <div className="flex items-center justify-between mb-3 px-1">
+              <h3 className="text-sm font-bold text-zinc-200 uppercase tracking-wider flex items-center gap-2">
+                <span>Camisas Escolhidas ({orderItems.reduce((acc, it) => acc + (it.quantity || 1), 0)} un)</span>
+              </h3>
+              <span className="text-xs text-zinc-500">
+                Fotos incluídas nos links da mensagem
+              </span>
+            </div>
+
+            <div className="space-y-2.5">
+              {orderItems.map((item, idx) => {
+                const photoSrc = item.imageUrl || '/placeholder.png';
+                const isSingleCopied = singleCopiedIdx === idx;
+                const isSingleCopying = copyingSingleIdx === idx;
+
+                return (
+                  <div
+                    key={idx}
+                    className="p-3.5 rounded-2xl bg-zinc-900 border border-zinc-800 flex items-center justify-between gap-3 hover:border-zinc-700 transition-colors"
+                  >
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div className="relative w-14 h-14 sm:w-16 sm:h-16 rounded-xl bg-zinc-950 border border-zinc-800 overflow-hidden shrink-0 flex items-center justify-center">
+                        {item.imageUrl ? (
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img
+                            src={item.imageUrl}
+                            alt={item.name}
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          <ImageIcon className="w-6 h-6 text-zinc-600" />
+                        )}
+                      </div>
+
+                      <div className="min-w-0">
+                        <strong className="block text-white text-xs sm:text-sm font-bold truncate">
+                          {item.name}
+                        </strong>
+                        <div className="flex flex-wrap items-center gap-1.5 mt-1 text-[11px] text-zinc-400">
+                          <span className="px-2 py-0.5 rounded-md bg-zinc-800 border border-zinc-700 text-zinc-300 font-mono font-bold">
+                            Tam: {item.size}
+                          </span>
+                          <span className="px-2 py-0.5 rounded-md bg-zinc-800 border border-zinc-700 text-zinc-300 font-mono">
+                            Qtd: {item.quantity}
+                          </span>
+                          {item.isPreSale && (
+                            <span className="px-2 py-0.5 rounded-md bg-amber-500/10 border border-amber-500/20 text-amber-300 font-bold uppercase text-[10px]">
+                              ⏳ Pré-Venda
+                            </span>
+                          )}
+                        </div>
+                        {item.customName && (
+                          <span className="block text-[11px] text-amber-400 mt-1 font-mono">
+                            Personalização: {item.customName} #{item.customNumber || 'S/N'}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-2 shrink-0">
+                      {item.imageUrl && (
+                        <button
+                          type="button"
+                          onClick={() => handleCopySingleItem(item.imageUrl, idx)}
+                          disabled={isSingleCopying}
+                          className="px-2.5 py-1.5 rounded-lg border border-zinc-700 hover:border-zinc-500 bg-zinc-800/80 hover:bg-zinc-800 text-zinc-300 hover:text-white text-[11px] font-bold flex items-center gap-1 transition-colors"
+                          title="Copiar apenas a foto desta camisa"
+                        >
+                          {isSingleCopying ? (
+                            <Loader2 className="w-3 h-3 animate-spin" />
+                          ) : isSingleCopied ? (
+                            <>
+                              <Check className="w-3 h-3 text-emerald-400" />
+                              <span className="hidden sm:inline text-emerald-400">Foto Copiada</span>
+                            </>
+                          ) : (
+                            <>
+                              <Copy className="w-3 h-3 text-zinc-400" />
+                              <span className="hidden sm:inline">Copiar Foto</span>
+                            </>
+                          )}
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        {/* DETALHES DE ENTREGA E VALOR */}
+        <div className="mt-8 p-6 rounded-2xl bg-zinc-900 border border-zinc-800 text-left space-y-3">
           <div className="flex justify-between text-xs text-zinc-400 pb-2 border-b border-zinc-800">
             <span>Número do Pedido:</span>
             <strong className="text-white font-mono">{completedOrder.orderNumber}</strong>
           </div>
+          {completedOrder.form?.customerName && (
+            <div className="flex justify-between text-xs text-zinc-400 pb-2 border-b border-zinc-800">
+              <span>Cliente:</span>
+              <strong className="text-white">{completedOrder.form.customerName}</strong>
+            </div>
+          )}
+          {completedOrder.shippingService && (
+            <div className="flex justify-between text-xs text-zinc-400 pb-2 border-b border-zinc-800">
+              <span>Modalidade de Frete:</span>
+              <strong className="text-zinc-200">{completedOrder.shippingService}</strong>
+            </div>
+          )}
           <div className="flex justify-between text-xs text-zinc-400 pb-2 border-b border-zinc-800">
             <span>Total com Frete:</span>
             <strong className="text-emerald-400 text-sm font-black">
@@ -388,20 +723,9 @@ export default function CheckoutPage() {
         </div>
 
         <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-3">
-          <button
-            type="button"
-            onClick={() => {
-              const cleanNumber = whatsappNumber.replace(/\D/g, '');
-              window.open(`https://wa.me/${cleanNumber}`, '_blank');
-            }}
-            className="w-full sm:w-auto px-6 py-3.5 rounded-xl bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-500 hover:to-green-500 text-white font-black text-sm flex items-center justify-center gap-2 shadow-lg shadow-emerald-950/60"
-          >
-            <MessageCircle className="w-5 h-5 fill-current" />
-            Abrir Conversa no WhatsApp
-          </button>
           <Link
             href="/"
-            className="w-full sm:w-auto px-6 py-3.5 rounded-xl bg-zinc-900 hover:bg-zinc-800 border border-zinc-700 text-zinc-300 hover:text-white font-bold text-sm"
+            className="w-full sm:w-auto px-6 py-3.5 rounded-xl bg-zinc-900 hover:bg-zinc-800 border border-zinc-700 text-zinc-300 hover:text-white font-bold text-sm transition-colors"
           >
             Voltar para a Loja
           </Link>

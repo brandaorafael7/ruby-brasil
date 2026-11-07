@@ -211,6 +211,19 @@ export function isValidCPF(cpf: string): boolean {
   return true;
 }
 
+export function toAbsoluteUrl(url?: string | null, origin?: string): string {
+  if (!url) return '';
+  const trimmed = url.trim();
+  if (!trimmed) return '';
+  if (trimmed.startsWith('http://') || trimmed.startsWith('https://')) return trimmed;
+  const base =
+    origin ||
+    (typeof window !== 'undefined' && window.location?.origin
+      ? window.location.origin
+      : 'https://rubybr.com.br');
+  return `${base.replace(/\/+$/, '')}/${trimmed.replace(/^\/+/, '')}`;
+}
+
 export function buildWhatsAppOrderMessage({
   items,
   form,
@@ -223,6 +236,7 @@ export function buildWhatsAppOrderMessage({
   shippingService,
   finalTotal,
   isFreeShipping,
+  origin,
 }: {
   items: CartItem[];
   form: Partial<CheckoutForm>;
@@ -235,6 +249,7 @@ export function buildWhatsAppOrderMessage({
   shippingService?: string;
   finalTotal: number;
   isFreeShipping?: boolean;
+  origin?: string;
 }): string {
   const customerTypeLabel = form.customerType === 'PJ' ? 'Pessoa Jurídica (CNPJ)' : 'Pessoa Física (CPF)';
   const docLabel = form.customerType === 'PJ' ? 'CNPJ' : 'CPF';
@@ -267,6 +282,10 @@ export function buildWhatsAppOrderMessage({
       : '';
     text += `${index + 1}. *${item.name}*${preSaleTxt}\n`;
     text += `   ↳ Tamanho: *${item.size}* | Qtd: *${item.quantity} un*${customTxt}\n`;
+    const photoUrl = toAbsoluteUrl(item.imageUrl, origin);
+    if (photoUrl) {
+      text += `   ↳ 📸 Foto: ${photoUrl}\n`;
+    }
   });
 
   text += `\n💰 *VALOR TOTAL:*\n`;
