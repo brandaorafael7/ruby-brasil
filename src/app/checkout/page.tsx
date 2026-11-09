@@ -26,6 +26,11 @@ import {
   formatCPFOrCNPJ,
   isValidCPF,
   toAbsoluteUrl,
+  formatBilingualSize,
+  getEnglishSizeInfo,
+  getModelTypeBilingual,
+  SIZE_LEGEND_EN_ITEMS,
+  MODEL_LEGEND_EN_ITEMS,
 } from '@/lib/utils';
 import { CheckoutForm, ShippingOption } from '@/types';
 import { sanitizePostalCode } from '@/lib/melhor-envio';
@@ -412,6 +417,7 @@ export default function CheckoutPage() {
           productId: it.productId,
           name: it.name,
           club: it.club,
+          league: it.league,
           size: it.size,
           quantity: it.quantity,
           imageUrl: it.imageUrl || (it.productId ? `/api/products/${it.productId}/image` : ''),
@@ -464,6 +470,7 @@ export default function CheckoutPage() {
           productId: it.productId,
           name: it.name,
           club: it.club,
+          league: it.league,
           size: it.size,
           quantity: it.quantity,
           imageUrl: it.imageUrl || (it.productId ? `/api/products/${it.productId}/image` : ''),
@@ -654,8 +661,11 @@ export default function CheckoutPage() {
                           {item.name}
                         </strong>
                         <div className="flex flex-wrap items-center gap-1.5 mt-1 text-[11px] text-zinc-400">
-                          <span className="px-2 py-0.5 rounded-md bg-zinc-800 border border-zinc-700 text-zinc-300 font-mono font-bold">
-                            Tam: {item.size}
+                          <span className="px-2 py-0.5 rounded-md bg-zinc-800 border border-zinc-700 text-zinc-200 font-mono font-bold">
+                            Size: {formatBilingualSize(item.size)} ({getEnglishSizeInfo(item.size).enName})
+                          </span>
+                          <span className="px-2 py-0.5 rounded-md bg-zinc-800 border border-zinc-700 text-emerald-400 font-mono font-bold">
+                            {getModelTypeBilingual(item).en}
                           </span>
                           <span className="px-2 py-0.5 rounded-md bg-zinc-800 border border-zinc-700 text-zinc-300 font-mono">
                             Qtd: {item.quantity}
@@ -668,7 +678,7 @@ export default function CheckoutPage() {
                         </div>
                         {item.customName && (
                           <span className="block text-[11px] text-amber-400 mt-1 font-mono">
-                            Personalização: {item.customName} #{item.customNumber || 'S/N'}
+                            Personalização / Custom Print: {item.customName} #{item.customNumber || 'S/N'}
                           </span>
                         )}
                       </div>
@@ -702,6 +712,41 @@ export default function CheckoutPage() {
                   </div>
                 );
               })}
+            </div>
+
+            {/* LEGENDA DE TAMANHOS & MODELOS EM INGLÊS (SUPPLIER REFERENCE) */}
+            <div className="mt-4 p-4 rounded-2xl bg-zinc-900/90 border border-zinc-800 text-left space-y-2.5">
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] font-bold uppercase tracking-wider text-emerald-400">
+                  🌐 Size & Model Legend (BR ➔ English / Supplier Reference)
+                </span>
+                <span className="text-[10px] font-mono text-zinc-500">
+                  International Standard
+                </span>
+              </div>
+              <div className="flex flex-wrap gap-1.5">
+                {SIZE_LEGEND_EN_ITEMS.map((sz) => (
+                  <span
+                    key={sz.br}
+                    className="px-2 py-1 rounded-md bg-zinc-950 border border-zinc-800 text-[11px] font-mono text-zinc-300"
+                  >
+                    <strong className="text-white">{sz.br}</strong> ={' '}
+                    <strong className="text-emerald-400">{sz.en}</strong>{' '}
+                    <span className="text-zinc-500">({sz.desc})</span>
+                  </span>
+                ))}
+              </div>
+              <div className="flex flex-wrap gap-1.5 pt-1 border-t border-zinc-800/80">
+                {MODEL_LEGEND_EN_ITEMS.map((md) => (
+                  <span
+                    key={md.pt}
+                    className="px-2 py-0.5 rounded bg-zinc-950/70 border border-zinc-800/80 text-[10px] font-mono text-zinc-400"
+                  >
+                    <strong className="text-zinc-200">{md.pt}</strong> ={' '}
+                    <strong className="text-amber-400">{md.en}</strong>
+                  </span>
+                ))}
+              </div>
             </div>
           </div>
         )}
@@ -1183,7 +1228,7 @@ export default function CheckoutPage() {
                         <div className="min-w-0">
                           <p className="font-bold text-white line-clamp-1">{item.name}</p>
                           <p className="text-[11px] text-zinc-400">
-                            Tam: <strong className="text-zinc-200">{item.size}</strong>{surcharge > 0 && <span className="text-amber-400 font-bold ml-1">(+{formatCurrency(surcharge)} Especial)</span>} • Qtd: {item.quantity} un
+                            Tam: <strong className="text-zinc-200">{formatBilingualSize(item.size)}</strong>{surcharge > 0 && <span className="text-amber-400 font-bold ml-1">(+{formatCurrency(surcharge)} Especial)</span>} • Qtd: {item.quantity} un
                             {item.customName && ` • [${item.customName} #${item.customNumber || '10'}]`}
                           </p>
                         </div>

@@ -17,6 +17,146 @@ export const ADULT_SIZES = ['P', 'M', 'G', 'GG', 'XG', '3XL', '4XL'];
 export const FEMALE_SIZES = ['P', 'M', 'G', 'GG', 'XG'];
 export const KIDS_SIZES = ['16', '18', '20', '22', '24', '26', '28'];
 
+export interface EnglishSizeInfo {
+  br: string;
+  enCode: string;
+  enName: string;
+  bilingualCompact: string;
+  bilingualFull: string;
+}
+
+export const SIZE_EN_MAP: Record<string, { enCode: string; enName: string }> = {
+  P: { enCode: 'S', enName: 'Small' },
+  M: { enCode: 'M', enName: 'Medium' },
+  G: { enCode: 'L', enName: 'Large' },
+  GG: { enCode: 'XL', enName: 'Extra Large' },
+  XG: { enCode: '2XL', enName: 'Double XL (XXL)' },
+  '2GG': { enCode: '2XL', enName: 'Double XL (XXL)' },
+  EGG: { enCode: '2XL', enName: 'Double XL (XXL)' },
+  '3XL': { enCode: '3XL', enName: 'Triple XL (XXXL)' },
+  G3: { enCode: '3XL', enName: 'Triple XL (XXXL)' },
+  '4XL': { enCode: '4XL', enName: 'Quadruple XL (XXXXL)' },
+  G4: { enCode: '4XL', enName: 'Quadruple XL (XXXXL)' },
+  '16': { enCode: 'Kids 16', enName: 'Youth 16 (3-4Y)' },
+  '18': { enCode: 'Kids 18', enName: 'Youth 18 (4-5Y)' },
+  '20': { enCode: 'Kids 20', enName: 'Youth 20 (5-6Y)' },
+  '22': { enCode: 'Kids 22', enName: 'Youth 22 (7-8Y)' },
+  '24': { enCode: 'Kids 24', enName: 'Youth 24 (9-10Y)' },
+  '26': { enCode: 'Kids 26', enName: 'Youth 26 (11-12Y)' },
+  '28': { enCode: 'Kids 28', enName: 'Youth 28 (13-14Y)' },
+};
+
+export const SIZE_LEGEND_EN_ITEMS = [
+  { br: 'P', en: 'S', desc: 'Small' },
+  { br: 'M', en: 'M', desc: 'Medium' },
+  { br: 'G', en: 'L', desc: 'Large' },
+  { br: 'GG', en: 'XL', desc: 'Extra Large' },
+  { br: 'XG', en: '2XL / XXL', desc: 'Double XL' },
+  { br: '3XL', en: '3XL / XXXL', desc: 'Triple XL' },
+  { br: '4XL', en: '4XL / XXXXL', desc: 'Quadruple XL' },
+  { br: '16–28', en: 'Kids 16–28', desc: 'Youth / Children Kit' },
+];
+
+export const MODEL_LEGEND_EN_ITEMS = [
+  { pt: 'Torcedor', en: 'Fan Version', desc: 'Standard Stadium Fit' },
+  { pt: 'Jogador', en: 'Player Version', desc: 'Authentic Slim Fit' },
+  { pt: 'Feminina', en: "Women's Version", desc: 'Ladies Cut' },
+  { pt: 'Infantil', en: 'Kids Kit (Youth)', desc: 'Jersey + Shorts Set' },
+  { pt: 'Retrô', en: 'Retro Version', desc: 'Classic Vintage' },
+];
+
+export function getEnglishSizeInfo(size?: string | null): EnglishSizeInfo {
+  const raw = (size || '').trim().toUpperCase();
+  if (!raw) {
+    return {
+      br: '-',
+      enCode: '-',
+      enName: 'Standard',
+      bilingualCompact: '-',
+      bilingualFull: '-',
+    };
+  }
+  const mapped = SIZE_EN_MAP[raw];
+  if (!mapped) {
+    return {
+      br: raw,
+      enCode: raw,
+      enName: raw,
+      bilingualCompact: raw,
+      bilingualFull: raw,
+    };
+  }
+  const bilingualCompact =
+    raw === mapped.enCode ? `${raw}` : `${raw} (${mapped.enCode})`;
+  const bilingualFull =
+    raw === mapped.enCode
+      ? `${raw} (${mapped.enName})`
+      : `${raw} (EN: ${mapped.enCode} - ${mapped.enName})`;
+
+  return {
+    br: raw,
+    enCode: mapped.enCode,
+    enName: mapped.enName,
+    bilingualCompact,
+    bilingualFull,
+  };
+}
+
+export function formatBilingualSize(size?: string | null): string {
+  return getEnglishSizeInfo(size).bilingualCompact;
+}
+
+export function getModelTypeBilingual(
+  productOrType?: { type?: string | null; league?: string | null; name?: string | null } | string | null
+): { pt: string; en: string; bilingual: string } {
+  if (!productOrType) {
+    return {
+      pt: 'Torcedor',
+      en: 'Fan Version',
+      bilingual: 'Torcedor (Fan Version)',
+    };
+  }
+  const typeStr = typeof productOrType === 'string' ? productOrType : productOrType.type || '';
+  const leagueStr = typeof productOrType === 'string' ? '' : productOrType.league || '';
+  const nameStr = typeof productOrType === 'string' ? '' : productOrType.name || '';
+  const upperType = typeStr.toUpperCase().trim();
+  const lowerAll = `${typeStr} ${leagueStr} ${nameStr}`.toLowerCase();
+
+  if (upperType === 'INFANTIL' || lowerAll.includes('infantil') || lowerAll.includes('kids')) {
+    return {
+      pt: 'Infantil',
+      en: 'Kids Kit (Youth)',
+      bilingual: 'Infantil (Kids Kit)',
+    };
+  }
+  if (upperType === 'FEMININA' || lowerAll.includes('feminin')) {
+    return {
+      pt: 'Feminina',
+      en: "Women's Version",
+      bilingual: "Feminina (Women's Version)",
+    };
+  }
+  if (upperType === 'JOGADOR' || lowerAll.includes('jogador') || lowerAll.includes('player')) {
+    return {
+      pt: 'Jogador',
+      en: 'Player Version',
+      bilingual: 'Jogador (Player Version)',
+    };
+  }
+  if (upperType === 'RETRO' || upperType === 'RETRÔ' || lowerAll.includes('retrô') || lowerAll.includes('retro')) {
+    return {
+      pt: 'Retrô',
+      en: 'Retro Version',
+      bilingual: 'Retrô (Retro Version)',
+    };
+  }
+  return {
+    pt: 'Torcedor',
+    en: 'Fan Version',
+    bilingual: 'Torcedor (Fan Version)',
+  };
+}
+
 export interface PreSaleMetadata {
   isPreSale: boolean;
   preSaleEta: string;
@@ -280,13 +420,20 @@ export function buildWhatsAppOrderMessage({
     const preSaleTxt = item.isPreSale
       ? ` [⏳ PRÉ-VENDA${item.preSaleEta ? `: ${item.preSaleEta}` : ''}]`
       : '';
+    const sizeInfo = getEnglishSizeInfo(item.size);
+    const modelInfo = getModelTypeBilingual({ name: item.name, league: item.league });
     text += `${index + 1}. *${item.name}*${preSaleTxt}\n`;
-    text += `   ↳ Tamanho: *${item.size}* | Qtd: *${item.quantity} un*${customTxt}\n`;
+    text += `   ↳ Modelo: *${modelInfo.bilingual}*\n`;
+    text += `   ↳ Tamanho: *${sizeInfo.bilingualFull}* | Qtd: *${item.quantity} un*${customTxt}\n`;
     const photoUrl = toAbsoluteUrl(item.imageUrl, origin);
     if (photoUrl) {
       text += `   ↳ 📸 Foto: ${photoUrl}\n`;
     }
   });
+
+  text += `\n🌐 *SIZE & MODEL LEGEND (ENGLISH / SUPPLIER):*\n`;
+  text += `• Sizes: P = S (Small) | M = M (Medium) | G = L (Large) | GG = XL | XG = 2XL (XXL) | 3XL | 4XL\n`;
+  text += `• Models: Torcedor = Fan Version | Jogador = Player Version | Feminina = Women's | Infantil = Kids Kit\n`;
 
   text += `\n💰 *VALOR TOTAL:*\n`;
   text += `• Subtotal Produtos: ${formatCurrency(subtotal)}\n`;

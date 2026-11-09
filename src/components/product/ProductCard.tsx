@@ -20,6 +20,8 @@ import {
   getStandardSizesForProduct,
   getProductPreSaleInfo,
   getProductGalleryImages,
+  getEnglishSizeInfo,
+  formatBilingualSize,
 } from '@/lib/utils';
 import CustomizationModal from './CustomizationModal';
 
@@ -416,7 +418,10 @@ export default function ProductCard({ product }: Props) {
                 style={{ color: 'var(--text-muted)' }}
               >
                 <span>
-                  TAM: <strong style={{ color: 'var(--text-primary)' }}>{selectedSize}</strong>
+                  TAM:{' '}
+                  <strong style={{ color: 'var(--text-primary)' }}>
+                    {formatBilingualSize(selectedSize)}
+                  </strong>
                 </span>
                 {!selectedInfo?.inStock ? (
                   <span className="text-rose-600 font-bold">Esgotado</span>
@@ -450,6 +455,7 @@ export default function ProductCard({ product }: Props) {
                       key={info.size}
                       type="button"
                       onClick={() => setSelectedSize(info.size)}
+                      title={`Tamanho ${info.size} (Inglês / EN: ${getEnglishSizeInfo(info.size).enCode} - ${getEnglishSizeInfo(info.size).enName})`}
                       className={`h-7 min-w-[34px] px-1.5 rounded-md font-mono text-xs font-bold border tactile ${
                         isSelected
                           ? 'bg-zinc-950 text-white border-zinc-950 dark:bg-white dark:text-zinc-950 dark:border-white'

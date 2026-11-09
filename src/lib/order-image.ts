@@ -3,10 +3,14 @@
  * Ruby Brasil - Football Archive & Atelier 1:1
  */
 
+import { getEnglishSizeInfo, getModelTypeBilingual } from '@/lib/utils';
+
 export interface OrderImageItem {
   productId?: string;
   name: string;
   club?: string;
+  type?: string;
+  league?: string;
   size: string;
   quantity: number;
   imageUrl?: string;
@@ -202,6 +206,7 @@ export async function generateOrderCardCanvas(data: OrderImageData): Promise<HTM
   const itemRowHeight = 96;
   const itemsGap = 12;
   const itemsSectionHeight = data.items.length * (itemRowHeight + itemsGap);
+  const legendBoxHeight = 64;
   const summaryHeight = 110;
   const footerHeight = 46;
 
@@ -211,7 +216,9 @@ export async function generateOrderCardCanvas(data: OrderImageData): Promise<HTM
     customerBoxHeight +
     16 +
     itemsSectionHeight +
-    16 +
+    8 +
+    legendBoxHeight +
+    14 +
     summaryHeight +
     footerHeight +
     padding;
@@ -403,31 +410,50 @@ export async function generateOrderCardCanvas(data: OrderImageData): Promise<HTM
       item.name.length > 46 ? item.name.slice(0, 44) + '...' : item.name;
     ctx.fillText(`${i + 1}. ${truncatedName}`, textStartX, rowY + 28);
 
-    // Badges de Tamanho e Quantidade
+    // Badges de Tamanho, Quantidade e Modelo em Inglês
     let badgeCursorX = textStartX;
     const badgeSizeY = rowY + 38;
+    const sizeInfo = getEnglishSizeInfo(item.size);
+    const modelInfo = getModelTypeBilingual({
+      type: item.type,
+      league: item.league,
+      name: item.name,
+    });
 
-    // Badge Tamanho
-    const sizeText = `Tam: ${item.size}`;
+    // Badge Tamanho (BR + EN)
+    const sizeText = `Size: ${sizeInfo.bilingualCompact}`;
+    ctx.font = '800 11px monospace';
     const sizeBadgeW = ctx.measureText(sizeText).width + 16;
     roundRect(ctx, badgeCursorX, badgeSizeY, sizeBadgeW, 22, 6);
     ctx.fillStyle = '#27272a';
     ctx.fill();
     ctx.fillStyle = '#ffffff';
-    ctx.font = '800 11px monospace';
     ctx.fillText(sizeText, badgeCursorX + 8, badgeSizeY + 15);
     badgeCursorX += sizeBadgeW + 8;
 
     // Badge Quantidade
-    const qtyText = `Qtd: ${item.quantity}un`;
+    const qtyText = `Qty: ${item.quantity}un`;
+    ctx.font = '800 11px monospace';
     const qtyBadgeW = ctx.measureText(qtyText).width + 16;
     roundRect(ctx, badgeCursorX, badgeSizeY, qtyBadgeW, 22, 6);
     ctx.fillStyle = '#27272a';
     ctx.fill();
     ctx.fillStyle = '#ffffff';
-    ctx.font = '800 11px monospace';
     ctx.fillText(qtyText, badgeCursorX + 8, badgeSizeY + 15);
     badgeCursorX += qtyBadgeW + 8;
+
+    // Badge Modelo em Inglês (Fan Version / Player Version / Kids Kit / Women's)
+    const modelBadgeText = `${modelInfo.en} (${modelInfo.pt})`;
+    ctx.font = '700 10px monospace';
+    const modelBadgeW = ctx.measureText(modelBadgeText).width + 16;
+    roundRect(ctx, badgeCursorX, badgeSizeY, modelBadgeW, 22, 6);
+    ctx.fillStyle = '#18181b';
+    ctx.fill();
+    ctx.strokeStyle = '#3f3f46';
+    ctx.stroke();
+    ctx.fillStyle = '#d4d4d8';
+    ctx.fillText(modelBadgeText, badgeCursorX + 8, badgeSizeY + 15);
+    badgeCursorX += modelBadgeW + 8;
 
     // Badge Pré-Venda se aplicável
     if (item.isPreSale) {
@@ -444,16 +470,20 @@ export async function generateOrderCardCanvas(data: OrderImageData): Promise<HTM
       badgeCursorX += psBadgeW + 8;
     }
 
-    // Personalização (se houver)
+    // Personalização ou Legenda EN da Peça
     if (item.customName) {
-      const customString = `★ Personalizada: ${item.customName} #${item.customNumber || 'S/N'}`;
+      const customString = `★ Custom: ${item.customName} #${item.customNumber || 'S/N'} • EN Size: ${sizeInfo.enCode} (${sizeInfo.enName})`;
       ctx.fillStyle = '#fbbf24'; // Amber-400
       ctx.font = '600 11px monospace';
       ctx.fillText(customString, textStartX, rowY + 76);
     } else {
-      ctx.fillStyle = '#71717a';
-      ctx.font = '500 11px Inter, system-ui, sans-serif';
-      ctx.fillText('Manto Oficial Tailandês Padrão 1:1', textStartX, rowY + 76);
+      ctx.fillStyle = '#a1a1aa';
+      ctx.font = '500 11px monospace';
+      ctx.fillText(
+        `Model: ${modelInfo.en} • Size EN: ${sizeInfo.enCode} (${sizeInfo.enName}) • Thai 1:1`,
+        textStartX,
+        rowY + 76
+      );
     }
 
     // Preço no lado direito do card
@@ -468,7 +498,32 @@ export async function generateOrderCardCanvas(data: OrderImageData): Promise<HTM
     currentY += itemRowHeight + itemsGap;
   }
 
-  currentY += 8;
+  currentY += 4;
+
+  // 4.5 CAIXA DE LEGENDA DE TAMANHOS E MODELOS EM INGLÊS (PARA FORNECEDOR / SUPPLIER)
+  roundRect(ctx, padding, currentY, contentWidth, legendBoxHeight, 12);
+  ctx.fillStyle = '#121215';
+  ctx.fill();
+  ctx.strokeStyle = '#27272a';
+  ctx.stroke();
+
+  ctx.fillStyle = '#a1a1aa';
+  ctx.font = '700 10px monospace';
+  ctx.fillText(
+    'SIZE LEGEND (BR ➔ ENGLISH):  P = S (Small)  |  M = M (Medium)  |  G = L (Large)  |  GG = XL  |  XG = 2XL (XXL)  |  3XL  |  4XL',
+    padding + 16,
+    currentY + 24
+  );
+
+  ctx.fillStyle = '#71717a';
+  ctx.font = '600 10px monospace';
+  ctx.fillText(
+    "MODEL LEGEND (PT ➔ EN):  Torcedor = Fan Version  •  Jogador = Player Version  •  Feminina = Women's  •  Infantil = Kids Kit (16-28)",
+    padding + 16,
+    currentY + 46
+  );
+
+  currentY += legendBoxHeight + 14;
 
   // 5. CAIXA DE RESUMO FINANCEIRO
   roundRect(ctx, padding, currentY, contentWidth, summaryHeight, 14);

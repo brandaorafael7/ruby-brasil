@@ -42,6 +42,11 @@ import {
   getProductPreSaleInfo,
   getProductGalleryImages,
   toAbsoluteUrl,
+  getEnglishSizeInfo,
+  formatBilingualSize,
+  getModelTypeBilingual,
+  SIZE_LEGEND_EN_ITEMS,
+  MODEL_LEGEND_EN_ITEMS,
 } from '@/lib/utils';
 import { PromotionalBatch, WholesaleTier } from '@/types';
 import {
@@ -118,7 +123,7 @@ export function buildOrderWhatsAppReport(order: any): string {
   const itemsText = (order.items || [])
     .map((item: any, idx: number) => {
       const custom = item.customName
-        ? ` (Personalizada: ${item.customName} #${item.customNumber || 'S/N'})`
+        ? ` (Personalizada / Custom: ${item.customName} #${item.customNumber || 'S/N'})`
         : '';
       const preSale = getProductPreSaleInfo(item.product);
       const preSaleLabel = preSale.isPreSale
@@ -130,9 +135,15 @@ export function buildOrderWhatsAppReport(order: any): string {
         (item.product?.gallery ? getProductGalleryImages(item.product)[0] : '') ||
         (item.productId ? `/api/products/${item.productId}/image` : '');
       const itemName = item.productName || item.product?.name || 'Camisa';
+      const sizeInfo = getEnglishSizeInfo(item.size);
+      const modelInfo = getModelTypeBilingual({
+        type: item.product?.type,
+        league: item.product?.league,
+        name: itemName,
+      });
       const photoUrl = toAbsoluteUrl(rawImg);
       const photoLine = photoUrl ? `\n     ↳ 📸 Foto: ${photoUrl}` : '';
-      return `  ${idx + 1}. *${itemName}*${preSaleLabel} [Tam: ${item.size}] x ${item.quantity}un - ${formatCurrency(item.totalItemPrice || 0)}${custom}${photoLine}`;
+      return `  ${idx + 1}. *${itemName}*${preSaleLabel}\n     ↳ Modelo: *${modelInfo.bilingual}* | Tam: *${sizeInfo.bilingualFull}* | Qtd: *${item.quantity}un* - ${formatCurrency(item.totalItemPrice || 0)}${custom}${photoLine}`;
     })
     .join('\n');
 
@@ -146,10 +157,70 @@ export function buildOrderWhatsAppReport(order: any): string {
     : `Frete ${formatCurrency(order.shippingCost || order.shippingFee || 0)}`;
   text += `💰 *Valor Total:* ${formatCurrency(order.finalTotal)} (${shippingText})\n\n`;
   text += `📋 *Itens do Pedido:*\n${itemsText || '  Nenhum item registrado'}\n\n`;
+  text += `🌐 *Size & Model Legend (English / Supplier):*\n`;
+  text += `• Sizes: P=S (Small) | M=M (Medium) | G=L (Large) | GG=XL | XG=2XL (XXL) | 3XL | 4XL\n`;
+  text += `• Models: Torcedor=Fan Version | Jogador=Player Version | Feminina=Women's | Infantil=Kids Kit\n\n`;
   text += `📍 *Endereço de Entrega:*\n`;
   text += `• ${order.street}, ${order.number}${order.complement ? ` (${order.complement})` : ''}\n`;
   text += `• ${order.neighborhood} - ${order.city}/${order.state} | CEP: ${order.zipCode}\n\n`;
   text += `Qualquer dúvida estamos à disposição! 🚀`;
+
+  return text;
+}
+
+export function buildSupplierEnglishOrderReport(order: any): string {
+  const totalQty =
+    order.totalQuantity ||
+    (order.items || []).reduce((acc: number, it: any) => acc + (it.quantity || 1), 0);
+
+  let text = `🌐 *SUPPLIER ORDER SHEET (ENGLISH) - RUBY BRASIL*\n`;
+  text += `🔢 *Order Ref:* #${order.orderNumber}\n`;
+  text += `👕 *Total Quantity:* ${totalQty} pcs\n\n`;
+  text += `📋 *ITEMS LIST (INTERNATIONAL SIZES & MODELS):*\n`;
+
+  (order.items || []).forEach((item: any, idx: number) => {
+    const itemName = item.productName || item.product?.name || 'Jersey';
+    const club = item.product?.club ? ` (${item.product.club})` : '';
+    const sizeInfo = getEnglishSizeInfo(item.size);
+    const modelInfo = getModelTypeBilingual({
+      type: item.product?.type,
+      league: item.product?.league,
+      name: itemName,
+    });
+    const rawImg =
+      item.imageUrl ||
+      item.product?.imageUrl ||
+      (item.product?.gallery ? getProductGalleryImages(item.product)[0] : '') ||
+      (item.productId ? `/api/products/${item.productId}/image` : '');
+    const photoUrl = toAbsoluteUrl(rawImg);
+
+    text += `${idx + 1}. *${itemName}*${club}\n`;
+    text += `   • Model / Version: *${modelInfo.en}* (${modelInfo.pt})\n`;
+    text += `   • Size (English): *${sizeInfo.enCode} - ${sizeInfo.enName}* (BR Size: ${sizeInfo.br})\n`;
+    text += `   • Quantity: *${item.quantity} pcs*\n`;
+    if (item.customName) {
+      text += `   • Custom Print: *Name: ${item.customName} | Number: #${item.customNumber || 'S/N'}*\n`;
+    }
+    if (photoUrl) {
+      text += `   • Photo Link: ${photoUrl}\n`;
+    }
+  });
+
+  text += `\n📏 *SIZE CONVERSION LEGEND (BRAZIL ➔ ENGLISH):*\n`;
+  text += `• P = S (Small)\n`;
+  text += `• M = M (Medium)\n`;
+  text += `• G = L (Large)\n`;
+  text += `• GG = XL (Extra Large)\n`;
+  text += `• XG = 2XL / XXL (Double XL)\n`;
+  text += `• 3XL = 3XL / XXXL (Triple XL)\n`;
+  text += `• 4XL = 4XL / XXXXL (Quadruple XL)\n`;
+  text += `• 16 to 28 = Kids / Youth Kit Sizes\n\n`;
+  text += `🏷️ *MODEL VERSION LEGEND (PORTUGUESE ➔ ENGLISH):*\n`;
+  text += `• Torcedor = Fan Version (Standard Stadium Fit)\n`;
+  text += `• Jogador = Player Version (Authentic Slim Fit)\n`;
+  text += `• Feminina = Women's Version (Ladies Cut)\n`;
+  text += `• Infantil = Kids Kit (Jersey + Shorts Set)\n`;
+  text += `• Retrô = Retro Classic Version`;
 
   return text;
 }
@@ -182,6 +253,8 @@ export function mapOrderToImageData(order: any): OrderImageData {
         productId: it.productId || it.product?.id,
         name: it.productName || it.product?.name || 'Camisa Ruby Brasil',
         club: it.product?.club,
+        type: it.product?.type,
+        league: it.product?.league,
         size: it.size,
         quantity: it.quantity,
         imageUrl: rawImage,
@@ -1427,6 +1500,100 @@ export default function AdminDashboardClient({
               </div>
             </div>
 
+            {/* LEGENDA DE TAMANHOS E MODELOS EM INGLÊS (REFERÊNCIA P/ FORNECEDOR) */}
+            <div
+              className="rounded-2xl border p-3.5 sm:p-4 mb-5"
+              style={{
+                backgroundColor: 'var(--bg-studio)',
+                borderColor: 'var(--border-crisp)',
+              }}
+            >
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-2.5 mb-2.5 border-b" style={{ borderColor: 'var(--border-crisp)' }}>
+                <div>
+                  <span
+                    className="text-[11px] font-mono font-bold uppercase tracking-wider block"
+                    style={{ color: 'var(--text-primary)' }}
+                  >
+                    🌐 Legenda de Tamanhos & Modelos em Inglês (Supplier Reference / International Sizes)
+                  </span>
+                  <span
+                    className="text-[11px]"
+                    style={{ color: 'var(--text-muted)' }}
+                  >
+                    Equivalência direta Brasil (BR) ➔ Inglês (EN) para envio e conferência com fornecedores internacionais
+                  </span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const legendText =
+                      `📏 SIZE CONVERSION LEGEND (BR ➔ ENGLISH):\n` +
+                      `• P = S (Small)\n• M = M (Medium)\n• G = L (Large)\n• GG = XL (Extra Large)\n• XG = 2XL / XXL (Double XL)\n• 3XL = 3XL / XXXL\n• 4XL = 4XL / XXXXL\n• 16–28 = Kids / Youth Kit Sizes\n\n` +
+                      `🏷️ MODEL VERSION LEGEND (PT ➔ ENGLISH):\n` +
+                      `• Torcedor = Fan Version (Standard Fit)\n• Jogador = Player Version (Slim Fit)\n• Feminina = Women's Version (Ladies Cut)\n• Infantil = Kids Kit (Jersey + Shorts)\n• Retrô = Retro Classic Version`;
+                    copyToClipboard(legendText, 'en-legend-products');
+                  }}
+                  className="px-3 py-1.5 rounded-xl border text-[11px] font-bold flex items-center gap-1.5 shrink-0 tactile border-[var(--border-crisp)] bg-[var(--bg-surface)] hover:bg-[var(--bg-studio)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
+                >
+                  {copiedKey === 'en-legend-products' ? (
+                    <>
+                      <Check className="w-3.5 h-3.5 text-emerald-500" />
+                      <span>Legenda Copiada!</span>
+                    </>
+                  ) : (
+                    <>
+                      <Copy className="w-3.5 h-3.5" />
+                      <span>Copiar Legenda (EN)</span>
+                    </>
+                  )}
+                </button>
+              </div>
+
+              <div className="space-y-2">
+                <div className="flex flex-wrap items-center gap-1.5 text-[11px] font-mono">
+                  <span className="font-bold uppercase text-[10px] mr-1" style={{ color: 'var(--text-muted)' }}>
+                    Sizes (BR ➔ EN):
+                  </span>
+                  {SIZE_LEGEND_EN_ITEMS.map((item) => (
+                    <span
+                      key={item.br}
+                      className="px-2 py-0.5 rounded-md border"
+                      style={{
+                        backgroundColor: 'var(--bg-surface)',
+                        borderColor: 'var(--border-crisp)',
+                        color: 'var(--text-secondary)',
+                      }}
+                    >
+                      <strong style={{ color: 'var(--text-primary)' }}>{item.br}</strong> ={' '}
+                      <strong className="text-rose-600 dark:text-rose-400">{item.en}</strong>{' '}
+                      <span className="opacity-75">({item.desc})</span>
+                    </span>
+                  ))}
+                </div>
+
+                <div className="flex flex-wrap items-center gap-1.5 text-[11px] font-mono">
+                  <span className="font-bold uppercase text-[10px] mr-1" style={{ color: 'var(--text-muted)' }}>
+                    Models (PT ➔ EN):
+                  </span>
+                  {MODEL_LEGEND_EN_ITEMS.map((m) => (
+                    <span
+                      key={m.pt}
+                      className="px-2 py-0.5 rounded-md border"
+                      style={{
+                        backgroundColor: 'var(--bg-surface)',
+                        borderColor: 'var(--border-crisp)',
+                        color: 'var(--text-secondary)',
+                      }}
+                    >
+                      <strong style={{ color: 'var(--text-primary)' }}>{m.pt}</strong> ={' '}
+                      <strong className="text-emerald-600 dark:text-emerald-400">{m.en}</strong>{' '}
+                      <span className="opacity-75">({m.desc})</span>
+                    </span>
+                  ))}
+                </div>
+              </div>
+            </div>
+
             {/* TABELA DE PRODUTOS */}
             <div
               className="overflow-x-auto rounded-2xl border"
@@ -1562,7 +1729,7 @@ export default function AdminDashboardClient({
                               className="text-[10px] block mt-1 font-mono uppercase"
                               style={{ color: 'var(--text-muted)' }}
                             >
-                              {p.type}
+                              {getModelTypeBilingual(p).bilingual}
                             </span>
                           </td>
                           <td className="py-3 px-3 font-mono font-black text-sm">
@@ -1589,13 +1756,14 @@ export default function AdminDashboardClient({
                                 return sortedVariants.map((v: any) => (
                                   <span
                                     key={v.id || v.size}
+                                    title={`BR: ${v.size} | EN: ${getEnglishSizeInfo(v.size).enCode} (${getEnglishSizeInfo(v.size).enName})`}
                                     className={`px-1.5 py-0.5 rounded border ${
                                       v.stockQuantity > 0
                                         ? 'border-[var(--border-crisp)] bg-[var(--bg-studio)] text-[var(--text-secondary)]'
                                         : 'bg-rose-500/10 border-rose-500/20 text-rose-600 dark:text-rose-400'
                                     }`}
                                   >
-                                    {v.size}: <strong style={{ color: 'var(--text-primary)' }}>{v.stockQuantity}</strong>
+                                    {formatBilingualSize(v.size)}: <strong style={{ color: 'var(--text-primary)' }}>{v.stockQuantity}</strong>
                                   </span>
                                 ));
                               })()}
@@ -2643,11 +2811,11 @@ export default function AdminDashboardClient({
                       color: 'var(--text-primary)',
                     }}
                   >
-                    <option value="TORCEDOR">Torcedor (Standard)</option>
-                    <option value="JOGADOR">Jogador (Player Version)</option>
-                    <option value="INFANTIL">Infantil (Kids / Conjunto)</option>
-                    <option value="RETRO">Retrô Clássica</option>
-                    <option value="FEMININA">Feminina</option>
+                    <option value="TORCEDOR">Torcedor (Fan Version / Standard)</option>
+                    <option value="JOGADOR">Jogador (Player Version / Slim Fit)</option>
+                    <option value="INFANTIL">Infantil (Kids Kit / Youth Set)</option>
+                    <option value="RETRO">Retrô Clássica (Retro Version)</option>
+                    <option value="FEMININA">Feminina (Women&apos;s Version)</option>
                   </select>
                 </div>
 
@@ -2918,16 +3086,26 @@ export default function AdminDashboardClient({
 
               {/* GRADE DE ESTOQUE POR TAMANHO */}
               <div className="pt-2">
-                <label
-                  className="block text-xs font-bold mb-2"
-                  style={{ color: 'var(--text-secondary)' }}
-                >
-                  {formData.isPreSale
-                    ? 'Grade de Vagas / Unidades p/ Reserva na Pré-Venda:'
-                    : 'Grade de Estoque por Tamanho (Unidades):'}
-                </label>
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 mb-2">
+                  <label
+                    className="block text-xs font-bold"
+                    style={{ color: 'var(--text-secondary)' }}
+                  >
+                    {formData.isPreSale
+                      ? 'Grade de Vagas / Unidades p/ Reserva na Pré-Venda:'
+                      : 'Grade de Estoque por Tamanho (BR / Inglês):'}
+                  </label>
+                  <span
+                    className="text-[10px] font-mono"
+                    style={{ color: 'var(--text-muted)' }}
+                  >
+                    Legenda EN: P=S • M=M • G=L • GG=XL • XG=2XL (XXL) • 3XL • 4XL
+                  </span>
+                </div>
                 <div className={`grid ${formData.variants.length > 5 ? 'grid-cols-4 sm:grid-cols-7' : 'grid-cols-5'} gap-2`}>
-                  {formData.variants.map((v, idx) => (
+                  {formData.variants.map((v, idx) => {
+                    const enInfo = getEnglishSizeInfo(v.size);
+                    return (
                     <div
                       key={v.size}
                       className="p-2 rounded-xl border text-center"
@@ -2938,6 +3116,14 @@ export default function AdminDashboardClient({
                     >
                       <span className="font-black text-xs text-rose-600 dark:text-rose-400 block mb-1">
                         {v.size}
+                        {enInfo.enCode !== v.size && (
+                          <span
+                            className="text-[10px] font-mono font-bold block leading-tight"
+                            style={{ color: 'var(--text-muted)' }}
+                          >
+                            EN: {enInfo.enCode}
+                          </span>
+                        )}
                         {v.size === '3XL' && <span className="text-[9px] text-amber-600 dark:text-amber-300 block font-normal leading-tight">+R$6</span>}
                         {v.size === '4XL' && <span className="text-[9px] text-amber-600 dark:text-amber-300 block font-normal leading-tight">+R$12</span>}
                       </span>
@@ -2959,7 +3145,8 @@ export default function AdminDashboardClient({
                         }}
                       />
                     </div>
-                  ))}
+                  );
+                  })}
                 </div>
               </div>
 
@@ -3249,8 +3436,8 @@ export default function AdminDashboardClient({
                     }}
                   >
                     <tr>
-                      <th className="py-2.5 px-3">Camisa</th>
-                      <th className="py-2.5 px-2 text-center">Tam</th>
+                      <th className="py-2.5 px-3">Camisa & Modelo (PT / EN)</th>
+                      <th className="py-2.5 px-2 text-center">Tam (BR / EN)</th>
                       <th className="py-2.5 px-2 text-center">Qtd</th>
                       <th className="py-2.5 px-3 text-right">Unitário</th>
                       <th className="py-2.5 px-3 text-right">Total</th>
@@ -3269,6 +3456,12 @@ export default function AdminDashboardClient({
                         itemGallery[0] ||
                         (item.productId ? `/api/products/${item.productId}/image` : '');
                       const itemName = item.productName || item.product?.name || 'Camisa de Futebol';
+                      const sizeInfo = getEnglishSizeInfo(item.size);
+                      const modelInfo = getModelTypeBilingual({
+                        type: item.product?.type,
+                        league: item.product?.league,
+                        name: itemName,
+                      });
 
                       return (
                         <tr
@@ -3296,6 +3489,16 @@ export default function AdminDashboardClient({
                                   <strong style={{ color: 'var(--text-primary)' }}>
                                     {itemName}
                                   </strong>
+                                  <span
+                                    className="px-1.5 py-0.5 rounded border text-[9px] font-mono font-bold"
+                                    style={{
+                                      backgroundColor: 'var(--bg-studio)',
+                                      borderColor: 'var(--border-crisp)',
+                                      color: 'var(--text-secondary)',
+                                    }}
+                                  >
+                                    {modelInfo.bilingual}
+                                  </span>
                                   {preSaleInfo.isPreSale && (
                                     <span className="bg-amber-500/15 text-amber-700 dark:text-amber-300 border border-amber-500/30 px-1.5 py-0.5 rounded text-[9px] font-black uppercase">
                                       ⏳ Pré-Venda
@@ -3331,7 +3534,12 @@ export default function AdminDashboardClient({
                             className="py-2.5 px-2 text-center font-bold font-mono"
                             style={{ color: 'var(--text-secondary)' }}
                           >
-                            {item.size}
+                            <span className="block" style={{ color: 'var(--text-primary)' }}>
+                              {item.size}
+                            </span>
+                            <span className="text-[10px] font-bold text-rose-600 dark:text-rose-400 block">
+                              EN: {sizeInfo.enCode} ({sizeInfo.enName})
+                            </span>
                           </td>
                           <td
                             className="py-2.5 px-2 text-center font-bold font-mono"
@@ -3353,6 +3561,55 @@ export default function AdminDashboardClient({
                     })}
                   </tbody>
                 </table>
+              </div>
+
+              {/* LEGENDA DE TAMANHOS E MODELOS EM INGLÊS PARA FORNECEDOR */}
+              <div
+                className="p-3 rounded-xl border mt-3 text-[11px] font-mono space-y-1"
+                style={{
+                  backgroundColor: 'var(--bg-studio)',
+                  borderColor: 'var(--border-crisp)',
+                  color: 'var(--text-secondary)',
+                }}
+              >
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <strong className="uppercase text-[10px]" style={{ color: 'var(--text-primary)' }}>
+                    🌐 Supplier Size & Model Legend (English Conversion):
+                  </strong>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const enSheet = buildSupplierEnglishOrderReport(selectedOrder);
+                      copyToClipboard(enSheet, `supplier-en-${selectedOrder.id}`);
+                    }}
+                    className="px-2.5 py-1 rounded-lg border border-[var(--border-crisp)] bg-[var(--bg-surface)] hover:bg-[var(--bg-studio)] text-[10px] font-bold flex items-center gap-1 tactile"
+                    style={{ color: 'var(--text-primary)' }}
+                  >
+                    {copiedKey === `supplier-en-${selectedOrder.id}` ? (
+                      <>
+                        <Check className="w-3 h-3 text-emerald-500" />
+                        <span>Lista em Inglês Copiada!</span>
+                      </>
+                    ) : (
+                      <>
+                        <Copy className="w-3 h-3" />
+                        <span>Copiar Pedido em Inglês p/ Fornecedor</span>
+                      </>
+                    )}
+                  </button>
+                </div>
+                <div>
+                  <span style={{ color: 'var(--text-muted)' }}>Sizes (BR ➔ EN):</span>{' '}
+                  <strong>P</strong>=S (Small) • <strong>M</strong>=M (Medium) • <strong>G</strong>=L (Large) •{' '}
+                  <strong>GG</strong>=XL (Extra Large) • <strong>XG</strong>=2XL/XXL • <strong>3XL</strong>=XXXL •{' '}
+                  <strong>4XL</strong>=XXXXL • <strong>16–28</strong>=Kids Kit
+                </div>
+                <div>
+                  <span style={{ color: 'var(--text-muted)' }}>Models (PT ➔ EN):</span>{' '}
+                  <strong>Torcedor</strong>=Fan Version • <strong>Jogador</strong>=Player Version •{' '}
+                  <strong>Feminina</strong>=Women&apos;s Version • <strong>Infantil</strong>=Kids Kit •{' '}
+                  <strong>Retrô</strong>=Retro Version
+                </div>
               </div>
 
               {/* RESUMO DE VALORES */}
@@ -3485,6 +3742,28 @@ export default function AdminDashboardClient({
                     <>
                       <Copy className="w-4 h-4" />
                       <span>Copiar Relatório</span>
+                    </>
+                  )}
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    const enSheet = buildSupplierEnglishOrderReport(selectedOrder);
+                    copyToClipboard(enSheet, `modal-supplier-en-${selectedOrder.id}`);
+                  }}
+                  className="w-full sm:w-auto px-3.5 py-2 rounded-xl border border-[var(--border-crisp)] bg-[var(--bg-surface)] hover:bg-[var(--bg-studio)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] text-xs font-bold flex items-center justify-center gap-1.5 tactile"
+                  title="Copiar pedido formatado em Inglês (Sizes & Models) para enviar ao fornecedor"
+                >
+                  {copiedKey === `modal-supplier-en-${selectedOrder.id}` ? (
+                    <>
+                      <Check className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                      <span>Copiado em Inglês (EN)!</span>
+                    </>
+                  ) : (
+                    <>
+                      <FileText className="w-4 h-4" />
+                      <span>Lista p/ Fornecedor (EN)</span>
                     </>
                   )}
                 </button>

@@ -18,7 +18,12 @@ import {
   Clock,
 } from 'lucide-react';
 import { useCartStore } from '@/store';
-import { formatCurrency, buildWhatsAppOrderMessage, getSizeSurcharge } from '@/lib/utils';
+import {
+  formatCurrency,
+  buildWhatsAppOrderMessage,
+  getSizeSurcharge,
+  formatBilingualSize,
+} from '@/lib/utils';
 
 export default function CartDrawer() {
   const {
@@ -208,7 +213,7 @@ export default function CartDrawer() {
 
                       <div className="flex flex-wrap items-center gap-1.5 mt-1 text-[11px] text-zinc-400">
                         <span className="bg-zinc-800 px-1.5 py-0.5 rounded text-zinc-200 font-bold">
-                          Tam: {item.size}
+                          Tam: {formatBilingualSize(item.size)}
                         </span>
                         {item.isPreSale && (
                           <span className="bg-amber-500/20 text-amber-300 border border-amber-500/30 px-1.5 py-0.5 rounded font-bold text-[10px] inline-flex items-center gap-1">

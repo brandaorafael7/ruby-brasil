@@ -30,6 +30,8 @@ import {
   getStandardSizesForProduct,
   getProductPreSaleInfo,
   getProductGalleryImages,
+  getEnglishSizeInfo,
+  getModelTypeBilingual,
 } from '@/lib/utils';
 import CustomizationModal from '@/components/product/CustomizationModal';
 import ProductCard from '@/components/product/ProductCard';
@@ -322,7 +324,7 @@ export default function ProductDetailClient({ product, relatedProducts }: Props)
                   Padrão Oficial 1:1 com etiquetas e bordados
                 </span>
                 <span className="font-mono text-zinc-300 font-bold uppercase text-[10px]">
-                  {product.type}
+                  {getModelTypeBilingual(product).bilingual}
                 </span>
               </div>
             </div>
@@ -482,7 +484,7 @@ export default function ProductDetailClient({ product, relatedProducts }: Props)
               <div className="mt-6">
                 <div className="flex items-center justify-between text-xs mb-2">
                   <span className="font-bold text-white">
-                    {isKids ? 'Tamanho / Idade Infantil:' : 'Selecione o Tamanho:'}
+                    {isKids ? 'Tamanho / Idade Infantil (BR / EN):' : 'Selecione o Tamanho (BR / EN):'}
                   </span>
                   {!selectedInfo?.inStock ? (
                     <span className="text-xs text-rose-400 font-bold flex items-center gap-1.5">
@@ -537,6 +539,19 @@ export default function ProductDetailClient({ product, relatedProducts }: Props)
                         <span className={`text-sm ${isSoldOut ? 'line-through opacity-60 text-zinc-500' : ''}`}>
                           {info.size}
                         </span>
+                        {getEnglishSizeInfo(info.size).enCode !== info.size && (
+                          <span
+                            className={`text-[9px] font-mono leading-none mt-0.5 ${
+                              isSelected
+                                ? isPreSale
+                                  ? 'text-zinc-900 font-bold'
+                                  : 'text-rose-100 font-bold'
+                                : 'text-zinc-400'
+                            }`}
+                          >
+                            EN: {getEnglishSizeInfo(info.size).enCode}
+                          </span>
+                        )}
                         {info.surcharge > 0 && !isSoldOut && (
                           <span
                             className={`text-[9px] font-semibold leading-none mt-1 ${
@@ -562,6 +577,30 @@ export default function ProductDetailClient({ product, relatedProducts }: Props)
                       </button>
                     );
                   })}
+                </div>
+
+                {/* LEGENDA DE TAMANHOS E MODELOS EM INGLÊS */}
+                <div className="mt-3 p-3 rounded-xl bg-zinc-950/90 border border-zinc-800/90 text-[11px] font-mono text-zinc-400 space-y-1">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-zinc-300">
+                      🌐 Legenda de Tamanhos & Modelos em Inglês (International Size Guide)
+                    </span>
+                    <span className="text-[10px] text-rose-400 font-bold">
+                      Modelo: {getModelTypeBilingual(product).bilingual}
+                    </span>
+                  </div>
+                  <p className="leading-relaxed">
+                    <strong className="text-zinc-200">P</strong> = S (Small) •{' '}
+                    <strong className="text-zinc-200">M</strong> = M (Medium) •{' '}
+                    <strong className="text-zinc-200">G</strong> = L (Large) •{' '}
+                    <strong className="text-zinc-200">GG</strong> = XL (Extra Large) •{' '}
+                    <strong className="text-zinc-200">XG</strong> = 2XL (XXL) •{' '}
+                    <strong className="text-zinc-200">3XL</strong> = XXXL •{' '}
+                    <strong className="text-zinc-200">4XL</strong> = XXXXL
+                  </p>
+                  <p className="text-[10px] text-zinc-500">
+                    Torcedor = Fan Version • Jogador = Player Version • Feminina = Women&apos;s Version • Infantil = Kids Kit (16–28)
+                  </p>
                 </div>
               </div>
 
