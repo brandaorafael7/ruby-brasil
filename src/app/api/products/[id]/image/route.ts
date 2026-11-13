@@ -14,6 +14,14 @@ const globalImageCache: Map<string, ImageCacheItem> =
 (global as any).__rubyImageBufferCache = globalImageCache;
 const MAX_CACHE_ENTRIES = 400;
 
+const CDN_CACHE_HEADERS = {
+  'Cache-Control': 'public, max-age=31536000, s-maxage=31536000, stale-while-revalidate=86400, immutable',
+  'CDN-Cache-Control': 'public, max-age=31536000, s-maxage=31536000, immutable',
+  'Vercel-CDN-Cache-Control': 'public, max-age=31536000, immutable',
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Methods': 'GET, HEAD, OPTIONS',
+};
+
 export async function GET(
   request: Request,
   { params }: { params: { id: string } }
@@ -26,6 +34,7 @@ export async function GET(
 
     const { searchParams } = new URL(request.url);
     const slot = Math.max(0, parseInt(searchParams.get('slot') || '0', 10) || 0);
+    const hasVersionParam = searchParams.has('v');
     const cacheKey = `${productId}:${slot}`;
 
     // 0. Retorno ultra-rápido do cache em memória RAM (< 1ms)
@@ -35,15 +44,35 @@ export async function GET(
         status: 200,
         headers: {
           'Content-Type': cached.mimeType || 'image/webp',
-          'Cache-Control': 'public, max-age=31536000, s-maxage=31536000, immutable',
-          'Access-Control-Allow-Origin': '*',
-          'Access-Control-Allow-Methods': 'GET, HEAD, OPTIONS',
+          ...CDN_CACHE_HEADERS,
           'X-Cache': 'HIT-RAM',
         },
       });
     }
 
-    // 1. Tenta buscar da tabela binária ProductImage no slot solicitado
+    // 1. Se não houver parâmetro de versão dinâmica (?v=), verifica primeiro o arquivo estático na CDN local (0 bytes de Egress no Supabase)
+    const staticFileName = slot === 0 ? `${productId}.webp` : `${productId}-slot-${slot}.webp`;
+    const staticPath = path.join(process.cwd(), 'public', 'uploads', 'products', staticFileName);
+
+    if (!hasVersionParam && fs.existsSync(staticPath)) {
+      const fileBuffer = fs.readFileSync(staticPath);
+      if (globalImageCache.size >= MAX_CACHE_ENTRIES) {
+        const oldestKey = globalImageCache.keys().next().value;
+        if (oldestKey) globalImageCache.delete(oldestKey);
+      }
+      globalImageCache.set(cacheKey, { mimeType: 'image/webp', data: fileBuffer });
+
+      return new NextResponse(fileBuffer as unknown as BodyInit, {
+        status: 200,
+        headers: {
+          'Content-Type': 'image/webp',
+          ...CDN_CACHE_HEADERS,
+          'X-Cache': 'STATIC-CDN',
+        },
+      });
+    }
+
+    // 2. Tenta buscar da tabela binária ProductImage no slot solicitado
     const rows = await prisma.$queryRaw<
       Array<{ mimeType: string; data: Buffer }>
     >`
@@ -67,37 +96,30 @@ export async function GET(
         status: 200,
         headers: {
           'Content-Type': mimeType || 'image/webp',
-          'Cache-Control': 'public, max-age=31536000, s-maxage=31536000, immutable',
-          'Access-Control-Allow-Origin': '*',
-          'Access-Control-Allow-Methods': 'GET, HEAD, OPTIONS',
+          ...CDN_CACHE_HEADERS,
           'X-Cache': 'MISS-DB',
         },
       });
     }
 
-    // 2. Fallback para slot 0: se existir arquivo estático em public/uploads/products/<id>.webp
-    if (slot === 0) {
-      const staticPath = path.join(process.cwd(), 'public', 'uploads', 'products', `${productId}.webp`);
-      if (fs.existsSync(staticPath)) {
-        const fileBuffer = fs.readFileSync(staticPath);
+    // 3. Fallback para arquivo estático caso exista em public/uploads/products/
+    if (fs.existsSync(staticPath)) {
+      const fileBuffer = fs.readFileSync(staticPath);
 
-        if (globalImageCache.size >= MAX_CACHE_ENTRIES) {
-          const oldestKey = globalImageCache.keys().next().value;
-          if (oldestKey) globalImageCache.delete(oldestKey);
-        }
-        globalImageCache.set(cacheKey, { mimeType: 'image/webp', data: fileBuffer });
-
-        return new NextResponse(fileBuffer as unknown as BodyInit, {
-          status: 200,
-          headers: {
-            'Content-Type': 'image/webp',
-            'Cache-Control': 'public, max-age=31536000, s-maxage=31536000, immutable',
-            'Access-Control-Allow-Origin': '*',
-            'Access-Control-Allow-Methods': 'GET, HEAD, OPTIONS',
-            'X-Cache': 'STATIC-FILE',
-          },
-        });
+      if (globalImageCache.size >= MAX_CACHE_ENTRIES) {
+        const oldestKey = globalImageCache.keys().next().value;
+        if (oldestKey) globalImageCache.delete(oldestKey);
       }
+      globalImageCache.set(cacheKey, { mimeType: 'image/webp', data: fileBuffer });
+
+      return new NextResponse(fileBuffer as unknown as BodyInit, {
+        status: 200,
+        headers: {
+          'Content-Type': 'image/webp',
+          ...CDN_CACHE_HEADERS,
+          'X-Cache': 'STATIC-FILE',
+        },
+      });
     }
 
     // 3. Fallback: caso o produto ainda tenha uma URL externa ou data URL na coluna imageUrl
