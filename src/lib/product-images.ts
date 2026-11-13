@@ -42,18 +42,16 @@ async function uploadToDedicatedImageCdn(
   }
 
   // 2. ImgBB CDN Dedicada (100% Gratuita com chave IMGBB_API_KEY)
-  const imgbbKey = process.env.IMGBB_API_KEY?.trim();
+  const imgbbKey = (process.env.IMGBB_API_KEY || '8c7f82450c8fa4a602d5de61a28e07bd').trim();
   if (imgbbKey) {
     try {
-      const body = new URLSearchParams();
-      body.append('key', imgbbKey);
-      body.append('image', base64Data);
-      body.append('name', `${productId}-slot-${slot}`);
+      const formData = new FormData();
+      formData.append('image', base64Data);
+      formData.append('name', `${productId}-slot-${slot}`);
 
-      const res = await fetch('https://api.imgbb.com/1/upload', {
+      const res = await fetch(`https://api.imgbb.com/1/upload?key=${encodeURIComponent(imgbbKey)}`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-        body: body.toString(),
+        body: formData,
       });
       if (res.ok) {
         const json = await res.json();
