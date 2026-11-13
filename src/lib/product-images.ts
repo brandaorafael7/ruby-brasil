@@ -1,4 +1,6 @@
 import { prisma } from '@/lib/prisma';
+import fs from 'fs';
+import path from 'path';
 
 const DATA_URL_REGEX = /^data:(image\/[a-zA-Z0-9.+-]+);base64,([\s\S]+)$/;
 
@@ -7,9 +9,69 @@ export function isDataUrlImage(url?: string | null): boolean {
 }
 
 /**
- * Se `imageUrl` for um Data URL Base64 (`data:image/...`), salva os bytes binários
- * na tabela `ProductImage` no `slot` indicado e retorna uma URL leve cacheável.
- * Isso evita armazenar ou trafegar megabytes de Base64 na tabela `Product`.
+ * Tenta enviar a imagem para uma CDN dedicada gratuita (Cloudinary ou ImgBB),
+ * se as variáveis de ambiente estiverem configuradas, mantendo 0 bytes no banco.
+ */
+async function uploadToDedicatedImageCdn(
+  productId: string,
+  slot: number,
+  dataUrl: string,
+  base64Data: string
+): Promise<string | null> {
+  // 1. Cloudinary CDN Dedicada (25 GB Grátis)
+  const cloudName = process.env.CLOUDINARY_CLOUD_NAME?.trim();
+  const uploadPreset = process.env.CLOUDINARY_UPLOAD_PRESET?.trim();
+  if (cloudName && uploadPreset) {
+    try {
+      const formData = new FormData();
+      formData.append('file', dataUrl);
+      formData.append('upload_preset', uploadPreset);
+      formData.append('public_id', `rubybr/${productId}-${slot}-${Date.now()}`);
+
+      const res = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/image/upload`, {
+        method: 'POST',
+        body: formData,
+      });
+      if (res.ok) {
+        const json = await res.json();
+        if (json?.secure_url) return String(json.secure_url);
+      }
+    } catch (err) {
+      console.warn('[CDN] Falha no upload Cloudinary, usando fallback:', err);
+    }
+  }
+
+  // 2. ImgBB CDN Dedicada (100% Gratuita com chave IMGBB_API_KEY)
+  const imgbbKey = process.env.IMGBB_API_KEY?.trim();
+  if (imgbbKey) {
+    try {
+      const body = new URLSearchParams();
+      body.append('key', imgbbKey);
+      body.append('image', base64Data);
+      body.append('name', `${productId}-slot-${slot}`);
+
+      const res = await fetch('https://api.imgbb.com/1/upload', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: body.toString(),
+      });
+      if (res.ok) {
+        const json = await res.json();
+        if (json?.data?.url) return String(json.data.url);
+      }
+    } catch (err) {
+      console.warn('[CDN] Falha no upload ImgBB, usando fallback:', err);
+    }
+  }
+
+  return null;
+}
+
+/**
+ * Processa e armazena a imagem em caminho dedicado:
+ * 1. CDN Externa Dedicada (Cloudinary / ImgBB), se configurada (0 bytes no banco).
+ * 2. Diretório estático `public/uploads/products/` quando gravável (0 bytes no banco).
+ * 3. Fallback seguro na tabela `ProductImage` com cache imutável na Edge CDN da Vercel.
  */
 export async function persistProductImageIfNeeded(
   productId: string,
@@ -29,6 +91,29 @@ export async function persistProductImageIfNeeded(
   const base64Data = match[2];
   const buffer = Buffer.from(base64Data, 'base64');
 
+  // 1. Tenta enviar para a CDN dedicada de imagens (0% de uso do banco)
+  const cdnUrl = await uploadToDedicatedImageCdn(productId, slot, imageUrl, base64Data);
+  if (cdnUrl) {
+    return cdnUrl;
+  }
+
+  // 2. Se o sistema de arquivos local for gravável (ambiente local/build), salva direto na CDN estática (/uploads/products/)
+  if (!process.env.VERCEL) {
+    try {
+      const uploadsDir = path.join(process.cwd(), 'public', 'uploads', 'products');
+      if (!fs.existsSync(uploadsDir)) {
+        fs.mkdirSync(uploadsDir, { recursive: true });
+      }
+      const fileName = slot === 0 ? `${productId}.webp` : `${productId}-slot-${slot}.webp`;
+      const filePath = path.join(uploadsDir, fileName);
+      fs.writeFileSync(filePath, buffer);
+      return `/uploads/products/${fileName}`;
+    } catch {
+      // Continua para o fallback
+    }
+  }
+
+  // 3. Fallback em runtime serverless quando nenhuma chave de CDN externa está definida
   await prisma.$executeRaw`
     INSERT INTO "public"."ProductImage" ("productId", "slot", "mimeType", "data", "updatedAt")
     VALUES (${productId}, ${slot}, ${mimeType}, ${buffer}, NOW())
