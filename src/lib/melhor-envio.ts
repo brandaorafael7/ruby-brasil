@@ -1,8 +1,19 @@
 import { ShippingOption } from '@/types';
+import { KIDS_SIZES } from '@/lib/utils';
+
+export interface ShippingItemInput {
+  productId?: string;
+  name?: string | null;
+  type?: string | null;
+  league?: string | null;
+  size?: string | null;
+  quantity?: number;
+}
 
 export interface CalculateShippingParams {
   toPostalCode: string;
   totalPieces: number;
+  items?: ShippingItemInput[];
   fromPostalCode?: string;
   orderValue?: number;
 }
@@ -13,14 +24,94 @@ export interface ShippingCalculationResult {
   fromPostalCode: string;
   toPostalCode: string;
   isFallback: boolean;
-  packageWeightKg?: number;
   message?: string;
 }
 
 /**
- * Peso oficial configurado por camisa: 300g (0.30 kg)
+ * Peso oficial configurado por camisa: 300g (0.30 kg) - interno, oculto para os clientes do site
  */
 export const SHIRT_WEIGHT_KG = 0.30;
+
+/**
+ * Peso oficial configurado por Kit (ex: Kit Infantil camisa + calção): 600g (0.60 kg)
+ * Exatamente o dobro do peso das camisas (2x 300g), mantido oculto para os clientes do site.
+ */
+export const KIT_WEIGHT_KG = SHIRT_WEIGHT_KG * 2;
+
+/**
+ * Identifica se um item do carrinho/pedido é um Kit (ex: Kit Infantil camisa + calção)
+ * que possui o dobro do peso de uma camisa avulsa.
+ */
+export function isKitItem(item?: ShippingItemInput | null): boolean {
+  if (!item) return false;
+  const upperType = (item.type || '').toUpperCase().trim();
+  const lowerLeague = (item.league || '').toLowerCase();
+  const lowerName = (item.name || '').toLowerCase();
+  const cleanSize = (item.size || '').toUpperCase().trim();
+
+  if (upperType === 'INFANTIL' || upperType === 'KIT') return true;
+  if (lowerLeague.includes('infantil') || lowerLeague.includes('kit')) return true;
+  if (
+    lowerName.includes('infantil') ||
+    lowerName.includes('kids') ||
+    lowerName.includes('conjunto') ||
+    /\bkit\b/i.test(lowerName)
+  ) {
+    return true;
+  }
+  if (KIDS_SIZES.includes(cleanSize)) return true;
+
+  return false;
+}
+
+/**
+ * Retorna o peso unitário oficial (em kg) de um item:
+ * - Camisa: 0.30 kg (300g)
+ * - Kit: 0.60 kg (600g - dobro do peso da camisa)
+ */
+export function getItemShippingWeightKg(item?: ShippingItemInput | null): number {
+  return isKitItem(item) ? KIT_WEIGHT_KG : SHIRT_WEIGHT_KG;
+}
+
+/**
+ * Calcula o peso total da encomenda e as unidades equivalentes de peso
+ * (onde 1 camisa = 1 unidade de 300g e 1 kit = 2 unidades = 600g).
+ */
+export function calculatePackageWeightMetrics(
+  items?: ShippingItemInput[],
+  fallbackTotalPieces: number = 1
+): {
+  totalPieces: number;
+  equivalentUnits: number;
+  totalWeightKg: number;
+} {
+  if (Array.isArray(items) && items.length > 0) {
+    let totalPieces = 0;
+    let equivalentUnits = 0;
+    let totalWeightKg = 0;
+
+    for (const item of items) {
+      const qty = Math.max(1, Number(item.quantity) || 1);
+      const isKit = isKitItem(item);
+      totalPieces += qty;
+      equivalentUnits += qty * (isKit ? 2 : 1);
+      totalWeightKg += qty * (isKit ? KIT_WEIGHT_KG : SHIRT_WEIGHT_KG);
+    }
+
+    return {
+      totalPieces: Math.max(1, totalPieces),
+      equivalentUnits: Math.max(1, equivalentUnits),
+      totalWeightKg: Number(Math.max(SHIRT_WEIGHT_KG, totalWeightKg).toFixed(2)),
+    };
+  }
+
+  const pieces = Math.max(1, Number(fallbackTotalPieces) || 1);
+  return {
+    totalPieces: pieces,
+    equivalentUnits: pieces,
+    totalWeightKg: Number((pieces * SHIRT_WEIGHT_KG).toFixed(2)),
+  };
+}
 
 /**
  * Valor declarado fixo para seguro de carga no Melhor Envio: R$ 100,00 por peça
@@ -181,10 +272,13 @@ export function getFallbackShippingRates(
 
 /**
  * Calcula cotações de frete via API oficial do Melhor Envio (v2).
+ * O peso (300g por camisa e 600g por kit) é calculado internamente no servidor
+ * e mantido oculto para os clientes do site.
  */
 export async function calculateShippingRates({
   toPostalCode,
   totalPieces,
+  items,
   fromPostalCode,
   orderValue,
 }: CalculateShippingParams): Promise<ShippingCalculationResult> {
@@ -216,26 +310,29 @@ export async function calculateShippingRates({
     ? 'https://sandbox.melhorenvio.com.br/api/v2/me/shipment/calculate'
     : 'https://melhorenvio.com.br/api/v2/me/shipment/calculate';
 
+  // Métricas internas de peso e volume (Camisa = 300g | Kit = 600g / 2x camisa)
+  const metrics = calculatePackageWeightMetrics(items, totalPieces);
+  const qty = metrics.totalPieces;
+  const equivalentUnits = metrics.equivalentUnits;
+  const weight = metrics.totalWeightKg;
+
   // Se não houver token configurado, retorna estimativa de contingência de forma transparente
   if (!token) {
-    const fallbackOptions = getFallbackShippingRates(cleanToCep, totalPieces);
+    const fallbackOptions = getFallbackShippingRates(cleanToCep, equivalentUnits);
     return {
       success: true,
       options: fallbackOptions,
       fromPostalCode: originCep,
       toPostalCode: cleanToCep,
       isFallback: true,
-      packageWeightKg: Number((Math.max(1, totalPieces) * SHIRT_WEIGHT_KG).toFixed(2)),
       message: 'Cotação estimada (configure MELHOR_ENVIO_TOKEN para valores em tempo real).',
     };
   }
 
-  // Especificações da embalagem com base na gramatura de 300g por camisa
-  const qty = Math.max(1, totalPieces);
-  const weight = Number((qty * SHIRT_WEIGHT_KG).toFixed(2)); // Gramatura oficial: 300g (0.30 kg) por peça
-  const height = Math.max(4, Math.min(80, Math.ceil(qty * 1.5)));
-  const width = Math.max(16, Math.min(60, 20 + Math.floor(qty / 5)));
-  const length = Math.max(22, Math.min(60, 25 + Math.floor(qty / 5)));
+  // Especificações da embalagem com base na gramatura (300g por camisa / 600g por kit)
+  const height = Math.max(4, Math.min(80, Math.ceil(equivalentUnits * 1.5)));
+  const width = Math.max(16, Math.min(60, 20 + Math.floor(equivalentUnits / 5)));
+  const length = Math.max(22, Math.min(60, 25 + Math.floor(equivalentUnits / 5)));
 
   // Valor declarado / Seguro de carga fixo configurado: R$ 100,00 por peça
   const declaredValue = Number((qty * SHIRT_INSURANCE_VALUE_PER_PIECE).toFixed(2));
@@ -271,14 +368,13 @@ export async function calculateShippingRates({
 
     if (!res.ok) {
       console.warn(`[Melhor Envio] Falha na requisição HTTP ${res.status}. Usando fallback.`);
-      const fallbackOptions = getFallbackShippingRates(cleanToCep, totalPieces);
+      const fallbackOptions = getFallbackShippingRates(cleanToCep, equivalentUnits);
       return {
         success: true,
         options: fallbackOptions,
         fromPostalCode: originCep,
         toPostalCode: cleanToCep,
         isFallback: true,
-        packageWeightKg: weight,
         message: 'Cotação aproximada via Correios/Transportadoras.',
       };
     }
@@ -287,14 +383,13 @@ export async function calculateShippingRates({
 
     if (!Array.isArray(data)) {
       console.warn('[Melhor Envio] Resposta inesperada (não é array):', data);
-      const fallbackOptions = getFallbackShippingRates(cleanToCep, totalPieces);
+      const fallbackOptions = getFallbackShippingRates(cleanToCep, equivalentUnits);
       return {
         success: true,
         options: fallbackOptions,
         fromPostalCode: originCep,
         toPostalCode: cleanToCep,
         isFallback: true,
-        packageWeightKg: weight,
       };
     }
 
@@ -350,14 +445,13 @@ export async function calculateShippingRates({
 
     if (validOptions.length === 0) {
       // Se não houver opções atendidas pelo Melhor Envio naquele CEP, entrega o fallback
-      const fallbackOptions = getFallbackShippingRates(cleanToCep, totalPieces);
+      const fallbackOptions = getFallbackShippingRates(cleanToCep, equivalentUnits);
       return {
         success: true,
         options: fallbackOptions,
         fromPostalCode: originCep,
         toPostalCode: cleanToCep,
         isFallback: true,
-        packageWeightKg: weight,
       };
     }
 
@@ -367,18 +461,16 @@ export async function calculateShippingRates({
       fromPostalCode: originCep,
       toPostalCode: cleanToCep,
       isFallback: false,
-      packageWeightKg: weight,
     };
   } catch (error) {
     console.error('[Melhor Envio] Erro ao conectar:', error);
-    const fallbackOptions = getFallbackShippingRates(cleanToCep, totalPieces);
+    const fallbackOptions = getFallbackShippingRates(cleanToCep, equivalentUnits);
     return {
       success: true,
       options: fallbackOptions,
       fromPostalCode: originCep,
       toPostalCode: cleanToCep,
       isFallback: true,
-      packageWeightKg: weight,
     };
   }
 }

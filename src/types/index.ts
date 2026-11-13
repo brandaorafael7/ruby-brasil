@@ -53,6 +53,7 @@ export interface CartItem {
   slug: string;
   club: string;
   league: string;
+  type?: string;
   imageUrl: string;
   retailPrice: number;
   size: string;

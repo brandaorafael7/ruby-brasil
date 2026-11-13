@@ -116,13 +116,23 @@ export default function CheckoutPage() {
       setShippingNotice(null);
 
       try {
-        const currentSubtotal = useCartStore.getState().getSubtotal();
+        const state = useCartStore.getState();
+        const currentSubtotal = state.getSubtotal();
+        const currentItems = (state.items || []).map((item) => ({
+          productId: item.productId,
+          name: item.name,
+          type: item.type,
+          league: item.league,
+          size: item.size,
+          quantity: item.quantity,
+        }));
         const res = await fetch('/api/shipping/calculate', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             zipCode: cleanCep,
             totalPieces: Math.max(1, pieces),
+            items: currentItems,
             orderValue: currentSubtotal,
           }),
         });
@@ -221,6 +231,10 @@ export default function CheckoutPage() {
     setForm((prev) => ({ ...prev, document: formatted }));
   };
 
+  const cartWeightSignature = items
+    .map((i) => `${i.productId}:${i.size}:${i.quantity}:${i.type || ''}`)
+    .join('|');
+
   useEffect(() => {
     setMounted(true);
     // Executa apenas uma vez no carregamento da página
@@ -233,8 +247,15 @@ export default function CheckoutPage() {
         fetchAddressViaCep(initialZip);
         fetchShippingQuotes(initialZip, totalPieces);
       }
+      return;
     }
-  }, [fetchAddressViaCep, fetchShippingQuotes, totalPieces]);
+
+    const activeZip = sanitizePostalCode(form.zipCode || useCartStore.getState().shippingZipCode);
+    if (activeZip.length === 8 && totalPieces > 0) {
+      fetchShippingQuotes(activeZip, totalPieces);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [cartWeightSignature]);
 
   if (!mounted) return null;
 

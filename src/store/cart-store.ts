@@ -123,6 +123,7 @@ export const useCartStore = create<CartStore>()(
             const updated = [...state.items];
             updated[existingIndex].quantity += toAdd;
             updated[existingIndex].stockQuantity = stock;
+            updated[existingIndex].type = product.type;
             updated[existingIndex].isPreSale = preSaleInfo.isPreSale;
             updated[existingIndex].preSaleEta = preSaleInfo.preSaleEta;
             return { items: updated, isCartOpen: true };
@@ -135,6 +136,7 @@ export const useCartStore = create<CartStore>()(
             slug: product.slug,
             club: product.club,
             league: product.league,
+            type: product.type,
             imageUrl: product.imageUrl,
             retailPrice: product.retailPrice || 60.0,
             size,
@@ -182,6 +184,7 @@ export const useCartStore = create<CartStore>()(
                 ...newItems[existingIndex],
                 quantity: newItems[existingIndex].quantity + toAdd,
                 stockQuantity: stock,
+                type: product.type,
                 isPreSale: preSaleInfo.isPreSale,
                 preSaleEta: preSaleInfo.preSaleEta,
               };
@@ -193,6 +196,7 @@ export const useCartStore = create<CartStore>()(
                 slug: product.slug,
                 club: product.club,
                 league: product.league,
+                type: product.type,
                 imageUrl: product.imageUrl,
                 retailPrice: product.retailPrice || 60.0,
                 size,
