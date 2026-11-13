@@ -75,8 +75,36 @@ html.dark {
 body {
   color: var(--text-primary);
   background-color: var(--bg-canvas);
-  font-family: Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-family: 'Segoe UI', Inter, -apple-system, BlinkMacSystemFont, Roboto, sans-serif;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.015em;
   overflow-x: hidden;
+}
+
+/* Unifica toda a tipografia do site (incluindo classes font-mono e elementos técnicos)
+   na mesma família grotesque forte do título principal para coesão estética total */
+.font-mono,
+.font-sans,
+code,
+kbd,
+samp,
+pre,
+button,
+input,
+select,
+textarea {
+  font-family: 'Segoe UI', Inter, -apple-system, BlinkMacSystemFont, Roboto, sans-serif !important;
+  font-variant-numeric: tabular-nums;
+}
+
+h1,
+h2,
+h3,
+h4,
+.font-black,
+.font-extrabold,
+.font-bold {
+  letter-spacing: -0.025em;
 }
 
 .ruby-icon-adaptive {

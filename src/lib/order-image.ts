@@ -274,7 +274,7 @@ export async function generateOrderCardCanvas(data: OrderImageData): Promise<HTM
   ctx.fillText('RUBY BRASIL', padding + logoBoxSize + 16, currentY + 26);
 
   ctx.fillStyle = '#a1a1aa';
-  ctx.font = '700 11px monospace';
+  ctx.font = '700 11px "Segoe UI", Inter, system-ui, sans-serif';
   ctx.fillText('FOOTBALL ARCHIVE & ATELIER 1:1', padding + logoBoxSize + 16, currentY + 44);
 
   // Badge do Pedido no lado direito
@@ -290,11 +290,11 @@ export async function generateOrderCardCanvas(data: OrderImageData): Promise<HTM
   ctx.stroke();
 
   ctx.fillStyle = '#e11d48'; // Rose-600
-  ctx.font = '900 11px monospace';
+  ctx.font = '900 11px "Segoe UI", Inter, system-ui, sans-serif';
   ctx.fillText('PEDIDO OFICIAL', badgeX + 16, badgeY + 18);
 
   ctx.fillStyle = '#ffffff';
-  ctx.font = '800 15px monospace';
+  ctx.font = '800 15px "Segoe UI", Inter, system-ui, sans-serif';
   ctx.fillText(`#${data.orderNumber}`, badgeX + 16, badgeY + 36);
 
   currentY += headerHeight;
@@ -308,7 +308,7 @@ export async function generateOrderCardCanvas(data: OrderImageData): Promise<HTM
 
   // Cliente
   ctx.fillStyle = '#71717a';
-  ctx.font = '600 10px monospace';
+  ctx.font = '600 10px "Segoe UI", Inter, system-ui, sans-serif';
   ctx.fillText('CLIENTE', padding + 16, currentY + 24);
 
   ctx.fillStyle = '#fafafa';
@@ -322,7 +322,7 @@ export async function generateOrderCardCanvas(data: OrderImageData): Promise<HTM
   // Local / Cidade
   const col2X = padding + 340;
   ctx.fillStyle = '#71717a';
-  ctx.font = '600 10px monospace';
+  ctx.font = '600 10px "Segoe UI", Inter, system-ui, sans-serif';
   ctx.fillText('ENTREGA', col2X, currentY + 24);
 
   ctx.fillStyle = '#d4d4d8';
@@ -335,11 +335,11 @@ export async function generateOrderCardCanvas(data: OrderImageData): Promise<HTM
   // Quantidade de Peças
   const col3X = width - padding - 130;
   ctx.fillStyle = '#71717a';
-  ctx.font = '600 10px monospace';
+  ctx.font = '600 10px "Segoe UI", Inter, system-ui, sans-serif';
   ctx.fillText('VOLUME', col3X, currentY + 24);
 
   ctx.fillStyle = '#e11d48';
-  ctx.font = '800 14px monospace';
+  ctx.font = '800 14px "Segoe UI", Inter, system-ui, sans-serif';
   ctx.fillText(`${data.totalQuantity} camisa(s)`, col3X, currentY + 46);
 
   currentY += customerBoxHeight + 16;
@@ -394,7 +394,7 @@ export async function generateOrderCardCanvas(data: OrderImageData): Promise<HTM
     } else {
       // Fallback sem foto
       ctx.fillStyle = '#71717a';
-      ctx.font = '700 10px monospace';
+      ctx.font = '700 10px "Segoe UI", Inter, system-ui, sans-serif';
       ctx.textAlign = 'center';
       ctx.fillText('SEM FOTO', imgX + imgW / 2, imgY + imgH / 2 + 4);
       ctx.textAlign = 'left';
@@ -422,7 +422,7 @@ export async function generateOrderCardCanvas(data: OrderImageData): Promise<HTM
 
     // Badge Tamanho (BR + EN)
     const sizeText = `Size: ${sizeInfo.bilingualCompact}`;
-    ctx.font = '800 11px monospace';
+    ctx.font = '800 11px "Segoe UI", Inter, system-ui, sans-serif';
     const sizeBadgeW = ctx.measureText(sizeText).width + 16;
     roundRect(ctx, badgeCursorX, badgeSizeY, sizeBadgeW, 22, 6);
     ctx.fillStyle = '#27272a';
@@ -433,7 +433,7 @@ export async function generateOrderCardCanvas(data: OrderImageData): Promise<HTM
 
     // Badge Quantidade
     const qtyText = `Qty: ${item.quantity}un`;
-    ctx.font = '800 11px monospace';
+    ctx.font = '800 11px "Segoe UI", Inter, system-ui, sans-serif';
     const qtyBadgeW = ctx.measureText(qtyText).width + 16;
     roundRect(ctx, badgeCursorX, badgeSizeY, qtyBadgeW, 22, 6);
     ctx.fillStyle = '#27272a';
@@ -444,7 +444,7 @@ export async function generateOrderCardCanvas(data: OrderImageData): Promise<HTM
 
     // Badge Modelo em Inglês (Fan Version / Player Version / Kids Kit / Women's)
     const modelBadgeText = `${modelInfo.en} (${modelInfo.pt})`;
-    ctx.font = '700 10px monospace';
+    ctx.font = '700 10px "Segoe UI", Inter, system-ui, sans-serif';
     const modelBadgeW = ctx.measureText(modelBadgeText).width + 16;
     roundRect(ctx, badgeCursorX, badgeSizeY, modelBadgeW, 22, 6);
     ctx.fillStyle = '#18181b';
@@ -474,11 +474,11 @@ export async function generateOrderCardCanvas(data: OrderImageData): Promise<HTM
     if (item.customName) {
       const customString = `★ Custom: ${item.customName} #${item.customNumber || 'S/N'} • EN Size: ${sizeInfo.enCode} (${sizeInfo.enName})`;
       ctx.fillStyle = '#fbbf24'; // Amber-400
-      ctx.font = '600 11px monospace';
+      ctx.font = '600 11px "Segoe UI", Inter, system-ui, sans-serif';
       ctx.fillText(customString, textStartX, rowY + 76);
     } else {
       ctx.fillStyle = '#a1a1aa';
-      ctx.font = '500 11px monospace';
+      ctx.font = '500 11px "Segoe UI", Inter, system-ui, sans-serif';
       ctx.fillText(
         `Model: ${modelInfo.en} • Size EN: ${sizeInfo.enCode} (${sizeInfo.enName}) • Thai 1:1`,
         textStartX,
@@ -490,7 +490,7 @@ export async function generateOrderCardCanvas(data: OrderImageData): Promise<HTM
     if (item.totalItemPrice !== undefined) {
       ctx.textAlign = 'right';
       ctx.fillStyle = '#34d399'; // Emerald-400
-      ctx.font = '800 14px monospace';
+      ctx.font = '800 14px "Segoe UI", Inter, system-ui, sans-serif';
       ctx.fillText(formatBRL(item.totalItemPrice), width - padding - 16, rowY + 50);
       ctx.textAlign = 'left';
     }
@@ -508,7 +508,7 @@ export async function generateOrderCardCanvas(data: OrderImageData): Promise<HTM
   ctx.stroke();
 
   ctx.fillStyle = '#a1a1aa';
-  ctx.font = '700 10px monospace';
+  ctx.font = '700 10px "Segoe UI", Inter, system-ui, sans-serif';
   ctx.fillText(
     'SIZE LEGEND (BR ➔ ENGLISH):  P = S (Small)  |  M = M (Medium)  |  G = L (Large)  |  GG = XL  |  XG = 2XL (XXL)  |  3XL  |  4XL',
     padding + 16,
@@ -516,7 +516,7 @@ export async function generateOrderCardCanvas(data: OrderImageData): Promise<HTM
   );
 
   ctx.fillStyle = '#71717a';
-  ctx.font = '600 10px monospace';
+  ctx.font = '600 10px "Segoe UI", Inter, system-ui, sans-serif';
   ctx.fillText(
     "MODEL LEGEND (PT ➔ EN):  Torcedor = Fan Version  •  Jogador = Player Version  •  Feminina = Women's  •  Infantil = Kids Kit (16-28)",
     padding + 16,
@@ -546,11 +546,11 @@ export async function generateOrderCardCanvas(data: OrderImageData): Promise<HTM
   // Linha 2: Grande Total no lado direito
   ctx.textAlign = 'right';
   ctx.fillStyle = '#a1a1aa';
-  ctx.font = '600 11px monospace';
+  ctx.font = '600 11px "Segoe UI", Inter, system-ui, sans-serif';
   ctx.fillText('VALOR TOTAL DO PEDIDO', width - padding - 20, sumY);
 
   ctx.fillStyle = '#34d399'; // Emerald-400
-  ctx.font = '900 24px monospace';
+  ctx.font = '900 24px "Segoe UI", Inter, system-ui, sans-serif';
   ctx.fillText(formatBRL(data.finalTotal), width - padding - 20, sumY + 30);
   ctx.textAlign = 'left';
 
@@ -562,7 +562,7 @@ export async function generateOrderCardCanvas(data: OrderImageData): Promise<HTM
   ctx.fillText('Ruby Brasil • Mantos Oficiais & Arquivo Histórico 1:1', padding, currentY + 14);
 
   ctx.textAlign = 'right';
-  ctx.font = '700 11px monospace';
+  ctx.font = '700 11px "Segoe UI", Inter, system-ui, sans-serif';
   ctx.fillStyle = '#a1a1aa';
   ctx.fillText('rubybr.com.br', width - padding, currentY + 14);
   ctx.textAlign = 'left';
