@@ -63,7 +63,124 @@ export const MODEL_LEGEND_EN_ITEMS = [
   { pt: 'Feminina', en: "Women's Version", desc: 'Ladies Cut' },
   { pt: 'Infantil', en: 'Kids Kit (Youth)', desc: 'Jersey + Shorts Set' },
   { pt: 'Retrô', en: 'Retro Version', desc: 'Classic Vintage' },
+  { pt: 'Grade (12 un)', en: '12-Pack Grade', desc: 'Closed Assorted Pack (12 pcs)' },
 ];
+
+export const GRADE_TOTAL_PIECES = 12;
+
+export const DEFAULT_GRADE_SIZES: Record<string, number> = {
+  P: 2,
+  M: 4,
+  G: 4,
+  GG: 2,
+  XG: 0,
+  '3XL': 0,
+  '4XL': 0,
+};
+
+export interface ProductGradeEntry {
+  size: string;
+  enCode: string;
+  quantity: number;
+}
+
+export interface ProductGradeInfo {
+  isGrade: boolean;
+  gradeSizes: Record<string, number>;
+  entries: ProductGradeEntry[];
+  totalPieces: number;
+  compactLabel: string;
+  bilingualCompactLabel: string;
+  gradeStock: number;
+}
+
+export function isGradeProduct(
+  productOrItem?: {
+    type?: string | null;
+    size?: string | null;
+    gallery?: string | null;
+    isGrade?: boolean;
+  } | null
+): boolean {
+  if (!productOrItem) return false;
+  if (productOrItem.isGrade === true) return true;
+  const upperType = (productOrItem.type || '').toUpperCase().trim();
+  if (upperType === 'GRADE') return true;
+  const upperSize = (productOrItem.size || '').toUpperCase().trim();
+  if (upperSize === 'GRADE' || upperSize.startsWith('GRADE:') || upperSize.startsWith('GRADE ')) {
+    return true;
+  }
+  if (productOrItem.gallery) {
+    try {
+      const parsed = JSON.parse(productOrItem.gallery);
+      if (parsed && typeof parsed === 'object' && !Array.isArray(parsed) && parsed.isGrade === true) {
+        return true;
+      }
+    } catch {
+      // ignore
+    }
+  }
+  return false;
+}
+
+export function getProductGradeInfo(product?: {
+  type?: string | null;
+  gallery?: string | null;
+  variants?: Array<{ size: string; stockQuantity: number }>;
+} | null): ProductGradeInfo {
+  const isGrade = isGradeProduct(product);
+  let gradeSizes: Record<string, number> = { ...DEFAULT_GRADE_SIZES };
+
+  if (product?.gallery) {
+    try {
+      const parsed = JSON.parse(product.gallery);
+      if (parsed && typeof parsed === 'object' && !Array.isArray(parsed) && parsed.gradeSizes) {
+        const cleaned: Record<string, number> = {};
+        for (const [k, v] of Object.entries(parsed.gradeSizes)) {
+          const qty = Math.max(0, Number(v) || 0);
+          cleaned[k] = qty;
+        }
+        if (Object.values(cleaned).reduce((a, b) => a + b, 0) > 0) {
+          gradeSizes = cleaned;
+        }
+      }
+    } catch {
+      // ignore
+    }
+  }
+
+  const entries: ProductGradeEntry[] = Object.entries(gradeSizes)
+    .filter(([, qty]) => qty > 0)
+    .map(([size, quantity]) => ({
+      size,
+      enCode: SIZE_EN_MAP[size.toUpperCase()]?.enCode || size,
+      quantity,
+    }));
+
+  const totalPieces = entries.reduce((sum, e) => sum + e.quantity, 0) || GRADE_TOTAL_PIECES;
+  const compactParts = entries.map((e) => `${e.quantity}${e.size}`).join(', ');
+  const bilingualParts = entries
+    .map((e) => (e.size === e.enCode ? `${e.quantity}x ${e.size}` : `${e.quantity}x ${e.size}(${e.enCode})`))
+    .join(' • ');
+
+  const gradeVariant = product?.variants?.find((v) => v.size.toUpperCase().startsWith('GRADE'));
+  const gradeStock =
+    gradeVariant !== undefined
+      ? Math.max(0, gradeVariant.stockQuantity)
+      : product?.variants && product.variants.length > 0
+      ? Math.max(0, product.variants[0].stockQuantity)
+      : 20;
+
+  return {
+    isGrade,
+    gradeSizes,
+    entries,
+    totalPieces,
+    compactLabel: compactParts ? `GRADE: ${compactParts}` : 'GRADE (12 Peças)',
+    bilingualCompactLabel: bilingualParts ? `${bilingualParts} (${totalPieces} un)` : 'Grade 12 Peças (12 pcs)',
+    gradeStock,
+  };
+}
 
 export function getEnglishSizeInfo(size?: string | null): EnglishSizeInfo {
   const raw = (size || '').trim().toUpperCase();
@@ -74,6 +191,18 @@ export function getEnglishSizeInfo(size?: string | null): EnglishSizeInfo {
       enName: 'Standard',
       bilingualCompact: '-',
       bilingualFull: '-',
+    };
+  }
+  if (raw === 'GRADE' || raw.startsWith('GRADE:') || raw.startsWith('GRADE ')) {
+    const cleanBreakdown = raw.replace(/^GRADE:?\s*/i, '').trim();
+    const label = cleanBreakdown ? `Grade 12un (${cleanBreakdown})` : 'Grade Fechada (12 un)';
+    const enLabel = cleanBreakdown ? `12-Pack (${cleanBreakdown})` : '12-Pack Assorted Grade';
+    return {
+      br: label,
+      enCode: enLabel,
+      enName: '12 pcs Assorted Grade',
+      bilingualCompact: label,
+      bilingualFull: `${label} [EN: ${enLabel}]`,
     };
   }
   const mapped = SIZE_EN_MAP[raw];
@@ -122,6 +251,13 @@ export function getModelTypeBilingual(
   const upperType = typeStr.toUpperCase().trim();
   const lowerAll = `${typeStr} ${leagueStr} ${nameStr}`.toLowerCase();
 
+  if (upperType === 'GRADE' || lowerAll.includes('grade fechada')) {
+    return {
+      pt: 'Grade (12 Peças)',
+      en: '12-Pack Grade',
+      bilingual: 'Grade 12un (12-Pack Grade)',
+    };
+  }
   if (upperType === 'INFANTIL' || lowerAll.includes('infantil') || lowerAll.includes('kids')) {
     return {
       pt: 'Infantil',
@@ -256,7 +392,13 @@ export function getProductGalleryImages(
 
 export function serializeProductPreSaleGallery(
   existingGallery: string | null | undefined,
-  meta: { isPreSale: boolean; preSaleEta?: string | null; images?: string[] }
+  meta: {
+    isPreSale: boolean;
+    preSaleEta?: string | null;
+    images?: string[];
+    isGrade?: boolean;
+    gradeSizes?: Record<string, number>;
+  }
 ): string {
   let baseObj: Record<string, any> = {};
   if (existingGallery) {
@@ -274,6 +416,13 @@ export function serializeProductPreSaleGallery(
 
   baseObj.isPreSale = Boolean(meta.isPreSale);
   baseObj.preSaleEta = meta.preSaleEta ? String(meta.preSaleEta).trim() : '';
+
+  if (meta.isGrade !== undefined) {
+    baseObj.isGrade = Boolean(meta.isGrade);
+  }
+  if (meta.gradeSizes && typeof meta.gradeSizes === 'object') {
+    baseObj.gradeSizes = meta.gradeSizes;
+  }
 
   if (Array.isArray(meta.images)) {
     baseObj.images = meta.images.map((u) => String(u).trim()).filter(Boolean);

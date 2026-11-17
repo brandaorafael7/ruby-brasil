@@ -47,6 +47,10 @@ import {
   getModelTypeBilingual,
   SIZE_LEGEND_EN_ITEMS,
   MODEL_LEGEND_EN_ITEMS,
+  isGradeProduct,
+  getProductGradeInfo,
+  DEFAULT_GRADE_SIZES,
+  GRADE_TOTAL_PIECES,
 } from '@/lib/utils';
 import { PromotionalBatch, WholesaleTier } from '@/types';
 import {
@@ -364,7 +368,7 @@ export default function AdminDashboardClient({
   initialOrders,
 }: Props) {
   const [adminEmail, setAdminEmail] = useState<string>('admin@rubybr.com.br');
-  const [activeTab, setActiveTab] = useState<'products' | 'batch' | 'orders'>('products');
+  const [activeTab, setActiveTab] = useState<'products' | 'grades' | 'batch' | 'orders'>('products');
   const [mounted, setMounted] = useState(false);
   const [isDark, setIsDark] = useState(false);
 
@@ -599,7 +603,7 @@ export default function AdminDashboardClient({
     });
   };
 
-  // Formulário de Peça
+  // Formulário de Peça / Grade
   const [formData, setFormData] = useState({
     id: '',
     name: '',
@@ -616,6 +620,9 @@ export default function AdminDashboardClient({
     customPrice: '15.00',
     isPreSale: false,
     preSaleEta: '',
+    isGrade: false,
+    gradeStock: 20,
+    gradeSizes: { ...DEFAULT_GRADE_SIZES } as Record<string, number>,
     variants: [
       { size: 'P', stockQuantity: 50 },
       { size: 'M', stockQuantity: 100 },
@@ -769,6 +776,9 @@ export default function AdminDashboardClient({
       customPrice: '15.00',
       isPreSale: defaultPreSale,
       preSaleEta: defaultPreSale ? 'Chega em 15 dias' : '',
+      isGrade: false,
+      gradeStock: 20,
+      gradeSizes: { ...DEFAULT_GRADE_SIZES },
       variants: [
         { size: 'P', stockQuantity: 50 },
         { size: 'M', stockQuantity: 100 },
@@ -782,11 +792,42 @@ export default function AdminDashboardClient({
     setIsModalOpen(true);
   };
 
+  const handleOpenCreateGradeModal = () => {
+    setIsEditing(false);
+    setImageUploadMode('file');
+    setNewImageUrlInput('');
+    if (fileInputRef.current) fileInputRef.current.value = '';
+    setFormData({
+      id: '',
+      name: '',
+      club: '',
+      league: 'Brasileirão',
+      season: '25/26',
+      type: 'GRADE',
+      imageUrl: '',
+      images: [],
+      retailPrice: '660.00',
+      description: 'Grade fechada com 12 camisas iguais de tamanhos pré-definidos no padrão Tailandês 1:1.',
+      isActive: true,
+      allowCustom: false,
+      customPrice: '0.00',
+      isPreSale: false,
+      preSaleEta: '',
+      isGrade: true,
+      gradeStock: 20,
+      gradeSizes: { ...DEFAULT_GRADE_SIZES },
+      variants: [{ size: 'GRADE', stockQuantity: 20 }],
+    });
+    setIsModalOpen(true);
+  };
+
   const handleOpenEditModal = (p: any) => {
     setIsEditing(true);
     setImageUploadMode('file');
     setNewImageUrlInput('');
     if (fileInputRef.current) fileInputRef.current.value = '';
+    const isGrade = isGradeProduct(p);
+    const gradeInfo = getProductGradeInfo(p);
     const standardSizes = getStandardSizesForProduct(p);
     const currentVariants = standardSizes.map((size) => {
       const found = p.variants?.find((v: any) => v.size === size);
@@ -802,17 +843,25 @@ export default function AdminDashboardClient({
       club: p.club || '',
       league: p.league || 'Brasileirão',
       season: p.season || '24/25',
-      type: p.type || 'TORCEDOR',
+      type: isGrade ? 'GRADE' : p.type || 'TORCEDOR',
       imageUrl: existingImages[0] || p.imageUrl || '',
       images: existingImages,
-      retailPrice: String(p.retailPrice || '60.00'),
+      retailPrice: String(p.retailPrice || (isGrade ? '660.00' : '60.00')),
       description: p.description || '',
       isActive: p.isActive,
-      allowCustom: p.allowCustom ?? true,
+      allowCustom: isGrade ? false : p.allowCustom ?? true,
       customPrice: String(p.customPrice || '15.00'),
       isPreSale: preSaleInfo.isPreSale,
       preSaleEta: preSaleInfo.preSaleEta,
-      variants: currentVariants,
+      isGrade,
+      gradeStock: gradeInfo.gradeStock,
+      gradeSizes: {
+        ...DEFAULT_GRADE_SIZES,
+        ...gradeInfo.gradeSizes,
+      },
+      variants: isGrade
+        ? [{ size: 'GRADE', stockQuantity: gradeInfo.gradeStock }]
+        : currentVariants,
     });
     setIsModalOpen(true);
   };
@@ -832,17 +881,40 @@ export default function AdminDashboardClient({
       return;
     }
 
+    const isGradeMode = formData.isGrade || formData.type === 'GRADE';
+    if (isGradeMode) {
+      const totalGradeSum = Object.values(formData.gradeSizes || {}).reduce(
+        (acc, val) => acc + (Math.max(0, Number(val) || 0)),
+        0
+      );
+      if (totalGradeSum !== GRADE_TOTAL_PIECES) {
+        alert(
+          `A Grade Fechada precisa ter exatamente ${GRADE_TOTAL_PIECES} peças somadas nos tamanhos definidos.\nAtualmente a soma está em ${totalGradeSum} peça(s). Ajuste as quantidades de cada tamanho até somar 12.`
+        );
+        return;
+      }
+    }
+
     setIsSavingProduct(true);
 
     try {
       const url = '/api/products';
       const method = isEditing ? 'PUT' : 'POST';
 
+      const payloadVariants = isGradeMode
+        ? [{ size: 'GRADE', stockQuantity: Math.max(0, Number(formData.gradeStock) || 0) }]
+        : formData.variants;
+
       const res = await fetch(url, {
         method,
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           ...formData,
+          type: isGradeMode ? 'GRADE' : formData.type,
+          isGrade: isGradeMode,
+          gradeSizes: isGradeMode ? formData.gradeSizes : undefined,
+          allowCustom: isGradeMode ? false : formData.allowCustom,
+          variants: payloadVariants,
           imageUrl: finalImages[0],
           images: finalImages,
         }),
@@ -985,7 +1057,15 @@ export default function AdminDashboardClient({
     return products.filter((p) => getProductPreSaleInfo(p).isPreSale).length;
   }, [products]);
 
-  const filteredProducts = products.filter((p) => {
+  const gradeProducts = useMemo(() => {
+    return products.filter((p) => isGradeProduct(p));
+  }, [products]);
+
+  const regularProducts = useMemo(() => {
+    return products.filter((p) => !isGradeProduct(p));
+  }, [products]);
+
+  const filteredProducts = regularProducts.filter((p) => {
     const preSaleInfo = getProductPreSaleInfo(p);
     const matchesSearch =
       p.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -998,6 +1078,15 @@ export default function AdminDashboardClient({
       p.league === selectedLeague;
 
     return matchesSearch && matchesLeague;
+  });
+
+  const filteredGradeProducts = gradeProducts.filter((p) => {
+    const matchesSearch =
+      !searchTerm.trim() ||
+      p.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      p.club?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      p.league?.toLowerCase().includes(searchTerm.toLowerCase());
+    return matchesSearch;
   });
 
   const totalSold = batch ? batch.totalQuota - batch.remainingQuota : 0;
@@ -1094,6 +1183,17 @@ export default function AdminDashboardClient({
               title={isDark ? 'Ativar Modo Claro' : 'Ativar Modo Escuro'}
             >
               {isDark ? <Sun className="w-4 h-4 text-amber-400" /> : <Moon className="w-4 h-4 text-zinc-600" />}
+            </button>
+
+            {/* BOTÃO ADICIONAR GRADE FECHADA (12 PEÇAS) */}
+            <button
+              onClick={handleOpenCreateGradeModal}
+              className="px-3 sm:px-3.5 py-2 rounded-xl text-xs font-bold border tactile flex items-center gap-1.5 shrink-0 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border-emerald-500/30 hover:bg-emerald-500/20"
+              title="Cadastrar Grade Fechada com 12 peças e tamanhos pré-definidos"
+            >
+              <Layers className="w-3.5 h-3.5" />
+              <span className="hidden md:inline">Adicionar Grade (12un)</span>
+              <span className="md:hidden">Grade 12un</span>
             </button>
 
             {/* BOTÃO ADICIONAR PRÉ-VENDA */}
@@ -1322,7 +1422,28 @@ export default function AdminDashboardClient({
                   : 'bg-[var(--bg-studio)]'
               }`}
             >
-              {products.length}
+              {regularProducts.length}
+            </span>
+          </button>
+
+          <button
+            onClick={() => setActiveTab('grades')}
+            className={`px-3.5 sm:px-4 py-2 rounded-full text-xs font-bold whitespace-nowrap tactile inline-flex items-center gap-2 border shrink-0 ${
+              activeTab === 'grades'
+                ? 'bg-emerald-600 text-white border-emerald-600 shadow-sm'
+                : 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border-emerald-500/30 hover:bg-emerald-500/20'
+            }`}
+          >
+            <Layers className="w-3.5 h-3.5" />
+            <span>Grades Fechadas (12 Peças)</span>
+            <span
+              className={`px-1.5 py-0.2 rounded-full font-mono text-[10px] ${
+                activeTab === 'grades'
+                  ? 'bg-zinc-950/30 text-white'
+                  : 'bg-emerald-500/20 text-emerald-700 dark:text-emerald-300'
+              }`}
+            >
+              {gradeProducts.length}
             </span>
           </button>
 
@@ -1838,6 +1959,290 @@ export default function AdminDashboardClient({
                                 onClick={() => handleDeleteProduct(p.id, p.name)}
                                 className="p-2 rounded-xl border border-rose-500/20 bg-rose-500/10 hover:bg-rose-500/20 text-rose-600 dark:text-rose-400 tactile"
                                 title="Excluir peça"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+
+        {/* ABA 1.5: GRADES FECHADAS (12 PEÇAS) */}
+        {activeTab === 'grades' && (
+          <div
+            className="rounded-2xl border p-4 sm:p-6 shadow-sm overflow-hidden"
+            style={{
+              backgroundColor: 'var(--bg-surface)',
+              borderColor: 'var(--border-crisp)',
+            }}
+          >
+            <div
+              className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 mb-6 pb-5 border-b"
+              style={{ borderColor: 'var(--border-crisp)' }}
+            >
+              <div>
+                <h2
+                  className="text-lg sm:text-xl font-black flex items-center gap-2 tracking-tight uppercase"
+                  style={{ color: 'var(--text-primary)' }}
+                >
+                  <Layers className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
+                  Grades Fechadas (12 Peças Iguais)
+                </h2>
+                <p
+                  className="text-xs mt-1"
+                  style={{ color: 'var(--text-secondary)' }}
+                >
+                  Cadastre pacotes fechados de 12 camisas do mesmo modelo com distribuição de tamanhos definida por você e preço fixo da grade.
+                </p>
+              </div>
+
+              <div className="flex flex-wrap items-center gap-2">
+                <button
+                  type="button"
+                  onClick={handleOpenCreateGradeModal}
+                  className="px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-black text-xs flex items-center gap-2 shadow-sm tactile"
+                >
+                  <PlusCircle className="w-4 h-4" />
+                  <span>Cadastrar Nova Grade (12 Peças)</span>
+                </button>
+              </div>
+            </div>
+
+            {/* BUSCA DE GRADES */}
+            <div className="mb-5">
+              <div className="relative w-full sm:w-96">
+                <Search
+                  className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none"
+                  style={{ color: 'var(--text-muted)' }}
+                />
+                <input
+                  type="text"
+                  placeholder="Buscar grade por nome, clube ou seleção..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="w-full rounded-full pl-10 pr-4 py-2 text-xs font-medium border focus:outline-none focus:ring-2 focus:ring-emerald-600 tactile"
+                  style={{
+                    backgroundColor: 'var(--bg-studio)',
+                    borderColor: 'var(--border-crisp)',
+                    color: 'var(--text-primary)',
+                  }}
+                />
+              </div>
+            </div>
+
+            {/* TABELA DE GRADES CADASTRADAS */}
+            <div
+              className="overflow-x-auto rounded-2xl border"
+              style={{
+                backgroundColor: 'var(--bg-surface)',
+                borderColor: 'var(--border-crisp)',
+              }}
+            >
+              <table className="w-full text-left text-xs">
+                <thead
+                  className="uppercase text-[10px] font-mono font-bold tracking-wider border-b"
+                  style={{
+                    backgroundColor: 'var(--bg-studio)',
+                    borderColor: 'var(--border-crisp)',
+                    color: 'var(--text-muted)',
+                  }}
+                >
+                  <tr>
+                    <th className="py-3 px-4">Grade (12 Peças)</th>
+                    <th className="py-3 px-3">Clube & Temporada</th>
+                    <th className="py-3 px-3">Composição Fixa (12 Tamanhos)</th>
+                    <th className="py-3 px-3">Valor da Grade</th>
+                    <th className="py-3 px-3 text-center">Grades em Estoque</th>
+                    <th className="py-3 px-3">Status</th>
+                    <th className="py-3 px-4 text-right">Ações</th>
+                  </tr>
+                </thead>
+                <tbody
+                  className="divide-y"
+                  style={{ borderColor: 'var(--border-crisp)' }}
+                >
+                  {filteredGradeProducts.length === 0 ? (
+                    <tr>
+                      <td
+                        colSpan={7}
+                        className="py-14 text-center"
+                        style={{ color: 'var(--text-muted)' }}
+                      >
+                        <Layers className="w-10 h-10 mx-auto mb-2 opacity-40" />
+                        <p
+                          className="font-bold text-sm"
+                          style={{ color: 'var(--text-primary)' }}
+                        >
+                          Nenhuma Grade de 12 Peças cadastrada ainda
+                        </p>
+                        <p className="text-xs mt-1 max-w-md mx-auto">
+                          Clique em &ldquo;Cadastrar Nova Grade (12 Peças)&rdquo; acima para definir os tamanhos da grade e estipular o preço fechado.
+                        </p>
+                      </td>
+                    </tr>
+                  ) : (
+                    filteredGradeProducts.map((p) => {
+                      const gInfo = getProductGradeInfo(p);
+                      const galleryCount = getProductGalleryImages(p).length;
+                      const unitEquivalent = (Number(p.retailPrice) || 660) / (gInfo.totalPieces || 12);
+
+                      return (
+                        <tr
+                          key={p.id}
+                          className="transition-colors hover:bg-[var(--bg-studio)]"
+                        >
+                          <td className="py-3 px-4">
+                            <div className="flex items-center gap-3">
+                              <div
+                                className="relative w-12 h-12 rounded-xl overflow-hidden shrink-0 border flex items-center justify-center"
+                                style={{
+                                  backgroundColor: 'var(--bg-studio)',
+                                  borderColor: 'var(--border-crisp)',
+                                }}
+                              >
+                                <img
+                                  src={p.imageUrl}
+                                  alt={p.name}
+                                  className="w-full h-full object-cover"
+                                  onError={(e) => {
+                                    (e.target as HTMLImageElement).src =
+                                      'https://placehold.co/100x100/18181b/10b981?text=Grade';
+                                  }}
+                                />
+                                {galleryCount > 1 && (
+                                  <span className="absolute bottom-0.5 right-0.5 px-1 py-0.2 rounded bg-zinc-950/85 text-white text-[9px] font-bold">
+                                    {galleryCount}📷
+                                  </span>
+                                )}
+                              </div>
+                              <div>
+                                <div className="flex items-center gap-1.5 flex-wrap">
+                                  <strong
+                                    className="font-bold text-xs sm:text-sm"
+                                    style={{ color: 'var(--text-primary)' }}
+                                  >
+                                    {p.name}
+                                  </strong>
+                                  <span className="px-2 py-0.5 rounded-md bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30 text-[10px] font-black uppercase">
+                                    📦 Grade 12un
+                                  </span>
+                                </div>
+                                <span
+                                  className="text-[11px] block mt-0.5"
+                                  style={{ color: 'var(--text-muted)' }}
+                                >
+                                  /{p.slug}
+                                </span>
+                              </div>
+                            </div>
+                          </td>
+                          <td className="py-3 px-3">
+                            <strong
+                              className="block text-xs font-bold"
+                              style={{ color: 'var(--text-primary)' }}
+                            >
+                              {p.club}
+                            </strong>
+                            <span
+                              className="text-[11px]"
+                              style={{ color: 'var(--text-secondary)' }}
+                            >
+                              {p.league} • {p.season}
+                            </span>
+                          </td>
+                          <td className="py-3 px-3">
+                            <div className="flex flex-wrap gap-1 max-w-xs">
+                              {gInfo.entries.map((entry) => (
+                                <span
+                                  key={entry.size}
+                                  className="px-2 py-0.5 rounded-md border text-[11px] font-bold"
+                                  style={{
+                                    backgroundColor: 'var(--bg-studio)',
+                                    borderColor: 'var(--border-crisp)',
+                                    color: 'var(--text-primary)',
+                                  }}
+                                >
+                                  <strong className="text-emerald-600 dark:text-emerald-400">
+                                    {entry.quantity}x
+                                  </strong>{' '}
+                                  {entry.size}
+                                  {entry.enCode !== entry.size ? ` (${entry.enCode})` : ''}
+                                </span>
+                              ))}
+                            </div>
+                          </td>
+                          <td className="py-3 px-3">
+                            <strong
+                              className="text-sm font-black block tabular-nums"
+                              style={{ color: 'var(--text-primary)' }}
+                            >
+                              {formatCurrency(p.retailPrice || 660)}
+                            </strong>
+                            <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-bold">
+                              ({formatCurrency(unitEquivalent)}/peça)
+                            </span>
+                          </td>
+                          <td className="py-3 px-3 text-center">
+                            <span
+                              className={`px-2.5 py-1 rounded-lg font-black text-xs border ${
+                                gInfo.gradeStock > 0
+                                  ? 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border-emerald-500/30'
+                                  : 'bg-rose-500/10 text-rose-600 border-rose-500/30'
+                              }`}
+                            >
+                              {gInfo.gradeStock} {gInfo.gradeStock === 1 ? 'grade' : 'grades'}
+                            </span>
+                          </td>
+                          <td className="py-3 px-3">
+                            <button
+                              type="button"
+                              onClick={() => handleToggleActive(p)}
+                              className={`px-2.5 py-1 rounded-full text-[10px] font-bold inline-flex items-center gap-1 border tactile ${
+                                p.isActive
+                                  ? 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border-emerald-500/30'
+                                  : 'bg-zinc-500/15 text-zinc-500 border-zinc-500/30'
+                              }`}
+                            >
+                              {p.isActive ? (
+                                <>
+                                  <Eye className="w-3 h-3" /> Ativa
+                                </>
+                              ) : (
+                                <>
+                                  <EyeOff className="w-3 h-3" /> Pausada
+                                </>
+                              )}
+                            </button>
+                          </td>
+                          <td className="py-3 px-4 text-right">
+                            <div className="flex items-center justify-end gap-1.5">
+                              <a
+                                href={`/produto/${p.slug}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="p-2 rounded-xl border border-[var(--border-crisp)] bg-[var(--bg-surface)] hover:bg-[var(--bg-studio)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] tactile"
+                                title="Ver página da Grade na loja"
+                              >
+                                <ExternalLink className="w-3.5 h-3.5" />
+                              </a>
+                              <button
+                                onClick={() => handleOpenEditModal(p)}
+                                className="p-2 rounded-xl border border-[var(--border-crisp)] bg-[var(--bg-surface)] hover:bg-[var(--bg-studio)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] tactile"
+                                title="Editar Grade"
+                              >
+                                <Edit2 className="w-3.5 h-3.5" />
+                              </button>
+                              <button
+                                onClick={() => handleDeleteProduct(p.id, p.name)}
+                                className="p-2 rounded-xl border border-rose-500/20 bg-rose-500/10 hover:bg-rose-500/20 text-rose-600 dark:text-rose-400 tactile"
+                                title="Excluir Grade"
                               >
                                 <Trash2 className="w-3.5 h-3.5" />
                               </button>
@@ -2591,13 +2996,19 @@ export default function AdminDashboardClient({
               className="text-lg sm:text-xl font-black flex items-center gap-2 mb-1 tracking-tight"
               style={{ color: 'var(--text-primary)' }}
             >
-              {formData.isPreSale ? (
+              {formData.isGrade || formData.type === 'GRADE' ? (
+                <Layers className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
+              ) : formData.isPreSale ? (
                 <CalendarClock className="w-5 h-5 text-amber-500" />
               ) : (
                 <Package className="w-5 h-5 text-rose-600 dark:text-rose-400" />
               )}
               {isEditing
-                ? 'Editar Peça'
+                ? formData.isGrade || formData.type === 'GRADE'
+                  ? 'Editar Grade Fechada (12 Peças)'
+                  : 'Editar Peça'
+                : formData.isGrade || formData.type === 'GRADE'
+                ? 'Cadastrar Nova Grade Fechada (12 Peças)'
                 : formData.isPreSale
                 ? 'Adicionar Modelo em Pré-Venda (Irá Chegar)'
                 : 'Adicionar Nova Camisa ao Catálogo'}
@@ -2606,12 +3017,72 @@ export default function AdminDashboardClient({
               className="text-xs mb-5"
               style={{ color: 'var(--text-secondary)' }}
             >
-              {formData.isPreSale
+              {formData.isGrade || formData.type === 'GRADE'
+                ? 'Defina a composição dos 12 tamanhos da grade e estipule o preço fechado da grade.'
+                : formData.isPreSale
                 ? 'Cadastre um lançamento ou reposição que irá chegar para liberar reservas antecipadas na loja.'
                 : 'Preencha os dados da camisa para disponibilizar no catálogo oficial.'}
             </p>
 
             <form onSubmit={handleSaveProduct} className="space-y-4">
+              {/* SELETOR DE FORMATO: CAMISA AVULSA vs GRADE FECHADA (12 PEÇAS) */}
+              <div
+                className="p-3.5 rounded-2xl border space-y-2.5"
+                style={{
+                  backgroundColor: 'var(--bg-studio)',
+                  borderColor: 'var(--border-crisp)',
+                }}
+              >
+                <label
+                  className="block text-xs font-bold"
+                  style={{ color: 'var(--text-secondary)' }}
+                >
+                  Formato de Venda:
+                </label>
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setFormData({
+                        ...formData,
+                        isGrade: false,
+                        type: formData.type === 'GRADE' ? 'TORCEDOR' : formData.type,
+                        retailPrice: formData.retailPrice === '660.00' ? '60.00' : formData.retailPrice,
+                      })
+                    }
+                    className={`py-2 px-3 rounded-xl text-xs font-bold flex items-center justify-center gap-2 border tactile ${
+                      !formData.isGrade && formData.type !== 'GRADE'
+                        ? 'bg-zinc-950 text-white border-zinc-950 dark:bg-white dark:text-zinc-950 dark:border-white shadow-sm'
+                        : 'border-[var(--border-crisp)] bg-[var(--bg-surface)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
+                    }`}
+                  >
+                    <Package className="w-4 h-4" />
+                    <span>Camisa / Kit Avulso</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setFormData({
+                        ...formData,
+                        isGrade: true,
+                        type: 'GRADE',
+                        allowCustom: false,
+                        retailPrice: formData.retailPrice === '60.00' ? '660.00' : formData.retailPrice,
+                      })
+                    }
+                    className={`py-2 px-3 rounded-xl text-xs font-bold flex items-center justify-center gap-2 border tactile ${
+                      formData.isGrade || formData.type === 'GRADE'
+                        ? 'bg-emerald-600 text-white border-emerald-500 shadow-sm'
+                        : 'border-[var(--border-crisp)] bg-[var(--bg-surface)] text-[var(--text-secondary)] hover:text-emerald-600 dark:hover:text-emerald-400'
+                    }`}
+                  >
+                    <Layers className="w-4 h-4" />
+                    <span>📦 Grade Fechada (12 Peças)</span>
+                  </button>
+                </div>
+              </div>
+
               {/* SELETOR DE MODO: PRONTA ENTREGA vs PRÉ-VENDA */}
               <div
                 className="p-3.5 rounded-2xl border space-y-3"
@@ -2790,6 +3261,16 @@ export default function AdminDashboardClient({
                     value={formData.type}
                     onChange={(e) => {
                       const newType = e.target.value;
+                      if (newType === 'GRADE') {
+                        setFormData({
+                          ...formData,
+                          type: 'GRADE',
+                          isGrade: true,
+                          allowCustom: false,
+                          retailPrice: formData.retailPrice === '60.00' ? '660.00' : formData.retailPrice,
+                        });
+                        return;
+                      }
                       const standardSizes = getStandardSizesForProduct(newType);
                       const currentMap = new Map(formData.variants.map((v) => [v.size, v.stockQuantity]));
                       const updatedVariants = standardSizes.map((size) => ({
@@ -2802,7 +3283,7 @@ export default function AdminDashboardClient({
                           ? 10
                           : 50,
                       }));
-                      setFormData({ ...formData, type: newType, variants: updatedVariants });
+                      setFormData({ ...formData, type: newType, isGrade: false, variants: updatedVariants });
                     }}
                     className="w-full rounded-xl px-3.5 py-2 text-xs border focus:outline-none focus:ring-2 focus:ring-rose-600 tactile"
                     style={{
@@ -2813,6 +3294,7 @@ export default function AdminDashboardClient({
                   >
                     <option value="TORCEDOR">Torcedor (Fan Version / Standard)</option>
                     <option value="JOGADOR">Jogador (Player Version / Slim Fit)</option>
+                    <option value="GRADE">📦 Grade Fechada (12 Peças Iguais)</option>
                     <option value="INFANTIL">Infantil (Kids Kit / Youth Set)</option>
                     <option value="RETRO">Retrô Clássica (Retro Version)</option>
                     <option value="FEMININA">Feminina (Women&apos;s Version)</option>
@@ -2824,13 +3306,15 @@ export default function AdminDashboardClient({
                     className="block text-xs font-bold mb-1"
                     style={{ color: 'var(--text-secondary)' }}
                   >
-                    Preço Base Unitário (R$) *
+                    {formData.isGrade || formData.type === 'GRADE'
+                      ? 'Preço Total da Grade (12 Peças) (R$) *'
+                      : 'Preço Base Unitário (R$) *'}
                   </label>
                   <input
                     type="number"
                     step="0.01"
                     required
-                    placeholder="60.00"
+                    placeholder={formData.isGrade || formData.type === 'GRADE' ? '660.00' : '60.00'}
                     value={formData.retailPrice}
                     onChange={(e) => setFormData({ ...formData, retailPrice: e.target.value })}
                     className="w-full rounded-xl px-3.5 py-2 text-xs font-mono font-bold border focus:outline-none focus:ring-2 focus:ring-rose-600 tactile"
@@ -2840,29 +3324,63 @@ export default function AdminDashboardClient({
                       color: 'var(--text-primary)',
                     }}
                   />
+                  {(formData.isGrade || formData.type === 'GRADE') && (
+                    <span className="text-[11px] font-bold text-emerald-600 dark:text-emerald-400 block mt-1">
+                      Sai a {formatCurrency((Number(formData.retailPrice) || 0) / 12)} por camisa (12 peças)
+                    </span>
+                  )}
                 </div>
 
-                <div>
-                  <label
-                    className="block text-xs font-bold mb-1"
-                    style={{ color: 'var(--text-secondary)' }}
-                  >
-                    Valor Personalização (R$)
-                  </label>
-                  <input
-                    type="number"
-                    step="0.01"
-                    placeholder="15.00"
-                    value={formData.customPrice}
-                    onChange={(e) => setFormData({ ...formData, customPrice: e.target.value })}
-                    className="w-full rounded-xl px-3.5 py-2 text-xs font-mono font-bold border focus:outline-none focus:ring-2 focus:ring-rose-600 tactile"
-                    style={{
-                      backgroundColor: 'var(--bg-studio)',
-                      borderColor: 'var(--border-crisp)',
-                      color: 'var(--text-primary)',
-                    }}
-                  />
-                </div>
+                {formData.isGrade || formData.type === 'GRADE' ? (
+                  <div>
+                    <label
+                      className="block text-xs font-bold mb-1"
+                      style={{ color: 'var(--text-secondary)' }}
+                    >
+                      Grades Disponíveis em Estoque *
+                    </label>
+                    <input
+                      type="number"
+                      min="0"
+                      required
+                      value={formData.gradeStock}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          gradeStock: Math.max(0, parseInt(e.target.value || '0', 10) || 0),
+                        })
+                      }
+                      className="w-full rounded-xl px-3.5 py-2 text-xs font-mono font-bold border focus:outline-none focus:ring-2 focus:ring-emerald-600 tactile"
+                      style={{
+                        backgroundColor: 'var(--bg-studio)',
+                        borderColor: 'var(--border-crisp)',
+                        color: 'var(--text-primary)',
+                      }}
+                    />
+                  </div>
+                ) : (
+                  <div>
+                    <label
+                      className="block text-xs font-bold mb-1"
+                      style={{ color: 'var(--text-secondary)' }}
+                    >
+                      Valor Personalização (R$)
+                    </label>
+                    <input
+                      type="number"
+                      step="0.01"
+                      placeholder="15.00"
+                      value={formData.customPrice}
+                      onChange={(e) => setFormData({ ...formData, customPrice: e.target.value })}
+                      className="w-full rounded-xl px-3.5 py-2 text-xs font-mono font-bold border focus:outline-none focus:ring-2 focus:ring-rose-600 tactile"
+                      style={{
+                        backgroundColor: 'var(--bg-studio)',
+                        borderColor: 'var(--border-crisp)',
+                        color: 'var(--text-primary)',
+                      }}
+                    />
+                  </div>
+                )}
 
                 {/* UPLOAD DE UMA OU MAIS IMAGENS DA PEÇA */}
                 <div className="sm:col-span-2 space-y-3">
@@ -3084,7 +3602,159 @@ export default function AdminDashboardClient({
                 </div>
               </div>
 
-              {/* GRADE DE ESTOQUE POR TAMANHO */}
+              {/* GRADE DE ESTOQUE POR TAMANHO OU DISTRIBUIÇÃO DA GRADE FECHADA (12 PEÇAS) */}
+              {formData.isGrade || formData.type === 'GRADE' ? (
+                <div
+                  className="p-4 rounded-2xl border space-y-3"
+                  style={{
+                    backgroundColor: 'var(--bg-studio)',
+                    borderColor: 'var(--border-crisp)',
+                  }}
+                >
+                  {(() => {
+                    const currentSum = Object.values(formData.gradeSizes || {}).reduce(
+                      (acc, val) => acc + (Math.max(0, Number(val) || 0)),
+                      0
+                    );
+                    const isExact12 = currentSum === GRADE_TOTAL_PIECES;
+                    return (
+                      <>
+                        <div className="flex flex-wrap items-center justify-between gap-2">
+                          <div>
+                            <label
+                              className="block text-xs font-black uppercase tracking-wider"
+                              style={{ color: 'var(--text-primary)' }}
+                            >
+                              📦 Tamanhos Definidos na Grade (Total = 12 Peças)
+                            </label>
+                            <span
+                              className="text-[11px] block mt-0.5"
+                              style={{ color: 'var(--text-secondary)' }}
+                            >
+                              Defina quantas camisas de cada tamanho compõem esta grade fechada de 12 peças:
+                            </span>
+                          </div>
+                          <span
+                            className={`px-3 py-1 rounded-full text-xs font-black border ${
+                              isExact12
+                                ? 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border-emerald-500/40'
+                                : 'bg-amber-500/15 text-amber-700 dark:text-amber-300 border-amber-500/40'
+                            }`}
+                          >
+                            Soma: {currentSum} / {GRADE_TOTAL_PIECES} peças
+                          </span>
+                        </div>
+
+                        {/* BOTÕES DE DISTRIBUIÇÃO RÁPIDA */}
+                        <div className="flex flex-wrap items-center gap-1.5">
+                          <span
+                            className="text-[10px] font-bold uppercase mr-1"
+                            style={{ color: 'var(--text-muted)' }}
+                          >
+                            Sugestões:
+                          </span>
+                          {[
+                            {
+                              label: 'Padrão (2P, 4M, 4G, 2GG)',
+                              dist: { P: 2, M: 4, G: 4, GG: 2, XG: 0, '3XL': 0, '4XL': 0 },
+                            },
+                            {
+                              label: 'Com XG (1P, 3M, 4G, 2GG, 2XG)',
+                              dist: { P: 1, M: 3, G: 4, GG: 2, XG: 2, '3XL': 0, '4XL': 0 },
+                            },
+                            {
+                              label: 'M ao GG (4M, 5G, 3GG)',
+                              dist: { P: 0, M: 4, G: 5, GG: 3, XG: 0, '3XL': 0, '4XL': 0 },
+                            },
+                            {
+                              label: 'Plus Size (2G, 4GG, 3XG, 2x 3XL, 1x 4XL)',
+                              dist: { P: 0, M: 0, G: 2, GG: 4, XG: 3, '3XL': 2, '4XL': 1 },
+                            },
+                          ].map((preset) => (
+                            <button
+                              key={preset.label}
+                              type="button"
+                              onClick={() =>
+                                setFormData({
+                                  ...formData,
+                                  gradeSizes: { ...preset.dist },
+                                })
+                              }
+                              className="px-2.5 py-1 rounded-lg border text-[10px] font-bold hover:border-emerald-500 tactile"
+                              style={{
+                                backgroundColor: 'var(--bg-surface)',
+                                borderColor: 'var(--border-crisp)',
+                                color: 'var(--text-secondary)',
+                              }}
+                            >
+                              {preset.label}
+                            </button>
+                          ))}
+                        </div>
+
+                        <div className="grid grid-cols-4 sm:grid-cols-7 gap-2 pt-1">
+                          {['P', 'M', 'G', 'GG', 'XG', '3XL', '4XL'].map((sz) => {
+                            const enInfo = getEnglishSizeInfo(sz);
+                            const qty = formData.gradeSizes?.[sz] ?? 0;
+                            return (
+                              <div
+                                key={sz}
+                                className={`p-2 rounded-xl border text-center ${
+                                  qty > 0
+                                    ? 'border-emerald-500/60 bg-emerald-500/5'
+                                    : ''
+                                }`}
+                                style={
+                                  qty === 0
+                                    ? {
+                                        backgroundColor: 'var(--bg-surface)',
+                                        borderColor: 'var(--border-crisp)',
+                                      }
+                                    : undefined
+                                }
+                              >
+                                <span className="font-black text-xs text-emerald-600 dark:text-emerald-400 block mb-1">
+                                  {sz}
+                                  {enInfo.enCode !== sz && (
+                                    <span
+                                      className="text-[10px] font-bold block leading-tight"
+                                      style={{ color: 'var(--text-muted)' }}
+                                    >
+                                      EN: {enInfo.enCode}
+                                    </span>
+                                  )}
+                                </span>
+                                <input
+                                  type="number"
+                                  min="0"
+                                  max="12"
+                                  value={qty}
+                                  onChange={(e) => {
+                                    const val = Math.max(0, parseInt(e.target.value || '0', 10) || 0);
+                                    setFormData({
+                                      ...formData,
+                                      gradeSizes: {
+                                        ...formData.gradeSizes,
+                                        [sz]: val,
+                                      },
+                                    });
+                                  }}
+                                  className="w-full border rounded-lg py-1 px-1 text-center text-xs font-black focus:outline-none focus:ring-2 focus:ring-emerald-600"
+                                  style={{
+                                    backgroundColor: 'var(--bg-surface)',
+                                    borderColor: 'var(--border-crisp)',
+                                    color: 'var(--text-primary)',
+                                  }}
+                                />
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </>
+                    );
+                  })()}
+                </div>
+              ) : (
               <div className="pt-2">
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 mb-2">
                   <label
@@ -3149,6 +3819,7 @@ export default function AdminDashboardClient({
                   })}
                 </div>
               </div>
+              )}
 
               <div className="flex items-center gap-6 pt-2">
                 <label

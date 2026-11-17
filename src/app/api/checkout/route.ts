@@ -104,7 +104,7 @@ export async function POST(req: Request) {
     > = {};
 
     for (const reqVar of requestedVariants) {
-      const variant = await prisma.productVariant.findUnique({
+      let variant = await prisma.productVariant.findUnique({
         where: {
           productId_size: {
             productId: reqVar.productId,
@@ -117,6 +117,20 @@ export async function POST(req: Request) {
           },
         },
       });
+
+      // Se for uma Grade Fechada (ex: size "GRADE: 2P, 4M, 4G, 2GG"), localiza a variante "GRADE" do produto
+      if (!variant && reqVar.size.toUpperCase().startsWith('GRADE')) {
+        variant = await prisma.productVariant.findFirst({
+          where: {
+            productId: reqVar.productId,
+          },
+          include: {
+            product: {
+              select: { name: true, imageUrl: true, gallery: true },
+            },
+          },
+        });
+      }
 
       if (!variant) {
         return NextResponse.json(
@@ -138,6 +152,9 @@ export async function POST(req: Request) {
           { status: 400 }
         );
       }
+
+      // Garante que o decremento use exatamente o size salvo no banco (ex: "GRADE")
+      reqVar.size = variant.size;
     }
 
     // 3. Decrementa o estoque real de cada variante comprada e atualiza a cota do lote

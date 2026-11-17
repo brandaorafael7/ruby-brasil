@@ -8,6 +8,7 @@ export interface ShippingItemInput {
   league?: string | null;
   size?: string | null;
   quantity?: number;
+  isGrade?: boolean;
 }
 
 export interface CalculateShippingParams {
@@ -39,11 +40,33 @@ export const SHIRT_WEIGHT_KG = 0.30;
 export const KIT_WEIGHT_KG = SHIRT_WEIGHT_KG * 2;
 
 /**
+ * Peso oficial configurado por Grade Fechada (12 peças): 3,5 kg (3.50 kg)
+ * Mantido oculto para os clientes do site, usado exclusivamente na cotação de frete.
+ */
+export const GRADE_WEIGHT_KG = 3.50;
+
+/**
+ * Identifica se um item do carrinho/pedido é uma Grade Fechada (12 peças) de 3,5 kg.
+ */
+export function isGradeShippingItem(item?: ShippingItemInput | null): boolean {
+  if (!item) return false;
+  if (item.isGrade === true) return true;
+  const upperType = (item.type || '').toUpperCase().trim();
+  const cleanSize = (item.size || '').toUpperCase().trim();
+  const lowerName = (item.name || '').toLowerCase();
+  if (upperType === 'GRADE') return true;
+  if (cleanSize === 'GRADE' || cleanSize.startsWith('GRADE:') || cleanSize.startsWith('GRADE ')) return true;
+  if (lowerName.includes('grade fechada') || lowerName.includes('grade 12')) return true;
+  return false;
+}
+
+/**
  * Identifica se um item do carrinho/pedido é um Kit (ex: Kit Infantil camisa + calção)
  * que possui o dobro do peso de uma camisa avulsa.
  */
 export function isKitItem(item?: ShippingItemInput | null): boolean {
   if (!item) return false;
+  if (isGradeShippingItem(item)) return false;
   const upperType = (item.type || '').toUpperCase().trim();
   const lowerLeague = (item.league || '').toLowerCase();
   const lowerName = (item.name || '').toLowerCase();
@@ -68,14 +91,16 @@ export function isKitItem(item?: ShippingItemInput | null): boolean {
  * Retorna o peso unitário oficial (em kg) de um item:
  * - Camisa: 0.30 kg (300g)
  * - Kit: 0.60 kg (600g - dobro do peso da camisa)
+ * - Grade (12 peças): 3.50 kg (3,5 kg)
  */
 export function getItemShippingWeightKg(item?: ShippingItemInput | null): number {
+  if (isGradeShippingItem(item)) return GRADE_WEIGHT_KG;
   return isKitItem(item) ? KIT_WEIGHT_KG : SHIRT_WEIGHT_KG;
 }
 
 /**
  * Calcula o peso total da encomenda e as unidades equivalentes de peso
- * (onde 1 camisa = 1 unidade de 300g e 1 kit = 2 unidades = 600g).
+ * (Camisa = 300g | Kit = 600g | Grade 12 peças = 3,5kg).
  */
 export function calculatePackageWeightMetrics(
   items?: ShippingItemInput[],
@@ -92,10 +117,16 @@ export function calculatePackageWeightMetrics(
 
     for (const item of items) {
       const qty = Math.max(1, Number(item.quantity) || 1);
-      const isKit = isKitItem(item);
-      totalPieces += qty;
-      equivalentUnits += qty * (isKit ? 2 : 1);
-      totalWeightKg += qty * (isKit ? KIT_WEIGHT_KG : SHIRT_WEIGHT_KG);
+      if (isGradeShippingItem(item)) {
+        totalPieces += qty * 12;
+        equivalentUnits += qty * 12;
+        totalWeightKg += qty * GRADE_WEIGHT_KG;
+      } else {
+        const isKit = isKitItem(item);
+        totalPieces += qty;
+        equivalentUnits += qty * (isKit ? 2 : 1);
+        totalWeightKg += qty * (isKit ? KIT_WEIGHT_KG : SHIRT_WEIGHT_KG);
+      }
     }
 
     return {

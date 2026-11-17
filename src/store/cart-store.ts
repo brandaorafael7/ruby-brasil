@@ -1,7 +1,12 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import { CartItem, Product, PromotionalBatch, WholesaleTier, ShippingOption } from '@/types';
-import { getSizeSurcharge, getProductPreSaleInfo } from '@/lib/utils';
+import {
+  getSizeSurcharge,
+  getProductPreSaleInfo,
+  isGradeProduct,
+  getProductGradeInfo,
+} from '@/lib/utils';
 
 const DEFAULT_TIERS: WholesaleTier[] = [
   { minQuantity: 1, maxQuantity: null, unitPrice: 60.0 },
@@ -20,6 +25,9 @@ const DEFAULT_BATCH: PromotionalBatch = {
 };
 
 export function getProductVariantStock(product: Product, size: string): number {
+  if (isGradeProduct(product)) {
+    return getProductGradeInfo(product).gradeStock;
+  }
   const variant = product.variants?.find((v) => v.size === size);
   if (variant !== undefined) return Math.max(0, variant.stockQuantity);
   return product.variants && product.variants.length > 0 ? 0 : 50;
@@ -116,9 +124,13 @@ export const useCartStore = create<CartStore>()(
 
         const toAdd = Math.min(quantity, available);
         const preSaleInfo = getProductPreSaleInfo(product);
+        const isGrade = isGradeProduct(product);
+        const gradeInfo = isGrade ? getProductGradeInfo(product) : null;
+        const effectiveSize = isGrade && gradeInfo ? gradeInfo.compactLabel : size;
+        const finalCartItemId = `${product.id}-${effectiveSize}-${normalizedCustomName || 'none'}-${normalizedCustomNumber || 'none'}`;
 
         set((state) => {
-          const existingIndex = state.items.findIndex((i) => i.cartItemId === cartItemId);
+          const existingIndex = state.items.findIndex((i) => i.cartItemId === finalCartItemId);
           if (existingIndex > -1) {
             const updated = [...state.items];
             updated[existingIndex].quantity += toAdd;
@@ -126,11 +138,16 @@ export const useCartStore = create<CartStore>()(
             updated[existingIndex].type = product.type;
             updated[existingIndex].isPreSale = preSaleInfo.isPreSale;
             updated[existingIndex].preSaleEta = preSaleInfo.preSaleEta;
+            updated[existingIndex].isGrade = isGrade;
+            if (gradeInfo) {
+              updated[existingIndex].gradeSizes = gradeInfo.gradeSizes;
+              updated[existingIndex].gradeLabel = gradeInfo.compactLabel;
+            }
             return { items: updated, isCartOpen: true };
           }
 
           const newItem: CartItem = {
-            cartItemId,
+            cartItemId: finalCartItemId,
             productId: product.id,
             name: product.name,
             slug: product.slug,
@@ -139,13 +156,16 @@ export const useCartStore = create<CartStore>()(
             type: product.type,
             imageUrl: product.imageUrl,
             retailPrice: product.retailPrice || 60.0,
-            size,
+            size: effectiveSize,
             quantity: toAdd,
             customName: normalizedCustomName,
             customNumber: normalizedCustomNumber,
             stockQuantity: stock,
             isPreSale: preSaleInfo.isPreSale,
             preSaleEta: preSaleInfo.preSaleEta,
+            isGrade,
+            gradeSizes: gradeInfo?.gradeSizes,
+            gradeLabel: gradeInfo?.compactLabel,
           };
 
           return { items: [...state.items, newItem], isCartOpen: true };

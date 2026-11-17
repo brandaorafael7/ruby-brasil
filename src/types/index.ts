@@ -63,6 +63,9 @@ export interface CartItem {
   stockQuantity?: number;
   isPreSale?: boolean;
   preSaleEta?: string | null;
+  isGrade?: boolean;
+  gradeSizes?: Record<string, number>;
+  gradeLabel?: string;
 }
 
 export type CustomerType = 'PF' | 'PJ';

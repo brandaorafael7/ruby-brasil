@@ -125,6 +125,7 @@ export default function CheckoutPage() {
           league: item.league,
           size: item.size,
           quantity: item.quantity,
+          isGrade: item.isGrade,
         }));
         const res = await fetch('/api/shipping/calculate', {
           method: 'POST',

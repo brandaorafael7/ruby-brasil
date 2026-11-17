@@ -112,6 +112,13 @@ export default function Navbar() {
               Catálogo 25/26
             </Link>
             <Link
+              href="/#grades"
+              className="px-3 py-1.5 rounded-full tactile flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/10"
+            >
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+              <span>Grades (12 Peças)</span>
+            </Link>
+            <Link
               href="/#pre-venda"
               className="px-3 py-1.5 rounded-full tactile flex items-center gap-1.5 text-amber-600 dark:text-amber-400 hover:bg-amber-500/10"
             >

@@ -22,6 +22,8 @@ import {
   getProductGalleryImages,
   getEnglishSizeInfo,
   formatBilingualSize,
+  isGradeProduct,
+  getProductGradeInfo,
 } from '@/lib/utils';
 import CustomizationModal from './CustomizationModal';
 
@@ -32,11 +34,15 @@ interface Props {
 export default function ProductCard({ product }: Props) {
   const { items, addItem, openCart } = useCartStore();
 
+  const isGrade = isGradeProduct(product);
+  const gradeInfo = isGrade ? getProductGradeInfo(product) : null;
+
   const isKids =
-    product.type === 'INFANTIL' ||
-    product.league?.toLowerCase().includes('infantil') ||
-    product.name?.toLowerCase().includes('infantil') ||
-    product.name?.toLowerCase().includes('kids');
+    !isGrade &&
+    (product.type === 'INFANTIL' ||
+      product.league?.toLowerCase().includes('infantil') ||
+      product.name?.toLowerCase().includes('infantil') ||
+      product.name?.toLowerCase().includes('kids'));
 
   const { isPreSale, preSaleEta } = getProductPreSaleInfo(product);
   const galleryImages = getProductGalleryImages(product);
@@ -106,22 +112,28 @@ export default function ProductCard({ product }: Props) {
 
   const selectedInfo = sizeInfoList.find((s) => s.size === selectedSize);
   const inCartForSelectedSize = items
-    .filter((i) => i.productId === product.id && i.size === selectedSize)
+    .filter((i) =>
+      isGrade
+        ? i.productId === product.id
+        : i.productId === product.id && i.size === selectedSize
+    )
     .reduce((sum, i) => sum + i.quantity, 0);
-  const remainingStock = Math.max(
-    0,
-    (selectedInfo?.stock || 0) - inCartForSelectedSize
-  );
+  const totalStockForSelected = isGrade
+    ? gradeInfo?.gradeStock ?? 0
+    : selectedInfo?.stock || 0;
+  const remainingStock = Math.max(0, totalStockForSelected - inCartForSelectedSize);
   const isAvailableToAdd =
-    (selectedInfo?.inStock || false) && remainingStock > 0;
+    (isGrade ? totalStockForSelected > 0 : selectedInfo?.inStock || false) &&
+    remainingStock > 0;
 
   const basePrice = product.retailPrice || 60.0;
-  const surcharge = getSizeSurcharge(selectedSize);
+  const surcharge = isGrade ? 0 : getSizeSurcharge(selectedSize);
   const currentPrice = basePrice + surcharge;
 
   const handleBuy = () => {
     if (!isAvailableToAdd) return;
-    const res = addItem(product, selectedSize, 1);
+    const targetSize = isGrade && gradeInfo ? gradeInfo.compactLabel : selectedSize;
+    const res = addItem(product, targetSize, 1);
     if (res.success) {
       setJustAdded(true);
       openCart();
@@ -168,7 +180,9 @@ export default function ProductCard({ product }: Props) {
     );
   };
 
-  const versionLabel = isKids
+  const versionLabel = isGrade
+    ? '📦 GRADE 12 PEÇAS'
+    : isKids
     ? 'KIT INFANTIL'
     : product.type === 'JOGADOR'
     ? 'VERSÃO JOGADOR'
@@ -279,7 +293,7 @@ export default function ProductCard({ product }: Props) {
                 </span>
               )}
 
-              {product.allowCustom !== false && (
+              {!isGrade && product.allowCustom !== false && (
                 <button
                   type="button"
                   disabled={!isAvailableToAdd}
@@ -396,89 +410,140 @@ export default function ProductCard({ product }: Props) {
                   >
                     {formatCurrency(currentPrice)}
                   </span>
-                  {surcharge > 0 && (
-                    <span className="text-[10px] font-mono font-bold text-amber-600 dark:text-amber-400">
-                      +{formatCurrency(surcharge)} ({selectedSize})
+                  {isGrade ? (
+                    <span className="text-[11px] font-bold text-emerald-600 dark:text-emerald-400">
+                      ({formatCurrency(currentPrice / (gradeInfo?.totalPieces || 12))}/peça)
                     </span>
+                  ) : (
+                    surcharge > 0 && (
+                      <span className="text-[10px] font-mono font-bold text-amber-600 dark:text-amber-400">
+                        +{formatCurrency(surcharge)} ({selectedSize})
+                      </span>
+                    )
                   )}
                 </div>
                 <span
                   className="text-[11px] font-mono font-semibold"
                   style={{ color: 'var(--text-muted)' }}
                 >
-                  Tailandesa 1:1
+                  {isGrade ? 'Grade 12un' : 'Tailandesa 1:1'}
                 </span>
               </div>
             </div>
 
-            {/* Seletor de Grade Direto */}
-            <div>
+            {/* Seletor de Grade Direto ou Composição Fixa da Grade (12 Peças) */}
+            {isGrade && gradeInfo ? (
               <div
-                className="flex items-center justify-between text-[11px] font-mono mb-1.5"
-                style={{ color: 'var(--text-muted)' }}
+                className="p-2.5 rounded-xl border space-y-1.5"
+                style={{
+                  backgroundColor: 'var(--bg-studio)',
+                  borderColor: 'var(--border-crisp)',
+                }}
               >
-                <span>
-                  TAM:{' '}
-                  <strong style={{ color: 'var(--text-primary)' }}>
-                    {formatBilingualSize(selectedSize)}
-                  </strong>
-                </span>
-                {!selectedInfo?.inStock ? (
-                  <span className="text-rose-600 font-bold">Esgotado</span>
-                ) : remainingStock === 0 ? (
-                  <span className="text-amber-600 dark:text-amber-400 font-bold">
-                    Limite na Sacola
+                <div className="flex items-center justify-between text-[10px] font-bold uppercase tracking-wider">
+                  <span style={{ color: 'var(--text-secondary)' }}>
+                    Grade Fixa ({gradeInfo.totalPieces} Peças):
                   </span>
-                ) : isPreSale ? (
-                  <span className="text-amber-600 dark:text-amber-400 font-semibold">
-                    Reserva ({remainingStock} un)
-                  </span>
-                ) : (
-                  <span className="text-emerald-600 dark:text-emerald-400 font-semibold">
-                    Disponível ({remainingStock} un)
-                  </span>
-                )}
-              </div>
-
-              <div className="flex flex-wrap gap-1">
-                {sizeInfoList.map((info) => {
-                  const isSelected = selectedSize === info.size;
-                  const inCartForThisSize = items
-                    .filter((i) => i.productId === product.id && i.size === info.size)
-                    .reduce((sum, i) => sum + i.quantity, 0);
-                  const remForThisSize = Math.max(0, info.stock - inCartForThisSize);
-                  const isSoldOut = !info.inStock;
-                  const isMaxInCart = !isSoldOut && remForThisSize === 0;
-
-                  return (
-                    <button
-                      key={info.size}
-                      type="button"
-                      onClick={() => setSelectedSize(info.size)}
-                      title={`Tamanho ${info.size} (Inglês / EN: ${getEnglishSizeInfo(info.size).enCode} - ${getEnglishSizeInfo(info.size).enName})`}
-                      className={`h-7 min-w-[34px] px-1.5 rounded-md font-mono text-xs font-bold border tactile ${
-                        isSelected
-                          ? 'bg-zinc-950 text-white border-zinc-950 dark:bg-white dark:text-zinc-950 dark:border-white'
-                          : isSoldOut || isMaxInCart
-                          ? 'opacity-40 line-through'
-                          : 'hover:border-zinc-500'
-                      }`}
-                      style={
-                        !isSelected
-                          ? {
-                              backgroundColor: 'var(--bg-canvas)',
-                              borderColor: 'var(--border-crisp)',
-                              color: 'var(--text-secondary)',
-                            }
-                          : undefined
-                      }
+                  {totalStockForSelected <= 0 ? (
+                    <span className="text-rose-600 font-bold">Grade Esgotada</span>
+                  ) : remainingStock === 0 ? (
+                    <span className="text-amber-600 dark:text-amber-400 font-bold">
+                      Limite na Sacola
+                    </span>
+                  ) : (
+                    <span className="text-emerald-600 dark:text-emerald-400 font-bold">
+                      {remainingStock} {remainingStock === 1 ? 'grade disp.' : 'grades disp.'}
+                    </span>
+                  )}
+                </div>
+                <div className="flex flex-wrap gap-1">
+                  {gradeInfo.entries.map((entry) => (
+                    <span
+                      key={entry.size}
+                      className="px-2 py-0.5 rounded-md border text-[11px] font-bold"
+                      style={{
+                        backgroundColor: 'var(--bg-surface)',
+                        borderColor: 'var(--border-crisp)',
+                        color: 'var(--text-primary)',
+                      }}
+                      title={`${entry.quantity} unidade(s) no tamanho ${entry.size} (EN: ${entry.enCode})`}
                     >
-                      {info.size}
-                    </button>
-                  );
-                })}
+                      <strong className="text-rose-600 dark:text-rose-400">{entry.quantity}x</strong>{' '}
+                      {entry.size}
+                      {entry.enCode !== entry.size ? ` (${entry.enCode})` : ''}
+                    </span>
+                  ))}
+                </div>
               </div>
-            </div>
+            ) : (
+              <div>
+                <div
+                  className="flex items-center justify-between text-[11px] font-mono mb-1.5"
+                  style={{ color: 'var(--text-muted)' }}
+                >
+                  <span>
+                    TAM:{' '}
+                    <strong style={{ color: 'var(--text-primary)' }}>
+                      {formatBilingualSize(selectedSize)}
+                    </strong>
+                  </span>
+                  {!selectedInfo?.inStock ? (
+                    <span className="text-rose-600 font-bold">Esgotado</span>
+                  ) : remainingStock === 0 ? (
+                    <span className="text-amber-600 dark:text-amber-400 font-bold">
+                      Limite na Sacola
+                    </span>
+                  ) : isPreSale ? (
+                    <span className="text-amber-600 dark:text-amber-400 font-semibold">
+                      Reserva ({remainingStock} un)
+                    </span>
+                  ) : (
+                    <span className="text-emerald-600 dark:text-emerald-400 font-semibold">
+                      Disponível ({remainingStock} un)
+                    </span>
+                  )}
+                </div>
+
+                <div className="flex flex-wrap gap-1">
+                  {sizeInfoList.map((info) => {
+                    const isSelected = selectedSize === info.size;
+                    const inCartForThisSize = items
+                      .filter((i) => i.productId === product.id && i.size === info.size)
+                      .reduce((sum, i) => sum + i.quantity, 0);
+                    const remForThisSize = Math.max(0, info.stock - inCartForThisSize);
+                    const isSoldOut = !info.inStock;
+                    const isMaxInCart = !isSoldOut && remForThisSize === 0;
+
+                    return (
+                      <button
+                        key={info.size}
+                        type="button"
+                        onClick={() => setSelectedSize(info.size)}
+                        title={`Tamanho ${info.size} (Inglês / EN: ${getEnglishSizeInfo(info.size).enCode} - ${getEnglishSizeInfo(info.size).enName})`}
+                        className={`h-7 min-w-[34px] px-1.5 rounded-md font-mono text-xs font-bold border tactile ${
+                          isSelected
+                            ? 'bg-zinc-950 text-white border-zinc-950 dark:bg-white dark:text-zinc-950 dark:border-white'
+                            : isSoldOut || isMaxInCart
+                            ? 'opacity-40 line-through'
+                            : 'hover:border-zinc-500'
+                        }`}
+                        style={
+                          !isSelected
+                            ? {
+                                backgroundColor: 'var(--bg-canvas)',
+                                borderColor: 'var(--border-crisp)',
+                                color: 'var(--text-secondary)',
+                              }
+                            : undefined
+                        }
+                      >
+                        {info.size}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
           </div>
         </div>
 
@@ -501,8 +566,19 @@ export default function ProductCard({ product }: Props) {
             {justAdded ? (
               <>
                 <Check className="w-4 h-4" />
-                <span>{isPreSale ? 'Reserva Adicionada!' : 'Adicionado à Sacola!'}</span>
+                <span>{isGrade ? 'Grade Adicionada!' : isPreSale ? 'Reserva Adicionada!' : 'Adicionado à Sacola!'}</span>
               </>
+            ) : isGrade ? (
+              totalStockForSelected <= 0 ? (
+                <span>Grade Esgotada</span>
+              ) : remainingStock === 0 ? (
+                <span>Limite na Sacola ({totalStockForSelected} grade(s))</span>
+              ) : (
+                <>
+                  <ShoppingBag className="w-3.5 h-3.5" />
+                  <span>Adicionar Grade (12 Peças)</span>
+                </>
+              )
             ) : !selectedInfo?.inStock ? (
               <span>Tamanho {selectedSize} Esgotado</span>
             ) : remainingStock === 0 ? (
@@ -519,7 +595,7 @@ export default function ProductCard({ product }: Props) {
         </div>
       </article>
 
-      {product.allowCustom !== false && (
+      {!isGrade && product.allowCustom !== false && (
         <CustomizationModal
           isOpen={isCustomOpen}
           onClose={() => setIsCustomOpen(false)}

@@ -75,6 +75,8 @@ export async function POST(request: Request) {
       customPrice = 15.0,
       isPreSale = false,
       preSaleEta = '',
+      isGrade = false,
+      gradeSizes,
       variants = [
         { size: 'P', stockQuantity: 100 },
         { size: 'M', stockQuantity: 100 },
@@ -111,6 +113,8 @@ export async function POST(request: Request) {
     const initialGallery = serializeProductPreSaleGallery(null, {
       isPreSale: Boolean(isPreSale),
       preSaleEta: preSaleEta ? String(preSaleEta) : '',
+      isGrade: Boolean(isGrade || type === 'GRADE'),
+      ...(gradeSizes && typeof gradeSizes === 'object' ? { gradeSizes } : {}),
       images: [],
     });
 
@@ -149,6 +153,8 @@ export async function POST(request: Request) {
     const finalGallery = serializeProductPreSaleGallery(initialGallery, {
       isPreSale: Boolean(isPreSale),
       preSaleEta: preSaleEta ? String(preSaleEta) : '',
+      isGrade: Boolean(isGrade || type === 'GRADE'),
+      ...(gradeSizes && typeof gradeSizes === 'object' ? { gradeSizes } : {}),
       images: galleryImages,
     });
 
@@ -203,6 +209,8 @@ export async function PUT(request: Request) {
       customPrice,
       isPreSale,
       preSaleEta,
+      isGrade,
+      gradeSizes,
       variants,
     } = body;
 
@@ -241,12 +249,18 @@ export async function PUT(request: Request) {
     if (
       isPreSale !== undefined ||
       preSaleEta !== undefined ||
+      isGrade !== undefined ||
+      gradeSizes !== undefined ||
       finalGalleryImages !== undefined
     ) {
       const currentPreSale = getProductPreSaleInfo(existing);
       updatedGallery = serializeProductPreSaleGallery(existing.gallery, {
         isPreSale: isPreSale !== undefined ? Boolean(isPreSale) : currentPreSale.isPreSale,
         preSaleEta: preSaleEta !== undefined ? String(preSaleEta || '') : currentPreSale.preSaleEta,
+        ...(isGrade !== undefined || type === 'GRADE'
+          ? { isGrade: Boolean(isGrade || type === 'GRADE') }
+          : {}),
+        ...(gradeSizes !== undefined && typeof gradeSizes === 'object' ? { gradeSizes } : {}),
         ...(finalGalleryImages !== undefined ? { images: finalGalleryImages } : {}),
       });
     }

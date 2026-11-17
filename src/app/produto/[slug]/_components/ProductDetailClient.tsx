@@ -32,6 +32,8 @@ import {
   getProductGalleryImages,
   getEnglishSizeInfo,
   getModelTypeBilingual,
+  isGradeProduct,
+  getProductGradeInfo,
 } from '@/lib/utils';
 import CustomizationModal from '@/components/product/CustomizationModal';
 import ProductCard from '@/components/product/ProductCard';
@@ -44,11 +46,15 @@ interface Props {
 export default function ProductDetailClient({ product, relatedProducts }: Props) {
   const { items, addItem, openCart, getTotalPieces } = useCartStore();
 
+  const isGrade = isGradeProduct(product);
+  const gradeInfo = isGrade ? getProductGradeInfo(product) : null;
+
   const isKids =
-    product.type === 'INFANTIL' ||
-    product.league?.toLowerCase().includes('infantil') ||
-    product.name?.toLowerCase().includes('infantil') ||
-    product.name?.toLowerCase().includes('kids');
+    !isGrade &&
+    (product.type === 'INFANTIL' ||
+      product.league?.toLowerCase().includes('infantil') ||
+      product.name?.toLowerCase().includes('infantil') ||
+      product.name?.toLowerCase().includes('kids'));
 
   const { isPreSale, preSaleEta } = getProductPreSaleInfo(product);
   const galleryImages = getProductGalleryImages(product);
@@ -103,10 +109,18 @@ export default function ProductDetailClient({ product, relatedProducts }: Props)
 
   const selectedInfo = sizeInfoList.find((s) => s.size === selectedSize);
   const inCartForSelectedSize = items
-    .filter((i) => i.productId === product.id && i.size === selectedSize)
+    .filter((i) =>
+      isGrade
+        ? i.productId === product.id
+        : i.productId === product.id && i.size === selectedSize
+    )
     .reduce((sum, i) => sum + i.quantity, 0);
-  const maxAvailable = Math.max(0, (selectedInfo?.stock || 0) - inCartForSelectedSize);
-  const isAvailableToAdd = (selectedInfo?.inStock || false) && maxAvailable > 0;
+  const totalStockForSelected = isGrade
+    ? gradeInfo?.gradeStock ?? 0
+    : selectedInfo?.stock || 0;
+  const maxAvailable = Math.max(0, totalStockForSelected - inCartForSelectedSize);
+  const isAvailableToAdd =
+    (isGrade ? totalStockForSelected > 0 : selectedInfo?.inStock || false) && maxAvailable > 0;
 
   React.useEffect(() => {
     if (maxAvailable > 0 && quantity > maxAvailable) {
@@ -117,14 +131,15 @@ export default function ProductDetailClient({ product, relatedProducts }: Props)
   }, [selectedSize, maxAvailable, quantity]);
 
   const basePrice = product.retailPrice || 60.0;
-  const surcharge = getSizeSurcharge(selectedSize);
+  const surcharge = isGrade ? 0 : getSizeSurcharge(selectedSize);
   const currentUnitPrice = basePrice + surcharge;
   const totalPrice = currentUnitPrice * quantity;
 
   const handleBuy = () => {
     if (!isAvailableToAdd) return;
     const qtyToAdd = Math.min(quantity, maxAvailable);
-    const res = addItem(product, selectedSize, qtyToAdd);
+    const targetSize = isGrade && gradeInfo ? gradeInfo.compactLabel : selectedSize;
+    const res = addItem(product, targetSize, qtyToAdd);
     if (res.success) {
       setJustAdded(true);
       openCart();
@@ -135,7 +150,8 @@ export default function ProductDetailClient({ product, relatedProducts }: Props)
   const handleBuyNow = () => {
     if (!isAvailableToAdd) return;
     const qtyToAdd = Math.min(quantity, maxAvailable);
-    const res = addItem(product, selectedSize, qtyToAdd);
+    const targetSize = isGrade && gradeInfo ? gradeInfo.compactLabel : selectedSize;
+    const res = addItem(product, targetSize, qtyToAdd);
     if (res.success) {
       openCart();
     }
@@ -442,16 +458,26 @@ export default function ProductDetailClient({ product, relatedProducts }: Props)
               <div className="mt-6 p-4 rounded-2xl bg-zinc-950 border border-zinc-800 flex items-center justify-between gap-4">
                 <div>
                   <span className="text-[11px] text-zinc-400 uppercase font-semibold block">
-                    {isPreSale ? 'Valor de Pré-Venda' : 'Valor Unitário'}
+                    {isGrade
+                      ? 'Valor da Grade Fechada (12 Peças)'
+                      : isPreSale
+                      ? 'Valor de Pré-Venda'
+                      : 'Valor Unitário'}
                   </span>
-                  <div className="flex items-baseline gap-2 mt-0.5">
+                  <div className="flex items-baseline gap-2 mt-0.5 flex-wrap">
                     <span className="text-3xl font-black text-white">
                       {formatCurrency(currentUnitPrice)}
                     </span>
-                    {surcharge > 0 && (
-                      <span className="text-xs font-bold text-amber-300 bg-amber-500/20 border border-amber-500/30 px-2 py-0.5 rounded-md">
-                        +{formatCurrency(surcharge)} ({selectedSize})
+                    {isGrade ? (
+                      <span className="text-xs font-bold text-emerald-400 bg-emerald-500/15 border border-emerald-500/30 px-2.5 py-0.5 rounded-md">
+                        Sai a {formatCurrency(currentUnitPrice / (gradeInfo?.totalPieces || 12))} / camisa
                       </span>
+                    ) : (
+                      surcharge > 0 && (
+                        <span className="text-xs font-bold text-amber-300 bg-amber-500/20 border border-amber-500/30 px-2 py-0.5 rounded-md">
+                          +{formatCurrency(surcharge)} ({selectedSize})
+                        </span>
+                      )
                     )}
                   </div>
                 </div>
@@ -480,7 +506,46 @@ export default function ProductDetailClient({ product, relatedProducts }: Props)
                 </div>
               </div>
 
-              {/* SELEÇÃO DE TAMANHO COM CONTROLE DE ESTOQUE */}
+              {/* SELEÇÃO DE TAMANHO OU GRADE FECHADA (12 PEÇAS) */}
+              {isGrade && gradeInfo ? (
+                <div className="mt-6 p-4 rounded-2xl bg-zinc-950 border border-zinc-800 space-y-3">
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="font-bold text-white uppercase tracking-wider">
+                      📦 Composição da Grade Fechada ({gradeInfo.totalPieces} Peças Iguais):
+                    </span>
+                    {totalStockForSelected <= 0 ? (
+                      <span className="text-xs text-rose-400 font-bold">Grade Esgotada</span>
+                    ) : maxAvailable === 0 ? (
+                      <span className="text-xs text-amber-400 font-bold">
+                        Limite no Carrinho ({totalStockForSelected} grade(s))
+                      </span>
+                    ) : (
+                      <span className="text-xs text-emerald-400 font-bold">
+                        {maxAvailable} {maxAvailable === 1 ? 'grade disponível' : 'grades disponíveis'}
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-xs text-zinc-400">
+                    Os tamanhos abaixo já vêm definidos de fábrica nesta grade de 12 peças:
+                  </p>
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                    {gradeInfo.entries.map((entry) => (
+                      <div
+                        key={entry.size}
+                        className="p-3 rounded-xl bg-zinc-900 border border-zinc-800 flex flex-col items-center justify-center text-center"
+                      >
+                        <span className="text-lg font-black text-rose-400">
+                          {entry.quantity} {entry.quantity === 1 ? 'peça' : 'peças'}
+                        </span>
+                        <span className="text-xs font-bold text-white mt-0.5">
+                          Tam: {entry.size}
+                          {entry.enCode !== entry.size ? ` (EN: ${entry.enCode})` : ''}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ) : (
               <div className="mt-6">
                 <div className="flex items-center justify-between text-xs mb-2">
                   <span className="font-bold text-white">
@@ -603,15 +668,18 @@ export default function ProductDetailClient({ product, relatedProducts }: Props)
                   </p>
                 </div>
               </div>
+              )}
 
               {/* SELETOR DE QUANTIDADE */}
               <div className="mt-6 flex flex-col gap-2">
                 <div className="flex items-center justify-between bg-zinc-950 border border-zinc-800 p-3 rounded-2xl">
                   <div>
-                    <span className="text-xs font-bold text-zinc-300 block">Quantidade de Peças:</span>
+                    <span className="text-xs font-bold text-zinc-300 block">
+                      {isGrade ? 'Quantidade de Grades (12 peças cada):' : 'Quantidade de Peças:'}
+                    </span>
                     {maxAvailable > 0 && (
                       <span className="text-[10px] text-zinc-500">
-                        Máximo disponível para {isPreSale ? 'reservar' : 'adicionar'}: {maxAvailable} un
+                        Máximo disponível para {isPreSale ? 'reservar' : 'adicionar'}: {maxAvailable} {isGrade ? 'grade(s)' : 'un'}
                       </span>
                     )}
                   </div>
@@ -702,7 +770,7 @@ export default function ProductDetailClient({ product, relatedProducts }: Props)
                 </button>
               </div>
 
-              {product.allowCustom && (
+              {!isGrade && product.allowCustom && (
                 <button
                   type="button"
                   disabled={!isAvailableToAdd}

@@ -8,10 +8,11 @@ import {
   Clock,
   ArrowRight,
   ShoppingBag,
+  Layers,
 } from 'lucide-react';
 import { Product } from '@/types';
 import { useCartStore } from '@/store';
-import { formatCurrency, getProductPreSaleInfo } from '@/lib/utils';
+import { formatCurrency, getProductPreSaleInfo, isGradeProduct } from '@/lib/utils';
 import ProductCard from '@/components/product/ProductCard';
 
 interface Props {
@@ -22,6 +23,7 @@ const PAGE_SIZE = 24;
 
 const CATEGORIES = [
   'Todas as Categorias',
+  'Grades (12 Peças)',
   'Pré-Venda',
   'Brasileirão',
   'Premier League',
@@ -68,12 +70,20 @@ export default function CatalogView({ initialProducts }: Props) {
   const loadMoreRef = useRef<HTMLDivElement | null>(null);
   const { addItem, openCart } = useCartStore();
 
-  const preSaleProducts = useMemo(() => {
-    return initialProducts.filter((p) => getProductPreSaleInfo(p).isPreSale);
+  const gradeProducts = useMemo(() => {
+    return initialProducts.filter((p) => isGradeProduct(p));
   }, [initialProducts]);
 
+  const regularProducts = useMemo(() => {
+    return initialProducts.filter((p) => !isGradeProduct(p));
+  }, [initialProducts]);
+
+  const preSaleProducts = useMemo(() => {
+    return regularProducts.filter((p) => getProductPreSaleInfo(p).isPreSale);
+  }, [regularProducts]);
+
   const kidsProducts = useMemo(() => {
-    return initialProducts.filter(
+    return regularProducts.filter(
       (p) =>
         p.type === 'INFANTIL' ||
         p.league?.toLowerCase().includes('infantil') ||
@@ -81,19 +91,22 @@ export default function CatalogView({ initialProducts }: Props) {
         p.name?.toLowerCase().includes('kids') ||
         p.description?.toLowerCase().includes('infantil')
     );
-  }, [initialProducts]);
+  }, [regularProducts]);
 
   const spotlightProduct = useMemo(() => {
     if (preSaleProducts.length > 0) return preSaleProducts[0];
-    return initialProducts[0] || null;
-  }, [preSaleProducts, initialProducts]);
+    return regularProducts[0] || initialProducts[0] || null;
+  }, [preSaleProducts, regularProducts, initialProducts]);
 
   const spotlightPreSale = useMemo(() => {
     return spotlightProduct ? getProductPreSaleInfo(spotlightProduct) : { isPreSale: false, preSaleEta: null };
   }, [spotlightProduct]);
 
   const filteredProducts = useMemo(() => {
-    return initialProducts.filter((product) => {
+    const sourceList =
+      selectedCategory === 'Grades (12 Peças)' ? gradeProducts : regularProducts;
+
+    return sourceList.filter((product) => {
       const preSaleInfo = getProductPreSaleInfo(product);
       const query = searchTerm.toLowerCase().trim();
       const matchesSearch =
@@ -103,6 +116,10 @@ export default function CatalogView({ initialProducts }: Props) {
         (product.league && product.league.toLowerCase().includes(query)) ||
         (product.description && product.description.toLowerCase().includes(query)) ||
         (preSaleInfo.isPreSale && 'pré-venda pre-venda lançamento chegando'.includes(query));
+
+      if (selectedCategory === 'Grades (12 Peças)') {
+        return matchesSearch;
+      }
 
       const matchesCategory =
         selectedCategory === 'Todas as Categorias' ||
@@ -121,7 +138,7 @@ export default function CatalogView({ initialProducts }: Props) {
 
       return matchesSearch && matchesCategory;
     });
-  }, [initialProducts, searchTerm, selectedCategory]);
+  }, [gradeProducts, regularProducts, searchTerm, selectedCategory]);
 
   // Reinicia a paginação progressiva ao trocar filtro ou busca
   useEffect(() => {
@@ -392,6 +409,7 @@ export default function CatalogView({ initialProducts }: Props) {
           <div className="flex items-center gap-1.5 overflow-x-auto pb-1 lg:pb-0 -mx-3 px-3 sm:mx-0 sm:px-0">
             {CATEGORIES.map((cat) => {
               const isPreSaleTab = cat === 'Pré-Venda';
+              const isGradeTab = cat === 'Grades (12 Peças)';
               const isSelected = selectedCategory === cat;
               return (
                 <button
@@ -402,13 +420,17 @@ export default function CatalogView({ initialProducts }: Props) {
                     isSelected
                       ? isPreSaleTab
                         ? 'bg-amber-400 text-zinc-950 border-amber-400'
+                        : isGradeTab
+                        ? 'bg-emerald-600 text-white border-emerald-600'
                         : 'bg-zinc-950 text-white border-zinc-950 dark:bg-white dark:text-zinc-950 dark:border-white'
                       : isPreSaleTab
                       ? 'bg-amber-500/10 text-amber-600 dark:text-amber-300 border-amber-500/30 hover:bg-amber-500/20'
+                      : isGradeTab
+                      ? 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border-emerald-500/30 hover:bg-emerald-500/20'
                       : 'hover:opacity-80'
                   }`}
                   style={
-                    !isSelected && !isPreSaleTab
+                    !isSelected && !isPreSaleTab && !isGradeTab
                       ? {
                           backgroundColor: 'var(--bg-surface)',
                           borderColor: 'var(--border-crisp)',
@@ -418,11 +440,23 @@ export default function CatalogView({ initialProducts }: Props) {
                   }
                 >
                   {isPreSaleTab && <Clock className="w-3.5 h-3.5" />}
+                  {isGradeTab && <Layers className="w-3.5 h-3.5" />}
                   <span>
                     {cat === 'Todas as Categorias'
-                      ? `Todos os Mantos (${initialProducts.length})`
+                      ? `Todos os Mantos (${regularProducts.length})`
                       : cat}
                   </span>
+                  {isGradeTab && (
+                    <span
+                      className={`px-1.5 py-0.2 rounded-full font-mono text-[11px] ${
+                        isSelected
+                          ? 'bg-zinc-950 text-emerald-400'
+                          : 'bg-emerald-500/20 text-emerald-700 dark:text-emerald-300'
+                      }`}
+                    >
+                      {gradeProducts.length}
+                    </span>
+                  )}
                   {isPreSaleTab && preSaleProducts.length > 0 && (
                     <span
                       className={`px-1.5 py-0.2 rounded-full font-mono text-[11px] ${
@@ -460,6 +494,27 @@ export default function CatalogView({ initialProducts }: Props) {
           </div>
         </div>
 
+        {/* Barra Contextual quando filtra por Grades (12 Peças) */}
+        {selectedCategory === 'Grades (12 Peças)' && (
+          <div className="mt-5 sm:mt-6 p-4 rounded-2xl border border-emerald-500/40 bg-emerald-500/10 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div className="flex items-start sm:items-center gap-3">
+              <span className="px-2.5 py-1 rounded-full bg-emerald-600 text-white text-[11px] font-black uppercase shrink-0 whitespace-nowrap">
+                📦 Grade 12 Peças
+              </span>
+              <p className="text-xs sm:text-sm font-medium">
+                Na modalidade <strong>Grade Fechada</strong>, você adquire um pacote com <strong>12 camisas iguais</strong> de tamanhos variados já pré-definidos pelo administrador com condição especial de atacado.
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => setSelectedCategory('Todas as Categorias')}
+              className="text-xs font-bold underline shrink-0 self-start sm:self-auto"
+            >
+              Ver camisas avulsas
+            </button>
+          </div>
+        )}
+
         {/* Barra Contextual quando filtra por Pré-Venda */}
         {selectedCategory === 'Pré-Venda' && (
           <div className="mt-5 sm:mt-6 p-4 rounded-2xl border border-amber-500/40 bg-amber-500/10 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
@@ -491,12 +546,16 @@ export default function CatalogView({ initialProducts }: Props) {
             }}
           >
             <p className="font-bold text-base" style={{ color: 'var(--text-primary)' }}>
-              {selectedCategory === 'Pré-Venda'
+              {selectedCategory === 'Grades (12 Peças)'
+                ? 'Nenhuma grade fechada de 12 peças cadastrada no momento'
+                : selectedCategory === 'Pré-Venda'
                 ? 'Nenhum modelo em pré-venda cadastrado no momento'
                 : 'Nenhum manto encontrado para este filtro'}
             </p>
             <p className="text-xs mt-1" style={{ color: 'var(--text-secondary)' }}>
-              {selectedCategory === 'Pré-Venda'
+              {selectedCategory === 'Grades (12 Peças)'
+                ? 'As grades fechadas com 12 peças e tamanhos pré-definidos aparecerão nesta aba assim que cadastradas pelo administrador.'
+                : selectedCategory === 'Pré-Venda'
                 ? 'Assim que novos lotes estiverem em trânsito, aparecerão aqui para reserva antecipada.'
                 : 'Tente buscar por outro clube ou limpar o filtro selecionado.'}
             </p>
@@ -539,6 +598,83 @@ export default function CatalogView({ initialProducts }: Props) {
             )}
           </>
         )}
+
+        {/* =========================================================================
+            2.5 SEÇÃO EDITORIAL: GRADES FECHADAS (12 PEÇAS IGUAIS)
+            ========================================================================= */}
+        <section
+          id="grades"
+          className="mt-12 sm:mt-16 pt-8 sm:pt-10 border-t"
+          style={{ borderColor: 'var(--border-crisp)' }}
+        >
+          <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-6">
+            <div>
+              <span className="text-xs font-mono uppercase tracking-widest text-emerald-600 dark:text-emerald-400 font-bold">
+                📦 ATACADO DE FÁBRICA • PACOTE 12 PEÇAS
+              </span>
+              <h2
+                className="mt-1 text-xl sm:text-2xl font-black tracking-tight uppercase"
+                style={{ color: 'var(--text-primary)' }}
+              >
+                Grades Fechadas (12 Peças Iguais)
+              </h2>
+              <p className="mt-1 text-xs sm:text-sm" style={{ color: 'var(--text-secondary)' }}>
+                Pacotes com 12 camisas do mesmo modelo e distribuição de tamanhos pré-definida para revenda imediata.
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => {
+                setSelectedCategory('Grades (12 Peças)');
+                document.getElementById('catalogo')?.scrollIntoView({ behavior: 'smooth' });
+              }}
+              className="self-start sm:self-auto px-4 py-2 rounded-full bg-emerald-600 hover:bg-emerald-500 text-white font-black text-xs uppercase tracking-wider inline-flex items-center gap-1.5 tactile"
+            >
+              <span>Abrir Aba de Grades ({gradeProducts.length})</span>
+              <ArrowRight className="w-3.5 h-3.5" />
+            </button>
+          </div>
+
+          {gradeProducts.length > 0 ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
+              {gradeProducts.slice(0, 4).map((product) => (
+                <ProductCard key={product.id} product={product} />
+              ))}
+            </div>
+          ) : (
+            <div
+              className="rounded-2xl border p-5 sm:p-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4"
+              style={{
+                backgroundColor: 'var(--bg-surface)',
+                borderColor: 'var(--border-crisp)',
+              }}
+            >
+              <div>
+                <h3 className="text-sm font-bold" style={{ color: 'var(--text-primary)' }}>
+                  Grades Fechadas de 12 Peças
+                </h3>
+                <p className="text-xs mt-0.5" style={{ color: 'var(--text-secondary)' }}>
+                  Confira na aba de Grades os pacotes de 12 peças com numeração sortida definida pelo administrador.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  setSelectedCategory('Grades (12 Peças)');
+                  document.getElementById('catalogo')?.scrollIntoView({ behavior: 'smooth' });
+                }}
+                className="px-4 py-2 rounded-full border text-xs font-bold inline-flex items-center gap-1.5 tactile shrink-0"
+                style={{
+                  borderColor: 'var(--border-crisp)',
+                  color: 'var(--text-primary)',
+                }}
+              >
+                <Layers className="w-3.5 h-3.5 text-emerald-600" />
+                <span>Ver Aba de Grades</span>
+              </button>
+            </div>
+          )}
+        </section>
 
         {/* =========================================================================
             3. SEÇÃO EDITORIAL: PRÉ-VENDA (MODELOS QUE IRÃO CHEGAR)
