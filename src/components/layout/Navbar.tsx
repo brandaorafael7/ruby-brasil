@@ -171,19 +171,29 @@ export default function Navbar() {
             </Link>
           </nav>
 
-          {/* Ações à Direita: Tema, Admin (Mobile) e Sacola */}
-          <div className="flex items-center gap-2 shrink-0">
+          {/* Ações à Direita: Botão Visível Modo Claro/Escuro, Admin (Mobile) e Sacola */}
+          <div className="flex items-center gap-2 sm:gap-2.5 shrink-0">
             <button
               type="button"
               onClick={toggleTheme}
-              title={isDark ? 'Mudar para Modo Claro (Nike White)' : 'Mudar para Modo Escuro'}
-              className="w-9 h-9 rounded-full flex items-center justify-center hover:bg-[#f5f5f5] dark:hover:bg-zinc-800 transition-colors"
-              style={{ color: 'var(--text-primary)' }}
+              title={isDark ? 'Alternar para Modo Claro' : 'Alternar para Modo Escuro'}
+              className="h-9 sm:h-10 px-3 sm:px-3.5 rounded-full border text-xs font-bold flex items-center justify-center gap-1.5 shrink-0 tactile focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-600"
+              style={{
+                borderColor: 'var(--border-crisp)',
+                backgroundColor: 'var(--bg-studio)',
+                color: 'var(--text-primary)',
+              }}
             >
               {isDark ? (
-                <Sun className="w-4 h-4 text-amber-400" />
+                <>
+                  <Sun className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                  <span>Modo Claro</span>
+                </>
               ) : (
-                <Moon className="w-4 h-4" />
+                <>
+                  <Moon className="w-3.5 h-3.5 shrink-0" />
+                  <span>Modo Escuro</span>
+                </>
               )}
             </button>
 
