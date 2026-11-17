@@ -181,35 +181,37 @@ export default function ProductCard({ product }: Props) {
   };
 
   const versionLabel = isGrade
-    ? '📦 GRADE 12 PEÇAS'
+    ? 'Grade Fechada (12 Peças)'
     : isKids
-    ? 'KIT INFANTIL'
+    ? 'Kit Infantil Oficial'
     : product.type === 'JOGADOR'
-    ? 'VERSÃO JOGADOR'
+    ? 'Versão Jogador (Slim Fit)'
     : product.type === 'RETRO'
-    ? 'ARQUIVO RETRÔ'
-    : 'TORCEDOR 1:1';
+    ? 'Arquivo Retrô Clássico'
+    : product.type === 'FEMININA'
+    ? 'Modelagem Feminina'
+    : 'Camisa Torcedor 1:1';
+
+  const retailRefPrice = isGrade
+    ? Math.max(currentPrice * 1.45, 960)
+    : Math.max(currentPrice * 2.2, 149.9);
+  const discountPct = Math.round(((retailRefPrice - currentPrice) / retailRefPrice) * 100);
 
   return (
     <>
       <article
         onMouseEnter={handlePreloadImages}
-        className="group rounded-2xl border overflow-hidden flex flex-col justify-between tactile"
-        style={{
-          backgroundColor: 'var(--bg-surface)',
-          borderColor: isPreSale ? 'rgba(245, 158, 11, 0.45)' : 'var(--border-crisp)',
-        }}
+        className="group flex flex-col justify-between"
       >
         <div>
-          {/* MOLDURA DE ESTÚDIO 4:5 (Estilo END. Clothing / Nike) */}
+          {/* TILE DE IMAGEM ESTILO NIKE.COM.BR (Quadrado/Retrato Limpo em #F5F5F5 sem borda pesada) */}
           <div
-            className="relative aspect-[4/5] overflow-hidden border-b flex flex-col justify-between p-3.5 sm:p-4"
+            className="relative aspect-square overflow-hidden flex flex-col justify-between p-3"
             style={{
               backgroundColor: 'var(--bg-studio)',
-              borderColor: 'var(--border-crisp)',
             }}
           >
-            {/* Imagem Oficial da Camisa ou Fallback Vetorial com troca instantânea */}
+            {/* Imagem Oficial da Camisa com troca instantânea */}
             <Link
               href={`/produto/${product.slug}`}
               prefetch={false}
@@ -231,7 +233,7 @@ export default function ProductCard({ product }: Props) {
                       onError={() => {
                         if (idx === 0) setImgError(true);
                       }}
-                      sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 25vw"
+                      sizes="(max-width: 768px) 50vw, (max-width: 1200px) 33vw, 25vw"
                       className={`object-cover jersey-zoom transition-opacity duration-200 ease-out ${
                         isCurrent
                           ? 'opacity-100 z-10'
@@ -245,7 +247,7 @@ export default function ProductCard({ product }: Props) {
                   <img
                     src="/ruby-brasil-icon.png"
                     alt={product.name}
-                    className="w-28 h-28 object-contain opacity-80 ruby-icon-adaptive"
+                    className="w-24 h-24 object-contain opacity-75"
                   />
                 </div>
               )}
@@ -258,7 +260,7 @@ export default function ProductCard({ product }: Props) {
                   type="button"
                   onClick={handlePrevImage}
                   aria-label="Foto anterior"
-                  className="absolute left-2 top-1/2 -translate-y-1/2 z-20 w-7 h-7 rounded-full bg-zinc-950/75 hover:bg-zinc-950 text-white border border-white/15 flex items-center justify-center opacity-85 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity shadow-md"
+                  className="absolute left-2 top-1/2 -translate-y-1/2 z-20 w-7 h-7 rounded-full bg-white/90 hover:bg-white text-[#111111] flex items-center justify-center opacity-85 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity shadow-sm"
                 >
                   <ChevronLeft className="w-4 h-4" />
                 </button>
@@ -266,30 +268,27 @@ export default function ProductCard({ product }: Props) {
                   type="button"
                   onClick={handleNextImage}
                   aria-label="Próxima foto"
-                  className="absolute right-2 top-1/2 -translate-y-1/2 z-20 w-7 h-7 rounded-full bg-zinc-950/75 hover:bg-zinc-950 text-white border border-white/15 flex items-center justify-center opacity-85 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity shadow-md"
+                  className="absolute right-2 top-1/2 -translate-y-1/2 z-20 w-7 h-7 rounded-full bg-white/90 hover:bg-white text-[#111111] flex items-center justify-center opacity-85 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity shadow-sm"
                 >
                   <ChevronRight className="w-4 h-4" />
                 </button>
               </>
             )}
 
-            {/* Linha Superior Discreta: Status Pré-Venda ou Versão + Personalizar */}
-            <div className="relative z-10 flex items-center justify-between gap-2">
+            {/* Topo do Tile: Selo Minimalista Estilo Nike + Botão Personalizar */}
+            <div className="relative z-10 flex items-center justify-between gap-1.5">
               {isPreSale ? (
-                <span className="px-2.5 py-1 rounded-full bg-amber-400 text-zinc-950 text-[10px] font-black uppercase tracking-wider shadow-sm inline-flex items-center gap-1 shrink-0 whitespace-nowrap">
-                  <Clock className="w-3 h-3 stroke-[2.5] shrink-0" />
+                <span className="px-2.5 py-1 rounded-sm bg-[#111111] text-white text-[10px] font-bold uppercase tracking-wider inline-flex items-center gap-1 shrink-0">
+                  <Clock className="w-3 h-3 shrink-0" />
                   <span>Pré-Venda</span>
                 </span>
+              ) : isGrade ? (
+                <span className="px-2.5 py-1 rounded-sm bg-[#007d48] text-white text-[10px] font-bold uppercase tracking-wider shrink-0">
+                  Grade 12 Peças
+                </span>
               ) : (
-                <span
-                  className="px-2.5 py-1 rounded-full border text-[10px] font-mono font-bold uppercase tracking-wider backdrop-blur-md shrink-0 whitespace-nowrap"
-                  style={{
-                    backgroundColor: 'color-mix(in srgb, var(--bg-surface) 90%, transparent)',
-                    borderColor: 'var(--border-crisp)',
-                    color: 'var(--text-primary)',
-                  }}
-                >
-                  {versionLabel}
+                <span className="px-2.5 py-1 rounded-sm bg-white/95 text-[#111111] text-[10px] font-bold uppercase tracking-wider shrink-0 shadow-sm">
+                  -{discountPct}%
                 </span>
               )}
 
@@ -298,12 +297,7 @@ export default function ProductCard({ product }: Props) {
                   type="button"
                   disabled={!isAvailableToAdd}
                   onClick={() => isAvailableToAdd && setIsCustomOpen(true)}
-                  className="px-2.5 py-1 rounded-full border text-[10px] font-bold uppercase tracking-wider backdrop-blur-md hover:border-rose-600 hover:text-rose-600 tactile disabled:opacity-40 shrink-0 whitespace-nowrap"
-                  style={{
-                    backgroundColor: 'color-mix(in srgb, var(--bg-surface) 90%, transparent)',
-                    borderColor: 'var(--border-crisp)',
-                    color: 'var(--text-primary)',
-                  }}
+                  className="px-2.5 py-1 rounded-full bg-white/95 hover:bg-[#111111] text-[#111111] hover:text-white text-[10px] font-bold transition-colors shadow-sm disabled:opacity-40 shrink-0"
                   title="Personalizar Nome e Número (+ R$ 15)"
                 >
                   Personalizar ✎
@@ -311,21 +305,11 @@ export default function ProductCard({ product }: Props) {
               )}
             </div>
 
-            {/* Rodapé Discreto da Moldura: Clube/Liga, Indicador de Fotos & Temporada */}
+            {/* Indicador de Fotos Discreto na Base da Imagem */}
             <div className="relative z-10 flex items-center justify-between gap-2 pointer-events-none">
-              <span
-                className="px-2 py-0.5 rounded text-[10px] font-mono font-semibold uppercase backdrop-blur-md border truncate max-w-[60%]"
-                style={{
-                  backgroundColor: 'color-mix(in srgb, var(--bg-surface) 88%, transparent)',
-                  borderColor: 'var(--border-crisp)',
-                  color: 'var(--text-secondary)',
-                }}
-              >
-                {product.club || product.league || 'Oficial 1:1'}
-              </span>
-
+              <span />
               {galleryImages.length > 1 && (
-                <div className="flex items-center gap-1 px-2 py-1 rounded-full bg-zinc-950/75 border border-white/15 backdrop-blur-md pointer-events-auto">
+                <div className="flex items-center gap-1 px-2 py-1 rounded-full bg-black/55 backdrop-blur-sm pointer-events-auto">
                   {galleryImages.map((_, idx) => (
                     <button
                       key={idx}
@@ -344,97 +328,89 @@ export default function ProductCard({ product }: Props) {
                       className={`h-1.5 rounded-full transition-all ${
                         idx === activeImageIdx
                           ? 'w-3.5 bg-white'
-                          : 'w-1.5 bg-white/45 hover:bg-white/75'
+                          : 'w-1.5 bg-white/45 hover:bg-white/80'
                       }`}
                     />
                   ))}
                 </div>
               )}
-
-              {product.season && (
-                <span
-                  className="px-2 py-0.5 rounded text-[10px] font-mono font-semibold backdrop-blur-md border shrink-0"
-                  style={{
-                    backgroundColor: 'color-mix(in srgb, var(--bg-surface) 88%, transparent)',
-                    borderColor: 'var(--border-crisp)',
-                    color: 'var(--text-secondary)',
-                  }}
-                >
-                  {product.season}
-                </span>
-              )}
+              <button
+                type="button"
+                onClick={handleCopyLink}
+                title="Copiar link desta camisa"
+                className="w-7 h-7 rounded-full bg-white/90 hover:bg-white text-[#111111] flex items-center justify-center pointer-events-auto opacity-0 group-hover:opacity-100 transition-opacity shadow-sm"
+              >
+                {copiedLink ? (
+                  <CheckCircle2 className="w-3.5 h-3.5 text-[#007d48]" />
+                ) : (
+                  <Copy className="w-3.5 h-3.5" />
+                )}
+              </button>
             </div>
           </div>
 
-          {/* INFORMAÇÕES EDITORIAIS E SELETOR TÁTIL DE TAMANHO */}
-          <div className="p-4 space-y-3">
+          {/* INFORMAÇÕES ABAIXO DA FOTO NO PADRÃO NIKE.COM.BR */}
+          <div className="pt-3 space-y-2">
             <div>
-              {isPreSale && preSaleEta && (
-                <div className="mb-1.5 px-2 py-0.5 rounded-md bg-amber-500/10 border border-amber-500/30 text-[10px] font-mono font-semibold text-amber-600 dark:text-amber-400 truncate">
-                  ⏳ {preSaleEta}
-                </div>
-              )}
-
-              <div className="flex items-start justify-between gap-2">
-                <Link
-                  href={`/produto/${product.slug}`}
-                  prefetch={false}
-                  className="text-sm font-bold leading-snug line-clamp-2 hover:text-rose-600 tactile flex-1"
-                  style={{ color: 'var(--text-primary)' }}
-                >
-                  {product.name}
-                </Link>
-                <button
-                  type="button"
-                  onClick={handleCopyLink}
-                  title="Copiar link desta camisa"
-                  className="p-1 rounded-md border tactile shrink-0 hover:opacity-80"
-                  style={{
-                    borderColor: 'var(--border-crisp)',
-                    color: 'var(--text-muted)',
-                  }}
-                >
-                  {copiedLink ? (
-                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" />
-                  ) : (
-                    <Copy className="w-3.5 h-3.5" />
-                  )}
-                </button>
+              {/* Linha de Destaque Nike (Cor #9E3500) */}
+              <div className="text-xs font-semibold text-[#9e3500] dark:text-amber-400 truncate">
+                {isGrade
+                  ? `Atacado • Grade Fechada (${gradeInfo?.totalPieces || 12} Peças)`
+                  : isPreSale
+                  ? `Pré-Venda • ${preSaleEta || 'Reserva Antecipada'}`
+                  : 'Em Oferta • Direto de Fábrica'}
               </div>
 
-              <div className="mt-1.5 flex items-baseline justify-between">
-                <div className="flex items-baseline gap-2">
-                  <span
-                    className="text-lg font-black font-mono tabular-nums"
-                    style={{ color: 'var(--text-primary)' }}
-                  >
-                    {formatCurrency(currentPrice)}
-                  </span>
-                  {isGrade ? (
-                    <span className="text-[11px] font-bold text-emerald-600 dark:text-emerald-400">
-                      ({formatCurrency(currentPrice / (gradeInfo?.totalPieces || 12))}/peça)
-                    </span>
-                  ) : (
-                    surcharge > 0 && (
-                      <span className="text-[10px] font-mono font-bold text-amber-600 dark:text-amber-400">
-                        +{formatCurrency(surcharge)} ({selectedSize})
-                      </span>
-                    )
-                  )}
-                </div>
+              {/* Nome da Camisa */}
+              <Link
+                href={`/produto/${product.slug}`}
+                prefetch={false}
+                className="mt-0.5 text-sm sm:text-[15px] font-semibold leading-snug line-clamp-1 hover:opacity-75 transition-opacity block"
+                style={{ color: 'var(--text-primary)' }}
+              >
+                {product.name}
+              </Link>
+
+              {/* Subtítulo / Categoria Estilo Nike (#707072) */}
+              <p
+                className="text-xs sm:text-[13px] truncate mt-0.5"
+                style={{ color: 'var(--text-secondary)' }}
+              >
+                {versionLabel} • {product.club || product.league} {product.season ? `(${product.season})` : ''}
+              </p>
+
+              {/* Bloco de Preço Estilo Nike Ofertas */}
+              <div className="mt-2 flex items-baseline flex-wrap gap-x-2 gap-y-0.5">
                 <span
-                  className="text-[11px] font-mono font-semibold"
-                  style={{ color: 'var(--text-muted)' }}
+                  className="text-sm sm:text-base font-bold tabular-nums"
+                  style={{ color: 'var(--text-primary)' }}
                 >
-                  {isGrade ? 'Grade 12un' : 'Tailandesa 1:1'}
+                  {formatCurrency(currentPrice)}
                 </span>
+                {isGrade ? (
+                  <span className="text-xs font-bold text-[#007d48] dark:text-emerald-400">
+                    ({formatCurrency(currentPrice / (gradeInfo?.totalPieces || 12))}/peça)
+                  </span>
+                ) : (
+                  <>
+                    <span
+                      className="text-xs line-through tabular-nums"
+                      style={{ color: 'var(--text-secondary)' }}
+                    >
+                      {formatCurrency(retailRefPrice)}
+                    </span>
+                    <span className="text-xs font-bold text-[#007d48] dark:text-emerald-400">
+                      {discountPct}% off
+                    </span>
+                  </>
+                )}
               </div>
             </div>
 
-            {/* Seletor de Grade Direto ou Composição Fixa da Grade (12 Peças) */}
+            {/* Seletor de Tamanho Compacto ou Composição Fixa da Grade (12 Peças) */}
             {isGrade && gradeInfo ? (
               <div
-                className="p-2.5 rounded-xl border space-y-1.5"
+                className="p-2.5 rounded-lg border space-y-1.5"
                 style={{
                   backgroundColor: 'var(--bg-studio)',
                   borderColor: 'var(--border-crisp)',
@@ -442,17 +418,13 @@ export default function ProductCard({ product }: Props) {
               >
                 <div className="flex items-center justify-between text-[10px] font-bold uppercase tracking-wider">
                   <span style={{ color: 'var(--text-secondary)' }}>
-                    Grade Fixa ({gradeInfo.totalPieces} Peças):
+                    Tamanhos na Grade ({gradeInfo.totalPieces} un):
                   </span>
                   {totalStockForSelected <= 0 ? (
-                    <span className="text-rose-600 font-bold">Grade Esgotada</span>
-                  ) : remainingStock === 0 ? (
-                    <span className="text-amber-600 dark:text-amber-400 font-bold">
-                      Limite na Sacola
-                    </span>
+                    <span className="text-rose-600 font-bold">Esgotada</span>
                   ) : (
-                    <span className="text-emerald-600 dark:text-emerald-400 font-bold">
-                      {remainingStock} {remainingStock === 1 ? 'grade disp.' : 'grades disp.'}
+                    <span className="text-[#007d48] dark:text-emerald-400 font-bold">
+                      {remainingStock} disp.
                     </span>
                   )}
                 </div>
@@ -460,50 +432,21 @@ export default function ProductCard({ product }: Props) {
                   {gradeInfo.entries.map((entry) => (
                     <span
                       key={entry.size}
-                      className="px-2 py-0.5 rounded-md border text-[11px] font-bold"
+                      className="px-2 py-0.5 rounded border text-[11px] font-semibold"
                       style={{
                         backgroundColor: 'var(--bg-surface)',
                         borderColor: 'var(--border-crisp)',
                         color: 'var(--text-primary)',
                       }}
-                      title={`${entry.quantity} unidade(s) no tamanho ${entry.size} (EN: ${entry.enCode})`}
                     >
-                      <strong className="text-rose-600 dark:text-rose-400">{entry.quantity}x</strong>{' '}
-                      {entry.size}
-                      {entry.enCode !== entry.size ? ` (${entry.enCode})` : ''}
+                      <strong>{entry.quantity}x</strong> {entry.size}
+                      {entry.enCode !== entry.size ? `(${entry.enCode})` : ''}
                     </span>
                   ))}
                 </div>
               </div>
             ) : (
-              <div>
-                <div
-                  className="flex items-center justify-between text-[11px] font-mono mb-1.5"
-                  style={{ color: 'var(--text-muted)' }}
-                >
-                  <span>
-                    TAM:{' '}
-                    <strong style={{ color: 'var(--text-primary)' }}>
-                      {formatBilingualSize(selectedSize)}
-                    </strong>
-                  </span>
-                  {!selectedInfo?.inStock ? (
-                    <span className="text-rose-600 font-bold">Esgotado</span>
-                  ) : remainingStock === 0 ? (
-                    <span className="text-amber-600 dark:text-amber-400 font-bold">
-                      Limite na Sacola
-                    </span>
-                  ) : isPreSale ? (
-                    <span className="text-amber-600 dark:text-amber-400 font-semibold">
-                      Reserva ({remainingStock} un)
-                    </span>
-                  ) : (
-                    <span className="text-emerald-600 dark:text-emerald-400 font-semibold">
-                      Disponível ({remainingStock} un)
-                    </span>
-                  )}
-                </div>
-
+              <div className="pt-1">
                 <div className="flex flex-wrap gap-1">
                   {sizeInfoList.map((info) => {
                     const isSelected = selectedSize === info.size;
@@ -519,20 +462,20 @@ export default function ProductCard({ product }: Props) {
                         key={info.size}
                         type="button"
                         onClick={() => setSelectedSize(info.size)}
-                        title={`Tamanho ${info.size} (Inglês / EN: ${getEnglishSizeInfo(info.size).enCode} - ${getEnglishSizeInfo(info.size).enName})`}
-                        className={`h-7 min-w-[34px] px-1.5 rounded-md font-mono text-xs font-bold border tactile ${
+                        title={`Tamanho ${info.size} (EN: ${getEnglishSizeInfo(info.size).enCode})`}
+                        className={`h-7 min-w-[32px] px-1.5 rounded text-[11px] font-semibold border transition-colors ${
                           isSelected
-                            ? 'bg-zinc-950 text-white border-zinc-950 dark:bg-white dark:text-zinc-950 dark:border-white'
+                            ? 'bg-[#111111] text-white border-[#111111] dark:bg-white dark:text-zinc-950 dark:border-white'
                             : isSoldOut || isMaxInCart
-                            ? 'opacity-40 line-through'
-                            : 'hover:border-zinc-500'
+                            ? 'opacity-35 line-through'
+                            : 'hover:border-[#111111] dark:hover:border-white'
                         }`}
                         style={
                           !isSelected
                             ? {
-                                backgroundColor: 'var(--bg-canvas)',
+                                backgroundColor: 'var(--bg-surface)',
                                 borderColor: 'var(--border-crisp)',
-                                color: 'var(--text-secondary)',
+                                color: 'var(--text-primary)',
                               }
                             : undefined
                         }
@@ -547,49 +490,41 @@ export default function ProductCard({ product }: Props) {
           </div>
         </div>
 
-        {/* CTA Principal */}
-        <div className="px-4 pb-4">
+        {/* Botão Pílula Preto Estilo Nike.com.br */}
+        <div className="pt-3">
           <button
             type="button"
             disabled={!isAvailableToAdd}
             onClick={handleBuy}
-            className={`w-full h-10 rounded-xl font-black text-xs uppercase tracking-wider flex items-center justify-center gap-2 tactile ${
+            className={`w-full h-10 rounded-full font-bold text-xs flex items-center justify-center gap-2 transition-colors ${
               justAdded
-                ? 'bg-emerald-600 text-white'
+                ? 'bg-[#007d48] text-white'
                 : !isAvailableToAdd
-                ? 'opacity-40 cursor-not-allowed bg-zinc-500 text-white'
-                : isPreSale
-                ? 'bg-amber-400 hover:bg-amber-300 text-zinc-950'
-                : 'bg-rose-600 hover:bg-rose-500 text-white'
+                ? 'opacity-40 cursor-not-allowed bg-zinc-400 text-white'
+                : 'bg-[#111111] hover:bg-[#333333] text-white dark:bg-white dark:text-zinc-950 dark:hover:bg-zinc-200'
             }`}
           >
             {justAdded ? (
               <>
                 <Check className="w-4 h-4" />
-                <span>{isGrade ? 'Grade Adicionada!' : isPreSale ? 'Reserva Adicionada!' : 'Adicionado à Sacola!'}</span>
+                <span>{isGrade ? 'Grade Adicionada' : 'Adicionado à Sacola'}</span>
               </>
             ) : isGrade ? (
               totalStockForSelected <= 0 ? (
                 <span>Grade Esgotada</span>
               ) : remainingStock === 0 ? (
-                <span>Limite na Sacola ({totalStockForSelected} grade(s))</span>
+                <span>Limite na Sacola</span>
               ) : (
-                <>
-                  <ShoppingBag className="w-3.5 h-3.5" />
-                  <span>Adicionar Grade (12 Peças)</span>
-                </>
+                <span>Adicionar Grade (12 Peças)</span>
               )
             ) : !selectedInfo?.inStock ? (
-              <span>Tamanho {selectedSize} Esgotado</span>
+              <span>Tamanho {selectedSize} Indisponível</span>
             ) : remainingStock === 0 ? (
               <span>Limite na Sacola ({selectedInfo?.stock} un)</span>
             ) : isPreSale ? (
-              <span>⏳ Reservar Pré-Venda ({selectedSize})</span>
+              <span>Reservar Pré-Venda ({formatBilingualSize(selectedSize)})</span>
             ) : (
-              <>
-                <ShoppingBag className="w-3.5 h-3.5" />
-                <span>Adicionar à Sacola ({selectedSize})</span>
-              </>
+              <span>Adicionar à Sacola ({formatBilingualSize(selectedSize)})</span>
             )}
           </button>
         </div>

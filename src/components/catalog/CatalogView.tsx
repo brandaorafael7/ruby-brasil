@@ -180,318 +180,151 @@ export default function CatalogView({ initialProducts }: Props) {
   return (
     <div className="min-h-screen flex flex-col">
       {/* =========================================================================
-          1. LOOKBOOK EDITORIAL SPLIT-BANNER (Estilo Nike Lab / END. / Classic Football Shirts)
+          1. BARRA PROMOCIONAL CINZA ESTILO NIKE.COM.BR (#F5F5F5)
           ========================================================================= */}
-      <section
-        className="border-b"
+      <div
+        className="border-b py-3 px-4 text-center"
         style={{
+          backgroundColor: 'var(--bg-studio)',
           borderColor: 'var(--border-crisp)',
-          backgroundColor: 'var(--bg-surface)',
+          color: 'var(--text-primary)',
         }}
       >
-        <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8">
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 sm:gap-6 items-stretch">
-            {/* Coluna Editorial Esquerda (7 cols): Manifesto + Condições Diretas */}
-            <div
-              className="lg:col-span-7 flex flex-col justify-between p-4 sm:p-8 rounded-2xl border relative overflow-hidden"
-              style={{
-                borderColor: 'var(--border-crisp)',
-                backgroundColor: 'var(--bg-studio)',
-              }}
-            >
-              {/* Marca d'água sutil do Diamante Ruby Brasil */}
-              <img
-                src="/ruby-brasil-icon.png"
-                alt=""
-                aria-hidden="true"
-                className="w-28 h-28 sm:w-36 sm:h-36 object-contain absolute -right-4 -top-4 opacity-[0.07] pointer-events-none ruby-icon-adaptive"
-              />
-
-              <div className="relative z-10">
-                <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 mb-3.5 sm:mb-4">
-                  <span className="px-2.5 py-1 rounded-full bg-rose-600 text-white text-[10px] sm:text-[11px] font-bold uppercase tracking-wider whitespace-nowrap">
-                    TEMPORADA 25/26 & CLÁSSICOS
-                  </span>
-                  <span
-                    className="px-2.5 py-1 rounded-full border text-[10px] sm:text-[11px] font-mono uppercase tracking-wider whitespace-nowrap"
-                    style={{
-                      borderColor: 'var(--border-crisp)',
-                      backgroundColor: 'var(--bg-surface)',
-                      color: 'var(--text-secondary)',
-                    }}
-                  >
-                    <span className="sm:hidden">TAILANDÊS 1:1 • CAMPINAS/SP</span>
-                    <span className="hidden sm:inline">TECIDO TAILANDÊS 1:1 • ENVIO DE CAMPINAS/SP</span>
-                  </span>
-                </div>
-
-                <h1
-                  className="text-2xl sm:text-4xl lg:text-[42px] font-black tracking-tight leading-[1.08] uppercase"
-                  style={{ color: 'var(--text-primary)' }}
-                >
-                  Mantos Oficiais & Arquivo Histórico Direto da Fábrica.
-                </h1>
-
-                <p
-                  className="mt-2.5 sm:mt-3 text-xs sm:text-base max-w-xl leading-relaxed"
-                  style={{ color: 'var(--text-secondary)' }}
-                >
-                  Bordados de alta definição, versões Jogador (Slim Fit) e Torcedor, além de relíquias retrô imortais. Compre pronta entrega ou reserve lançamentos exclusivos na pré-venda com envio seguro para todo o Brasil.
-                </p>
-              </div>
-
-              {/* Barra de Condições Comerciais Integrada */}
-              <div
-                className="relative z-10 mt-5 sm:mt-6 pt-4 sm:pt-5 border-t grid grid-cols-3 gap-2 sm:gap-4"
-                style={{ borderColor: 'var(--border-crisp)' }}
-              >
-                <div className="min-w-0">
-                  <span
-                    className="text-[9px] sm:text-[11px] font-mono uppercase block truncate"
-                    style={{ color: 'var(--text-muted)' }}
-                  >
-                    Preço Fábrica
-                  </span>
-                  <span
-                    className="text-sm sm:text-xl font-black font-mono tabular-nums whitespace-nowrap block mt-0.5"
-                    style={{ color: 'var(--text-primary)' }}
-                  >
-                    R$ 60
-                    <small
-                      className="text-[10px] sm:text-xs font-normal"
-                      style={{ color: 'var(--text-muted)' }}
-                    >
-                      /un
-                    </small>
-                  </span>
-                </div>
-
-                <div
-                  className="border-l pl-2.5 sm:pl-4 min-w-0"
-                  style={{ borderColor: 'var(--border-crisp)' }}
-                >
-                  <span className="text-[9px] sm:text-[11px] font-mono uppercase block text-rose-600 dark:text-rose-400 truncate">
-                    Qualidade
-                  </span>
-                  <span
-                    className="text-sm sm:text-xl font-black font-mono tabular-nums whitespace-nowrap block mt-0.5"
-                    style={{ color: 'var(--text-primary)' }}
-                  >
-                    Padrão 1:1
-                  </span>
-                </div>
-
-                <div
-                  className="border-l pl-2.5 sm:pl-4 min-w-0"
-                  style={{ borderColor: 'var(--border-crisp)' }}
-                >
-                  <span
-                    className="text-[9px] sm:text-[11px] font-mono uppercase block text-emerald-600 dark:text-emerald-400 truncate"
-                  >
-                    Frete Oficial
-                  </span>
-                  <span
-                    className="text-sm sm:text-xl font-black font-mono tabular-nums text-emerald-600 dark:text-emerald-400 whitespace-nowrap block mt-0.5"
-                  >
-                    Melhor Envio
-                  </span>
-                </div>
-              </div>
-            </div>
-
-            {/* Coluna Editorial Direita (5 cols): Card de Drop / Pré-Venda em Destaque */}
-            <div
-              className="lg:col-span-5 rounded-2xl border p-4 sm:p-6 flex flex-col justify-between bg-zinc-950 text-white relative overflow-hidden"
-              style={{ borderColor: 'var(--border-crisp)' }}
-            >
-              <div className="flex flex-wrap items-center justify-between gap-2 z-10">
-                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-amber-400 text-zinc-950 text-[10px] sm:text-[11px] font-black uppercase tracking-wider shrink-0 whitespace-nowrap">
-                  {spotlightPreSale.isPreSale ? '⏳ DROP PRÉ-VENDA' : '★ DESTAQUE DA COLEÇÃO'}
-                </span>
-                <span className="text-[11px] sm:text-xs font-mono text-amber-300 truncate max-w-full">
-                  {spotlightPreSale.isPreSale
-                    ? spotlightPreSale.preSaleEta || 'Lote Chegando • Reserva Aberta'
-                    : 'Pronta Entrega • Envio Rápido'}
-                </span>
-              </div>
-
-              {spotlightProduct ? (
-                <>
-                  <div className="my-3.5 sm:my-4 flex items-center gap-3.5 sm:gap-5 z-10">
-                    <Link
-                      href={`/produto/${spotlightProduct.slug}`}
-                      prefetch={false}
-                      className="w-24 h-32 sm:w-32 sm:h-40 shrink-0 relative rounded-xl border border-zinc-800 bg-zinc-900 overflow-hidden block"
-                    >
-                      <Image
-                        src={spotlightProduct.imageUrl}
-                        alt={spotlightProduct.name}
-                        fill
-                        unoptimized
-                        priority
-                        sizes="150px"
-                        className="object-cover hover:scale-105 transition-transform duration-300"
-                      />
-                    </Link>
-
-                    <div className="space-y-1 sm:space-y-1.5 min-w-0 flex-1">
-                      <div className="text-[10px] sm:text-[11px] font-mono uppercase tracking-widest text-zinc-400 truncate">
-                        {spotlightProduct.club || spotlightProduct.league} •{' '}
-                        {spotlightProduct.season || '25/26'}
-                      </div>
-                      <Link
-                        href={`/produto/${spotlightProduct.slug}`}
-                        prefetch={false}
-                        className="text-sm sm:text-lg font-black tracking-tight leading-snug text-white line-clamp-2 hover:text-amber-300 tactile block"
-                      >
-                        {spotlightProduct.name}
-                      </Link>
-                      <p className="text-[11px] sm:text-xs text-zinc-400 leading-relaxed line-clamp-2">
-                        {spotlightProduct.description ||
-                          'Acabamento oficial Tailandês 1:1 com tecido respirável e escudo de alta definição.'}
-                      </p>
-                      <div className="pt-1 flex items-baseline gap-2 flex-wrap">
-                        <span className="text-base sm:text-lg font-black font-mono tabular-nums text-amber-400 whitespace-nowrap">
-                          {formatCurrency(spotlightProduct.retailPrice || 60)}
-                        </span>
-                        <span className="text-[11px] text-zinc-500 font-mono whitespace-nowrap">
-                          Padrão 1:1
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center gap-2 pt-3 border-t border-zinc-800/80 z-10">
-                    <button
-                      type="button"
-                      onClick={handleSpotlightBuy}
-                      className="flex-1 h-10 px-3 rounded-xl bg-amber-400 hover:bg-amber-300 text-zinc-950 font-black text-[11px] sm:text-xs uppercase tracking-wider whitespace-nowrap tactile"
-                    >
-                      {spotlightPreSale.isPreSale
-                        ? 'Reservar Pré-Venda'
-                        : 'Adicionar à Sacola'}
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        if (preSaleProducts.length > 0) {
-                          setSelectedCategory('Pré-Venda');
-                        }
-                        document
-                          .getElementById('catalogo')
-                          ?.scrollIntoView({ behavior: 'smooth' });
-                      }}
-                      className="h-10 px-3 sm:px-3.5 rounded-xl bg-zinc-900 hover:bg-zinc-800 border border-zinc-700 text-zinc-200 font-semibold text-[11px] sm:text-xs shrink-0 whitespace-nowrap tactile"
-                    >
-                      Ver Drops ({preSaleProducts.length || initialProducts.length})
-                    </button>
-                  </div>
-                </>
-              ) : null}
-            </div>
-          </div>
+        <p className="text-xs sm:text-sm font-bold tracking-tight">
+          MANTOS OFICIAIS PADRÃO TAILANDÊS 1:1 DIRETO DE FÁBRICA — A PARTIR DE R$ 60,00
+        </p>
+        <div className="mt-0.5 flex items-center justify-center gap-3 text-[11px] font-medium" style={{ color: 'var(--text-secondary)' }}>
+          <button
+            type="button"
+            onClick={() => {
+              setSelectedCategory('Grades (12 Peças)');
+              document.getElementById('catalogo')?.scrollIntoView({ behavior: 'smooth' });
+            }}
+            className="underline font-semibold hover:opacity-75"
+            style={{ color: 'var(--text-primary)' }}
+          >
+            Ver Grades Fechadas (12 Peças)
+          </button>
+          <span>•</span>
+          <span>Envio para todo o Brasil via Melhor Envio</span>
         </div>
-      </section>
+      </div>
 
       {/* =========================================================================
-          2. CATÁLOGO VISUAL DE CAMISAS (Proporção 4:5 de Estúdio • Estilo END. / Nike)
+          2. PAREDE DE PRODUTOS ESTILO NIKE.COM.BR (/nav/ofertas/emoferta)
           ========================================================================= */}
       <main
         id="catalogo"
-        className="flex-1 max-w-7xl w-full mx-auto px-3 sm:px-6 lg:px-8 py-6 sm:py-8"
+        className="flex-1 max-w-[1440px] w-full mx-auto px-4 sm:px-8 lg:px-12 py-6 sm:py-8"
       >
-        {/* Barra Unificada de Filtros de Coleção e Busca */}
-        <div
-          className="flex flex-col lg:flex-row lg:items-center justify-between gap-3 sm:gap-4 pb-5 sm:pb-6 border-b"
-          style={{ borderColor: 'var(--border-crisp)' }}
-        >
-          {/* Pílulas de Categoria */}
-          <div className="flex items-center gap-1.5 overflow-x-auto pb-1 lg:pb-0 -mx-3 px-3 sm:mx-0 sm:px-0">
-            {CATEGORIES.map((cat) => {
-              const isPreSaleTab = cat === 'Pré-Venda';
-              const isGradeTab = cat === 'Grades (12 Peças)';
-              const isSelected = selectedCategory === cat;
-              return (
-                <button
-                  key={cat}
-                  type="button"
-                  onClick={() => setSelectedCategory(cat)}
-                  className={`px-3 sm:px-3.5 py-2 rounded-full text-xs font-bold whitespace-nowrap tactile inline-flex items-center gap-1.5 border shrink-0 ${
-                    isSelected
-                      ? isPreSaleTab
-                        ? 'bg-amber-400 text-zinc-950 border-amber-400'
-                        : isGradeTab
-                        ? 'bg-emerald-600 text-white border-emerald-600'
-                        : 'bg-zinc-950 text-white border-zinc-950 dark:bg-white dark:text-zinc-950 dark:border-white'
-                      : isPreSaleTab
-                      ? 'bg-amber-500/10 text-amber-600 dark:text-amber-300 border-amber-500/30 hover:bg-amber-500/20'
-                      : isGradeTab
-                      ? 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border-emerald-500/30 hover:bg-emerald-500/20'
-                      : 'hover:opacity-80'
-                  }`}
-                  style={
-                    !isSelected && !isPreSaleTab && !isGradeTab
-                      ? {
-                          backgroundColor: 'var(--bg-surface)',
-                          borderColor: 'var(--border-crisp)',
-                          color: 'var(--text-secondary)',
-                        }
-                      : undefined
-                  }
-                >
-                  {isPreSaleTab && <Clock className="w-3.5 h-3.5" />}
-                  {isGradeTab && <Layers className="w-3.5 h-3.5" />}
-                  <span>
-                    {cat === 'Todas as Categorias'
-                      ? `Todos os Mantos (${regularProducts.length})`
-                      : cat}
-                  </span>
-                  {isGradeTab && (
-                    <span
-                      className={`px-1.5 py-0.2 rounded-full font-mono text-[11px] ${
-                        isSelected
-                          ? 'bg-zinc-950 text-emerald-400'
-                          : 'bg-emerald-500/20 text-emerald-700 dark:text-emerald-300'
-                      }`}
-                    >
-                      {gradeProducts.length}
-                    </span>
-                  )}
-                  {isPreSaleTab && preSaleProducts.length > 0 && (
-                    <span
-                      className={`px-1.5 py-0.2 rounded-full font-mono text-[11px] ${
-                        isSelected
-                          ? 'bg-zinc-950 text-amber-400'
-                          : 'bg-amber-500/20 text-amber-600 dark:text-amber-300'
-                      }`}
-                    >
-                      {preSaleProducts.length}
-                    </span>
-                  )}
-                </button>
-              );
-            })}
+        {/* Breadcrumb + Cabeçalho Estilo Nike */}
+        <div className="mb-6">
+          <div className="text-xs font-medium mb-2 flex items-center gap-1.5" style={{ color: 'var(--text-secondary)' }}>
+            <span>Início</span>
+            <span>/</span>
+            <span>Ofertas</span>
+            <span>/</span>
+            <strong style={{ color: 'var(--text-primary)' }}>{selectedCategory}</strong>
           </div>
 
-          {/* Busca Instantânea */}
-          <div className="relative w-full lg:w-72 shrink-0">
-            <Search
-              className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none"
-              style={{ color: 'var(--text-muted)' }}
-            />
-            <input
-              type="search"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              placeholder="Buscar clube, seleção ou ano..."
-              className="w-full h-10 pl-9 pr-4 rounded-full border text-xs font-medium focus:outline-none focus:ring-2 focus:ring-rose-600 tactile"
-              style={{
-                backgroundColor: 'var(--bg-surface)',
-                borderColor: 'var(--border-crisp)',
-                color: 'var(--text-primary)',
-              }}
-            />
+          <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
+            <div>
+              <h1
+                className="text-2xl sm:text-3xl font-black tracking-tight"
+                style={{ color: 'var(--text-primary)' }}
+              >
+                {selectedCategory === 'Todas as Categorias'
+                  ? `Mantos Oficiais em Oferta (${filteredProducts.length})`
+                  : `${selectedCategory} (${filteredProducts.length})`}
+              </h1>
+              <p className="text-xs sm:text-sm mt-1" style={{ color: 'var(--text-secondary)' }}>
+                {selectedCategory === 'Grades (12 Peças)'
+                  ? 'Pacotes fechados de 12 camisas iguais com tamanhos pré-definidos pelo administrador.'
+                  : 'Qualidade Tailandesa 1:1 com escudos bordados ou TPU, pronta entrega e pré-venda oficial.'}
+              </p>
+            </div>
+
+            {/* Busca Estilo Pílula Nike (#F5F5F5) */}
+            <div className="relative w-full md:w-72 shrink-0">
+              <Search
+                className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none"
+                style={{ color: 'var(--text-secondary)' }}
+              />
+              <input
+                type="search"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                placeholder="Buscar clube, seleção ou ano..."
+                className="w-full h-10 pl-10 pr-4 rounded-full text-xs font-medium focus:outline-none focus:ring-1 focus:ring-[#111111] dark:focus:ring-white transition-all"
+                style={{
+                  backgroundColor: 'var(--bg-studio)',
+                  color: 'var(--text-primary)',
+                }}
+              />
+            </div>
           </div>
+        </div>
+
+        {/* Barra de Filtros em Pílulas Estilo Nike.com.br */}
+        <div
+          className="flex items-center gap-2 overflow-x-auto pb-4 mb-6 border-b -mx-4 px-4 sm:mx-0 sm:px-0"
+          style={{ borderColor: 'var(--border-crisp)' }}
+        >
+          {CATEGORIES.map((cat) => {
+            const isPreSaleTab = cat === 'Pré-Venda';
+            const isGradeTab = cat === 'Grades (12 Peças)';
+            const isSelected = selectedCategory === cat;
+            return (
+              <button
+                key={cat}
+                type="button"
+                onClick={() => setSelectedCategory(cat)}
+                className={`px-4 py-2 rounded-full text-xs font-semibold whitespace-nowrap transition-colors inline-flex items-center gap-1.5 shrink-0 ${
+                  isSelected
+                    ? 'bg-[#111111] text-white dark:bg-white dark:text-zinc-950'
+                    : 'hover:opacity-80'
+                }`}
+                style={
+                  !isSelected
+                    ? {
+                        backgroundColor: 'var(--bg-studio)',
+                        color: 'var(--text-primary)',
+                      }
+                    : undefined
+                }
+              >
+                {isPreSaleTab && <Clock className="w-3.5 h-3.5" />}
+                {isGradeTab && <Layers className="w-3.5 h-3.5" />}
+                <span>
+                  {cat === 'Todas as Categorias'
+                    ? `Todos (${regularProducts.length})`
+                    : cat}
+                </span>
+                {isGradeTab && (
+                  <span
+                    className={`px-1.5 py-0.2 rounded-full text-[11px] font-bold ${
+                      isSelected
+                        ? 'bg-white/20 text-white dark:bg-black/20 dark:text-zinc-950'
+                        : 'bg-black/10 dark:bg-white/10'
+                    }`}
+                  >
+                    {gradeProducts.length}
+                  </span>
+                )}
+                {isPreSaleTab && preSaleProducts.length > 0 && (
+                  <span
+                    className={`px-1.5 py-0.2 rounded-full text-[11px] font-bold ${
+                      isSelected
+                        ? 'bg-white/20 text-white dark:bg-black/20 dark:text-zinc-950'
+                        : 'bg-black/10 dark:bg-white/10'
+                    }`}
+                  >
+                    {preSaleProducts.length}
+                  </span>
+                )}
+              </button>
+            );
+          })}
         </div>
 
         {/* Barra Contextual quando filtra por Grades (12 Peças) */}
@@ -565,34 +398,29 @@ export default function CatalogView({ initialProducts }: Props) {
                 setSearchTerm('');
                 setSelectedCategory('Todas as Categorias');
               }}
-              className="mt-4 px-4 py-2 rounded-full bg-rose-600 text-white text-xs font-bold tactile hover:bg-rose-500"
+              className="mt-4 px-5 py-2.5 rounded-full bg-[#111111] text-white dark:bg-white dark:text-zinc-950 text-xs font-bold hover:opacity-85 transition-opacity"
             >
               Ver Todos os Mantos
             </button>
           </div>
         ) : (
           <>
-            <div className="mt-5 sm:mt-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
+            <div className="mt-4 sm:mt-6 grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-x-4 gap-y-8 sm:gap-x-6 sm:gap-y-10">
               {displayedProducts.map((product) => (
                 <ProductCard key={product.id} product={product} />
               ))}
             </div>
 
             {visibleCount < filteredProducts.length && (
-              <div ref={loadMoreRef} className="mt-8 flex flex-col items-center justify-center gap-2">
+              <div ref={loadMoreRef} className="mt-10 flex flex-col items-center justify-center gap-2">
                 <button
                   type="button"
                   onClick={() =>
                     setVisibleCount((prev) => Math.min(prev + PAGE_SIZE, filteredProducts.length))
                   }
-                  className="px-6 py-2.5 rounded-full border text-xs font-bold tactile hover:opacity-80"
-                  style={{
-                    borderColor: 'var(--border-crisp)',
-                    backgroundColor: 'var(--bg-surface)',
-                    color: 'var(--text-primary)',
-                  }}
+                  className="px-7 py-3 rounded-full bg-[#111111] text-white dark:bg-white dark:text-zinc-950 text-xs font-bold hover:opacity-85 transition-opacity"
                 >
-                  Carregar mais camisas ({filteredProducts.length - visibleCount} restantes)
+                  Carregar mais produtos ({filteredProducts.length - visibleCount} restantes)
                 </button>
               </div>
             )}
@@ -604,16 +432,16 @@ export default function CatalogView({ initialProducts }: Props) {
             ========================================================================= */}
         <section
           id="grades"
-          className="mt-12 sm:mt-16 pt-8 sm:pt-10 border-t"
+          className="mt-14 sm:mt-20 pt-8 sm:pt-12 border-t"
           style={{ borderColor: 'var(--border-crisp)' }}
         >
           <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-6">
             <div>
-              <span className="text-xs font-mono uppercase tracking-widest text-emerald-600 dark:text-emerald-400 font-bold">
-                📦 ATACADO DE FÁBRICA • PACOTE 12 PEÇAS
+              <span className="text-xs font-bold uppercase tracking-wider text-[#007d48] dark:text-emerald-400">
+                Atacado • Pacote 12 Peças
               </span>
               <h2
-                className="mt-1 text-xl sm:text-2xl font-black tracking-tight uppercase"
+                className="mt-1 text-xl sm:text-2xl font-black tracking-tight"
                 style={{ color: 'var(--text-primary)' }}
               >
                 Grades Fechadas (12 Peças Iguais)
@@ -628,24 +456,24 @@ export default function CatalogView({ initialProducts }: Props) {
                 setSelectedCategory('Grades (12 Peças)');
                 document.getElementById('catalogo')?.scrollIntoView({ behavior: 'smooth' });
               }}
-              className="self-start sm:self-auto px-4 py-2 rounded-full bg-emerald-600 hover:bg-emerald-500 text-white font-black text-xs uppercase tracking-wider inline-flex items-center gap-1.5 tactile"
+              className="self-start sm:self-auto px-5 py-2.5 rounded-full bg-[#111111] hover:bg-[#333333] text-white dark:bg-white dark:text-zinc-950 font-bold text-xs inline-flex items-center gap-1.5 transition-colors"
             >
-              <span>Abrir Aba de Grades ({gradeProducts.length})</span>
+              <span>Ver Grades ({gradeProducts.length})</span>
               <ArrowRight className="w-3.5 h-3.5" />
             </button>
           </div>
 
           {gradeProducts.length > 0 ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-x-4 gap-y-8 sm:gap-x-6 sm:gap-y-10">
               {gradeProducts.slice(0, 4).map((product) => (
                 <ProductCard key={product.id} product={product} />
               ))}
             </div>
           ) : (
             <div
-              className="rounded-2xl border p-5 sm:p-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4"
+              className="rounded-xl border p-5 sm:p-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4"
               style={{
-                backgroundColor: 'var(--bg-surface)',
+                backgroundColor: 'var(--bg-studio)',
                 borderColor: 'var(--border-crisp)',
               }}
             >
@@ -663,14 +491,10 @@ export default function CatalogView({ initialProducts }: Props) {
                   setSelectedCategory('Grades (12 Peças)');
                   document.getElementById('catalogo')?.scrollIntoView({ behavior: 'smooth' });
                 }}
-                className="px-4 py-2 rounded-full border text-xs font-bold inline-flex items-center gap-1.5 tactile shrink-0"
-                style={{
-                  borderColor: 'var(--border-crisp)',
-                  color: 'var(--text-primary)',
-                }}
+                className="px-5 py-2.5 rounded-full bg-[#111111] text-white dark:bg-white dark:text-zinc-950 text-xs font-bold inline-flex items-center gap-1.5 shrink-0"
               >
-                <Layers className="w-3.5 h-3.5 text-emerald-600" />
-                <span>Ver Aba de Grades</span>
+                <Layers className="w-3.5 h-3.5" />
+                <span>Abrir Aba de Grades</span>
               </button>
             </div>
           )}
@@ -681,16 +505,16 @@ export default function CatalogView({ initialProducts }: Props) {
             ========================================================================= */}
         <section
           id="pre-venda"
-          className="mt-12 sm:mt-16 pt-8 sm:pt-10 border-t"
+          className="mt-14 sm:mt-20 pt-8 sm:pt-12 border-t"
           style={{ borderColor: 'var(--border-crisp)' }}
         >
           <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-6">
             <div>
-              <span className="text-xs font-mono uppercase tracking-widest text-amber-600 dark:text-amber-400 font-bold">
-                ⏳ DROPS EM TRÂNSITO • RESERVA ANTECIPADA
+              <span className="text-xs font-bold uppercase tracking-wider text-[#9e3500] dark:text-amber-400">
+                Drops em Trânsito • Reserva Antecipada
               </span>
               <h2
-                className="mt-1 text-xl sm:text-2xl font-black tracking-tight uppercase"
+                className="mt-1 text-xl sm:text-2xl font-black tracking-tight"
                 style={{ color: 'var(--text-primary)' }}
               >
                 Pré-Venda: Modelos que Irão Chegar
@@ -705,7 +529,7 @@ export default function CatalogView({ initialProducts }: Props) {
                 setSelectedCategory('Pré-Venda');
                 document.getElementById('catalogo')?.scrollIntoView({ behavior: 'smooth' });
               }}
-              className="self-start sm:self-auto px-4 py-2 rounded-full bg-amber-400 hover:bg-amber-300 text-zinc-950 font-black text-xs uppercase tracking-wider inline-flex items-center gap-1.5 tactile"
+              className="self-start sm:self-auto px-5 py-2.5 rounded-full bg-[#111111] hover:bg-[#333333] text-white dark:bg-white dark:text-zinc-950 font-bold text-xs inline-flex items-center gap-1.5 transition-colors"
             >
               <span>Filtrar Pré-Venda</span>
               <ArrowRight className="w-3.5 h-3.5" />
@@ -713,7 +537,7 @@ export default function CatalogView({ initialProducts }: Props) {
           </div>
 
           {preSaleProducts.length > 0 ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-x-4 gap-y-8 sm:gap-x-6 sm:gap-y-10">
               {preSaleProducts.slice(0, 4).map((product) => (
                 <ProductCard key={product.id} product={product} />
               ))}

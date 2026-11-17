@@ -38,30 +38,29 @@ export default function FloatingCartBar() {
       aria-label="Resumo do Carrinho"
       className="fixed bottom-3 sm:bottom-5 left-1/2 -translate-x-1/2 z-40 w-[calc(100%-1.5rem)] max-w-xl animate-in fade-in slide-in-from-bottom-4 duration-300 pointer-events-auto"
     >
-      <div className="bg-zinc-950/95 backdrop-blur-xl border border-emerald-500/40 rounded-2xl p-2.5 sm:p-3 shadow-2xl shadow-black/80 flex items-center justify-between gap-3 ring-1 ring-emerald-500/20">
+      <div className="bg-[#111111] text-white border border-white/15 rounded-full p-2.5 sm:px-4 sm:py-2.5 shadow-2xl flex items-center justify-between gap-3">
         
         {/* INFORMAÇÕES DO CARRINHO */}
-        <div className="flex items-center gap-2.5 min-w-0 flex-1">
-          <div className="relative w-10 h-10 rounded-xl bg-gradient-to-tr from-emerald-600 to-teal-500 text-white flex items-center justify-center shrink-0 shadow-md shadow-emerald-950/50">
-            <ShoppingBag className="w-5 h-5" />
-            <span className="absolute -top-1 -right-1 bg-rose-600 text-white text-[10px] font-black w-4 h-4 rounded-full flex items-center justify-center border border-zinc-950">
+        <div className="flex items-center gap-3 min-w-0 flex-1 pl-1">
+          <div className="relative w-9 h-9 rounded-full bg-white text-[#111111] flex items-center justify-center shrink-0">
+            <ShoppingBag className="w-4 h-4" />
+            <span className="absolute -top-1 -right-1 bg-[#007d48] text-white text-[10px] font-black w-4 h-4 rounded-full flex items-center justify-center">
               {totalPieces}
             </span>
           </div>
 
           <div className="min-w-0 flex-1">
             <div className="flex items-baseline gap-2">
-              <span className="text-xs sm:text-sm font-black text-white truncate">
-                {totalPieces} {totalPieces === 1 ? 'camisa' : 'camisas'}
+              <span className="text-xs sm:text-sm font-bold text-white truncate">
+                {totalPieces} {totalPieces === 1 ? 'item na sacola' : 'itens na sacola'}
               </span>
-              <span className="text-xs sm:text-sm font-black text-emerald-400">
-                {formatCurrency(finalTotal)}
+              <span className="text-xs sm:text-sm font-black text-white tabular-nums">
+                • {formatCurrency(finalTotal)}
               </span>
             </div>
 
-            <p className="text-[10px] sm:text-[11px] text-zinc-300 font-semibold truncate flex items-center gap-1">
-              <Sparkles className="w-3 h-3 text-emerald-400 shrink-0" />
-              <span className="text-zinc-300">Envio seguro para todo o Brasil</span>
+            <p className="text-[11px] text-zinc-400 truncate">
+              Despacho rápido via Melhor Envio
             </p>
           </div>
         </div>
@@ -71,10 +70,10 @@ export default function FloatingCartBar() {
           type="button"
           onClick={openCart}
           id="floating-cart-view-btn"
-          className="px-4 py-2.5 sm:py-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-black text-xs sm:text-sm flex items-center gap-1.5 shadow-lg shadow-emerald-950/70 active:scale-95 transition-all shrink-0 cursor-pointer"
+          className="px-4 py-2 sm:py-2.5 rounded-full bg-white hover:bg-zinc-200 text-[#111111] font-bold text-xs flex items-center gap-1.5 transition-colors shrink-0 cursor-pointer"
         >
-          <span>Ver Carrinho</span>
-          <ArrowRight className="w-4 h-4" />
+          <span>Ver Sacola</span>
+          <ArrowRight className="w-3.5 h-3.5" />
         </button>
 
       </div>
