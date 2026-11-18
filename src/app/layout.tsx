@@ -3,6 +3,7 @@ import './globals.css';
 import Navbar from '@/components/layout/Navbar';
 import CartDrawer from '@/components/cart/CartDrawer';
 import FloatingCartBar from '@/components/cart/FloatingCartBar';
+import AnalyticsTracker from '@/components/analytics/AnalyticsTracker';
 
 export const metadata: Metadata = {
   title: 'RUBY BRASIL | Football Archive & Atelier 1:1 — Atacado & Varejo',
@@ -23,6 +24,7 @@ export default function RootLayout({
   return (
     <html lang="pt-BR" suppressHydrationWarning>
       <body className="min-h-screen flex flex-col antialiased selection:bg-rose-600 selection:text-white">
+        <AnalyticsTracker />
         <Navbar />
         <div className="flex-1">{children}</div>
         <CartDrawer />

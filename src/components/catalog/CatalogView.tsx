@@ -13,6 +13,7 @@ import {
 import { Product } from '@/types';
 import { useCartStore } from '@/store';
 import { formatCurrency, getProductPreSaleInfo, isGradeProduct } from '@/lib/utils';
+import { trackAnalyticsEvent } from '@/lib/analytics-client';
 import ProductCard from '@/components/product/ProductCard';
 
 interface Props {
@@ -143,6 +144,12 @@ export default function CatalogView({ initialProducts }: Props) {
   // Reinicia a paginação progressiva ao trocar filtro ou busca
   useEffect(() => {
     setVisibleCount(PAGE_SIZE);
+    if (selectedCategory && selectedCategory !== 'Todas as Categorias') {
+      trackAnalyticsEvent({
+        eventType: 'CATEGORY_FILTER',
+        category: selectedCategory,
+      });
+    }
   }, [searchTerm, selectedCategory]);
 
   // Carrega mais cards automaticamente conforme o usuário rola a página

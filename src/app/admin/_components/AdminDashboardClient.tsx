@@ -35,7 +35,9 @@ import {
   Check,
   Sun,
   Moon,
+  BarChart3,
 } from 'lucide-react';
+import AdminAnalyticsTab from './AdminAnalyticsTab';
 import {
   formatCurrency,
   getStandardSizesForProduct,
@@ -368,7 +370,7 @@ export default function AdminDashboardClient({
   initialOrders,
 }: Props) {
   const [adminEmail, setAdminEmail] = useState<string>('admin@rubybr.com.br');
-  const [activeTab, setActiveTab] = useState<'products' | 'grades' | 'batch' | 'orders'>('products');
+  const [activeTab, setActiveTab] = useState<'products' | 'grades' | 'batch' | 'orders' | 'analytics'>('products');
   const [mounted, setMounted] = useState(false);
   const [isDark, setIsDark] = useState(false);
 
@@ -1505,7 +1507,33 @@ export default function AdminDashboardClient({
               {orders.length}
             </span>
           </button>
+
+          <button
+            onClick={() => setActiveTab('analytics')}
+            className={`px-3.5 sm:px-4 py-2 rounded-full text-xs font-bold whitespace-nowrap tactile inline-flex items-center gap-2 border shrink-0 ${
+              activeTab === 'analytics'
+                ? 'bg-zinc-950 text-white border-zinc-950 dark:bg-white dark:text-zinc-950 dark:border-white shadow-sm'
+                : 'hover:opacity-80'
+            }`}
+            style={
+              activeTab !== 'analytics'
+                ? {
+                    backgroundColor: 'var(--bg-surface)',
+                    borderColor: 'var(--border-crisp)',
+                    color: 'var(--text-secondary)',
+                  }
+                : undefined
+            }
+          >
+            <BarChart3 className="w-3.5 h-3.5 text-rose-600 dark:text-rose-400" />
+            <span>Métricas & Acessos</span>
+          </button>
         </div>
+
+        {/* ABA DE MÉTRICAS E ACESSOS */}
+        {activeTab === 'analytics' && (
+          <AdminAnalyticsTab products={products} orders={orders} />
+        )}
 
         {/* ABA 1: CATÁLOGO DE PEÇAS */}
         {activeTab === 'products' && (

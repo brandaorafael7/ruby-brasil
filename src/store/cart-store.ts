@@ -7,6 +7,7 @@ import {
   isGradeProduct,
   getProductGradeInfo,
 } from '@/lib/utils';
+import { trackAnalyticsEvent } from '@/lib/analytics-client';
 
 const DEFAULT_TIERS: WholesaleTier[] = [
   { minQuantity: 1, maxQuantity: null, unitPrice: 60.0 },
@@ -169,6 +170,13 @@ export const useCartStore = create<CartStore>()(
           };
 
           return { items: [...state.items, newItem], isCartOpen: true };
+        });
+
+        trackAnalyticsEvent({
+          eventType: 'ADD_TO_CART',
+          productId: product.id,
+          productName: product.name,
+          category: isGrade ? 'Grades (12 Peças)' : product.league,
         });
 
         return {
