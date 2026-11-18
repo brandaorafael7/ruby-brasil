@@ -925,11 +925,17 @@ export default function AdminDashboardClient({
       if (res.ok) {
         if (isEditing) {
           setProducts((prev) => prev.map((item) => (item.id === data.id ? data : item)));
-          showToast('Peça atualizada com sucesso no catálogo!');
+          showToast(
+            isGradeMode
+              ? 'Grade Fechada (12 Peças) atualizada com sucesso!'
+              : 'Peça atualizada com sucesso no catálogo!'
+          );
         } else {
           setProducts((prev) => [data, ...prev]);
           showToast(
-            formData.isPreSale
+            isGradeMode
+              ? 'Nova Grade Fechada (12 Peças) cadastrada com sucesso!'
+              : formData.isPreSale
               ? 'Novo modelo em Pré-Venda adicionado com sucesso!'
               : 'Nova peça cadastrada com sucesso no catálogo!'
           );
@@ -1065,8 +1071,9 @@ export default function AdminDashboardClient({
     return products.filter((p) => !isGradeProduct(p));
   }, [products]);
 
-  const filteredProducts = regularProducts.filter((p) => {
+  const filteredProducts = products.filter((p) => {
     const preSaleInfo = getProductPreSaleInfo(p);
+    const isGrade = isGradeProduct(p);
     const matchesSearch =
       p.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       p.club?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -1074,6 +1081,7 @@ export default function AdminDashboardClient({
 
     const matchesLeague =
       selectedLeague === 'TODAS' ||
+      (selectedLeague === 'Grades (12un)' && isGrade) ||
       (selectedLeague === 'Pré-Venda' && preSaleInfo.isPreSale) ||
       p.league === selectedLeague;
 
@@ -1422,7 +1430,7 @@ export default function AdminDashboardClient({
                   : 'bg-[var(--bg-studio)]'
               }`}
             >
-              {regularProducts.length}
+              {products.length}
             </span>
           </button>
 
@@ -1571,6 +1579,7 @@ export default function AdminDashboardClient({
               <div className="flex items-center gap-1.5 overflow-x-auto w-full pb-2 sm:pb-0">
                 {[
                   'TODAS',
+                  'Grades (12un)',
                   'Pré-Venda',
                   'Infantil',
                   'Brasileirão',
@@ -1816,6 +1825,11 @@ export default function AdminDashboardClient({
                                   style={{ color: 'var(--text-muted)' }}
                                 />
                               </a>
+                              {isGradeProduct(p) && (
+                                <span className="bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30 px-2 py-0.5 rounded-full text-[10px] font-black uppercase inline-flex items-center gap-1">
+                                  📦 Grade 12un
+                                </span>
+                              )}
                               {preSaleInfo.isPreSale && (
                                 <span className="bg-amber-500/15 text-amber-700 dark:text-amber-300 border border-amber-500/30 px-2 py-0.5 rounded-full text-[10px] font-black uppercase inline-flex items-center gap-1">
                                   <Clock className="w-2.5 h-2.5" />
@@ -1857,10 +1871,34 @@ export default function AdminDashboardClient({
                             <span style={{ color: 'var(--text-primary)' }}>
                               {formatCurrency(p.retailPrice)}
                             </span>
+                            {isGradeProduct(p) && (
+                              <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-bold block">
+                                ({formatCurrency((Number(p.retailPrice) || 660) / 12)}/peça)
+                              </span>
+                            )}
                           </td>
                           <td className="py-3 px-3">
                             <div className="flex flex-wrap items-center gap-1 font-mono text-[10px]">
                               {(() => {
+                                if (isGradeProduct(p)) {
+                                  const gInfo = getProductGradeInfo(p);
+                                  return (
+                                    <>
+                                      {gInfo.entries.map((entry) => (
+                                        <span
+                                          key={entry.size}
+                                          className="px-1.5 py-0.5 rounded border border-emerald-500/30 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 font-bold"
+                                        >
+                                          {entry.quantity}x {entry.size}
+                                          {entry.enCode !== entry.size ? `(${entry.enCode})` : ''}
+                                        </span>
+                                      ))}
+                                      <span className="px-1.5 py-0.5 rounded border border-[var(--border-crisp)] bg-[var(--bg-studio)] text-[var(--text-secondary)]">
+                                        Estoque: <strong style={{ color: 'var(--text-primary)' }}>{gInfo.gradeStock} grade(s)</strong>
+                                      </span>
+                                    </>
+                                  );
+                                }
                                 const standardSizes = getStandardSizesForProduct(p);
                                 const relevantVariants = (p.variants || []).filter((v: any) => {
                                   if (standardSizes.includes(v.size)) return true;
@@ -1949,11 +1987,13 @@ export default function AdminDashboardClient({
                                 <ExternalLink className="w-3.5 h-3.5" />
                               </a>
                               <button
+                                type="button"
                                 onClick={() => handleOpenEditModal(p)}
-                                className="p-2 rounded-xl border border-[var(--border-crisp)] bg-[var(--bg-surface)] hover:bg-[var(--bg-studio)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] tactile"
-                                title="Editar peça"
+                                className="px-2.5 py-1.5 rounded-xl border border-[var(--border-crisp)] bg-[var(--bg-surface)] hover:bg-[var(--bg-studio)] text-[var(--text-primary)] font-bold text-xs inline-flex items-center gap-1.5 tactile"
+                                title="Editar peça ou grade"
                               >
                                 <Edit2 className="w-3.5 h-3.5" />
+                                <span>Editar</span>
                               </button>
                               <button
                                 onClick={() => handleDeleteProduct(p.id, p.name)}
@@ -2233,11 +2273,13 @@ export default function AdminDashboardClient({
                                 <ExternalLink className="w-3.5 h-3.5" />
                               </a>
                               <button
+                                type="button"
                                 onClick={() => handleOpenEditModal(p)}
-                                className="p-2 rounded-xl border border-[var(--border-crisp)] bg-[var(--bg-surface)] hover:bg-[var(--bg-studio)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] tactile"
+                                className="px-2.5 py-1.5 rounded-xl border border-emerald-500/40 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 font-bold text-xs inline-flex items-center gap-1.5 tactile"
                                 title="Editar Grade"
                               >
                                 <Edit2 className="w-3.5 h-3.5" />
+                                <span>Editar Grade</span>
                               </button>
                               <button
                                 onClick={() => handleDeleteProduct(p.id, p.name)}
@@ -3271,6 +3313,16 @@ export default function AdminDashboardClient({
                         });
                         return;
                       }
+                      // Se já estiver no modo Grade Fechada (12 Peças), mantém isGrade = true ao escolher Torcedor / Jogador / Infantil / Retrô
+                      if (formData.isGrade) {
+                        setFormData({
+                          ...formData,
+                          type: newType,
+                          isGrade: true,
+                          allowCustom: false,
+                        });
+                        return;
+                      }
                       const standardSizes = getStandardSizesForProduct(newType);
                       const currentMap = new Map(formData.variants.map((v) => [v.size, v.stockQuantity]));
                       const updatedVariants = standardSizes.map((size) => ({
@@ -3692,10 +3744,10 @@ export default function AdminDashboardClient({
                           ))}
                         </div>
 
-                        <div className="grid grid-cols-4 sm:grid-cols-7 gap-2 pt-1">
+                        <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-7 gap-2 pt-1">
                           {['P', 'M', 'G', 'GG', 'XG', '3XL', '4XL'].map((sz) => {
                             const enInfo = getEnglishSizeInfo(sz);
-                            const qty = formData.gradeSizes?.[sz] ?? 0;
+                            const qty = Number(formData.gradeSizes?.[sz] ?? 0);
                             return (
                               <div
                                 key={sz}
@@ -3713,7 +3765,7 @@ export default function AdminDashboardClient({
                                     : undefined
                                 }
                               >
-                                <span className="font-black text-xs text-emerald-600 dark:text-emerald-400 block mb-1">
+                                <span className="font-black text-xs text-emerald-600 dark:text-emerald-400 block mb-1.5">
                                   {sz}
                                   {enInfo.enCode !== sz && (
                                     <span
@@ -3724,28 +3776,73 @@ export default function AdminDashboardClient({
                                     </span>
                                   )}
                                 </span>
-                                <input
-                                  type="number"
-                                  min="0"
-                                  max="12"
-                                  value={qty}
-                                  onChange={(e) => {
-                                    const val = Math.max(0, parseInt(e.target.value || '0', 10) || 0);
-                                    setFormData({
-                                      ...formData,
-                                      gradeSizes: {
-                                        ...formData.gradeSizes,
-                                        [sz]: val,
-                                      },
-                                    });
-                                  }}
-                                  className="w-full border rounded-lg py-1 px-1 text-center text-xs font-black focus:outline-none focus:ring-2 focus:ring-emerald-600"
-                                  style={{
-                                    backgroundColor: 'var(--bg-surface)',
-                                    borderColor: 'var(--border-crisp)',
-                                    color: 'var(--text-primary)',
-                                  }}
-                                />
+                                <div className="flex items-center justify-between gap-1">
+                                  <button
+                                    type="button"
+                                    onClick={() =>
+                                      setFormData((prev) => ({
+                                        ...prev,
+                                        gradeSizes: {
+                                          ...prev.gradeSizes,
+                                          [sz]: Math.max(0, (Number(prev.gradeSizes?.[sz]) || 0) - 1),
+                                        },
+                                      }))
+                                    }
+                                    className="w-6 h-7 rounded-md border flex items-center justify-center font-black text-xs hover:bg-rose-500/10 hover:text-rose-600 transition-colors"
+                                    style={{
+                                      backgroundColor: 'var(--bg-surface)',
+                                      borderColor: 'var(--border-crisp)',
+                                      color: 'var(--text-primary)',
+                                    }}
+                                    title={`Diminuir tamanho ${sz}`}
+                                  >
+                                    -
+                                  </button>
+                                  <input
+                                    type="text"
+                                    inputMode="numeric"
+                                    value={formData.gradeSizes?.[sz] === undefined ? '' : String(formData.gradeSizes[sz])}
+                                    onFocus={(e) => e.target.select()}
+                                    onChange={(e) => {
+                                      const raw = e.target.value.replace(/\D/g, '');
+                                      const val = raw === '' ? 0 : Math.min(99, parseInt(raw, 10) || 0);
+                                      setFormData((prev) => ({
+                                        ...prev,
+                                        gradeSizes: {
+                                          ...prev.gradeSizes,
+                                          [sz]: val,
+                                        },
+                                      }));
+                                    }}
+                                    className="w-full min-w-[28px] border rounded-md py-1 px-0.5 text-center text-xs font-black focus:outline-none focus:ring-2 focus:ring-emerald-600"
+                                    style={{
+                                      backgroundColor: 'var(--bg-surface)',
+                                      borderColor: 'var(--border-crisp)',
+                                      color: 'var(--text-primary)',
+                                    }}
+                                  />
+                                  <button
+                                    type="button"
+                                    onClick={() =>
+                                      setFormData((prev) => ({
+                                        ...prev,
+                                        gradeSizes: {
+                                          ...prev.gradeSizes,
+                                          [sz]: Math.min(99, (Number(prev.gradeSizes?.[sz]) || 0) + 1),
+                                        },
+                                      }))
+                                    }
+                                    className="w-6 h-7 rounded-md border flex items-center justify-center font-black text-xs hover:bg-emerald-500/15 hover:text-emerald-600 transition-colors"
+                                    style={{
+                                      backgroundColor: 'var(--bg-surface)',
+                                      borderColor: 'var(--border-crisp)',
+                                      color: 'var(--text-primary)',
+                                    }}
+                                    title={`Aumentar tamanho ${sz}`}
+                                  >
+                                    +
+                                  </button>
+                                </div>
                               </div>
                             );
                           })}

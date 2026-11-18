@@ -169,6 +169,7 @@ export async function POST(request: Request) {
 
     revalidateTag('catalog-products');
     revalidatePath('/');
+    revalidatePath('/admin');
     revalidatePath(`/produto/${product.slug}`);
 
     return NextResponse.json(product, { status: 201 });
@@ -327,6 +328,7 @@ export async function PUT(request: Request) {
 
     revalidateTag('catalog-products');
     revalidatePath('/');
+    revalidatePath('/admin');
     if (fullProduct?.slug) {
       revalidatePath(`/produto/${fullProduct.slug}`);
     }
@@ -365,6 +367,7 @@ export async function DELETE(request: Request) {
 
     revalidateTag('catalog-products');
     revalidatePath('/');
+    revalidatePath('/admin');
 
     return NextResponse.json({ success: true, message: 'Peça excluída com sucesso' });
   } catch (error: any) {
