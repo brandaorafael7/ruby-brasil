@@ -1,10 +1,21 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { getSizeSurcharge, isValidCPF, getProductGalleryImages } from '@/lib/utils';
+import { getSizeSurcharge, isValidCPF, getProductGalleryImages, getProductPreSaleInfo } from '@/lib/utils';
 import { sanitizePostalCode } from '@/lib/melhor-envio';
+
+let preSaleColsReady = false;
 
 export async function POST(req: Request) {
   try {
+    if (!preSaleColsReady) {
+      await prisma
+        .$executeRawUnsafe(
+          `ALTER TABLE "public"."OrderItem" ADD COLUMN IF NOT EXISTS "isPreSale" BOOLEAN NOT NULL DEFAULT false, ADD COLUMN IF NOT EXISTS "preSaleEta" TEXT;`
+        )
+        .catch(() => {});
+      preSaleColsReady = true;
+    }
+
     const body = await req.json();
     const { form, items } = body;
 
@@ -198,6 +209,9 @@ export async function POST(req: Request) {
 
       const dbProd = item.productId ? dbProductMap[item.productId] : undefined;
       const galleryImgs = dbProd ? getProductGalleryImages(dbProd) : [];
+      const dbPreSale = dbProd ? getProductPreSaleInfo(dbProd) : { isPreSale: false, preSaleEta: null };
+      const itemIsPreSale = Boolean(item.isPreSale || dbPreSale.isPreSale);
+      const itemPreSaleEta = item.preSaleEta || dbPreSale.preSaleEta || null;
       const resolvedImageUrl =
         item.imageUrl ||
         dbProd?.imageUrl ||
@@ -216,11 +230,14 @@ export async function POST(req: Request) {
         customNumber: item.customNumber || null,
         customFee,
         totalItemPrice: totalItem,
+        isPreSale: itemIsPreSale,
+        preSaleEta: itemPreSaleEta,
       };
     });
 
     const discountAmount = 0.0;
     const finalTotal = subtotal + shippingCost;
+    const hasPreSaleItems = orderItemsData.some((it: any) => it.isPreSale);
 
     const orderNumber = `RUBY-${Date.now().toString().slice(-6)}-${Math.floor(100 + Math.random() * 900)}`;
 
@@ -247,7 +264,7 @@ export async function POST(req: Request) {
         isFreeShipping,
         finalTotal,
         paymentMethod: 'WHATSAPP_ASSISTED',
-        status: 'PENDING',
+        status: hasPreSaleItems ? 'AGUARDANDO_CHEGADA' : 'PENDING',
         isWholesale,
         promotionalBatchId: promoBatchId,
         items: {

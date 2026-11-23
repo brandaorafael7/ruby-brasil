@@ -125,6 +125,8 @@ model OrderItem {
   customNumber       String?
   customFee          Float    @default(0.0)
   totalItemPrice     Float
+  isPreSale          Boolean  @default(false)
+  preSaleEta         String?
 
   createdAt          DateTime @default(now())
 }

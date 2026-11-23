@@ -100,7 +100,22 @@ export const getCachedCatalogProducts = unstable_cache(
  * últimos 100 Pedidos com itens) em UMA ÚNICA viagem de rede (1 round-trip SQL)
  * e 1 única conexão TCP/TLS ao Supabase.
  */
+let orderItemPreSaleColsEnsured = false;
+
 export async function getFastAdminDashboardData() {
+  if (!orderItemPreSaleColsEnsured) {
+    try {
+      await prisma.$executeRawUnsafe(`
+        ALTER TABLE "public"."OrderItem"
+        ADD COLUMN IF NOT EXISTS "isPreSale" BOOLEAN NOT NULL DEFAULT false,
+        ADD COLUMN IF NOT EXISTS "preSaleEta" TEXT;
+      `);
+      orderItemPreSaleColsEnsured = true;
+    } catch {
+      // ignora se já existir
+    }
+  }
+
   const result = await prisma.$queryRaw<
     Array<{
       batch: any;
@@ -183,6 +198,8 @@ export async function getFastAdminDashboardData() {
                   'customNumber', oi."customNumber",
                   'customFee', oi."customFee",
                   'totalItemPrice', oi."totalItemPrice",
+                  'isPreSale', COALESCE(oi."isPreSale", false),
+                  'preSaleEta', oi."preSaleEta",
                   'createdAt', oi."createdAt",
                   'product', (
                     SELECT row_to_json(pr)

@@ -6,6 +6,8 @@ export const dynamic = 'force-dynamic';
 
 const VALID_ORDER_STATUSES = [
   'PENDING',
+  'AGUARDANDO_CHEGADA',
+  'PRONTO_PARA_ENVIO',
   'PROCESSAMENTO',
   'PAGAMENTO_CONFIRMADO',
   'ENVIADO',
@@ -193,5 +195,71 @@ export async function PUT(req: Request) {
   } catch (error) {
     console.error('Erro ao atualizar status do pedido:', error);
     return NextResponse.json({ error: 'Erro ao atualizar pedido no banco' }, { status: 500 });
+  }
+}
+
+// 3. AÇÕES EM LOTE DE PRÉ-VENDA (Ex: Marcar que as peças de um modelo chegaram ou vincular pedido à aba Pré-Venda)
+export async function PATCH(req: Request) {
+  try {
+    const session = getAdminSessionFromRequest(req);
+    if (!session) {
+      return NextResponse.json(
+        { error: 'Não autorizado. Faça login como administrador.' },
+        { status: 401 }
+      );
+    }
+
+    const body = await req.json();
+    const { action, orderId, orderIds, isPreSale, preSaleEta, newStatus } = body;
+
+    if (action === 'TOGGLE_ORDER_PRESALE' && orderId) {
+      await prisma.orderItem.updateMany({
+        where: { orderId },
+        data: {
+          isPreSale: Boolean(isPreSale),
+          preSaleEta: preSaleEta ?? null,
+        },
+      });
+
+      if (isPreSale && newStatus) {
+        await prisma.order.update({
+          where: { id: orderId },
+          data: { status: newStatus, updatedAt: new Date() },
+        });
+      }
+
+      return NextResponse.json({
+        success: true,
+        message: isPreSale
+          ? 'Pedido salvo na aba de Reservas de Pré-Venda!'
+          : 'Pedido removido da fila de Pré-Venda.',
+      });
+    }
+
+    if (action === 'BULK_STATUS_UPDATE' && Array.isArray(orderIds) && orderIds.length > 0 && newStatus) {
+      const cleanStatus = String(newStatus).trim().toUpperCase();
+      if (!VALID_ORDER_STATUSES.includes(cleanStatus as any)) {
+        return NextResponse.json({ error: 'Status inválido' }, { status: 400 });
+      }
+
+      await prisma.order.updateMany({
+        where: { id: { in: orderIds } },
+        data: {
+          status: cleanStatus,
+          updatedAt: new Date(),
+        },
+      });
+
+      return NextResponse.json({
+        success: true,
+        updatedCount: orderIds.length,
+        message: `${orderIds.length} pedido(s) atualizado(s) para ${cleanStatus}`,
+      });
+    }
+
+    return NextResponse.json({ error: 'Ação inválida' }, { status: 400 });
+  } catch (error) {
+    console.error('Erro em PATCH /api/admin/orders:', error);
+    return NextResponse.json({ error: 'Erro ao processar ação de pré-venda' }, { status: 500 });
   }
 }

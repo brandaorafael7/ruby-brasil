@@ -38,6 +38,10 @@ import {
   BarChart3,
 } from 'lucide-react';
 import AdminAnalyticsTab from './AdminAnalyticsTab';
+import AdminPreSaleOrdersTab, {
+  isPreSaleOrder,
+  isOrderItemPreSale,
+} from './AdminPreSaleOrdersTab';
 import {
   formatCurrency,
   getStandardSizesForProduct,
@@ -69,10 +73,24 @@ export const ORDER_STATUS_MAP: Record<
 > = {
   PENDING: {
     label: 'Pendente',
-    badge: 'bg-amber-500/20 text-amber-300 border-amber-500/30',
+    badge: 'bg-amber-500/20 text-amber-700 dark:text-amber-300 border-amber-500/30',
     border: 'border-amber-500/40',
     color: '#fbbf24',
     emoji: '⏳',
+  },
+  AGUARDANDO_CHEGADA: {
+    label: 'Aguardando Peças (Pré-Venda)',
+    badge: 'bg-amber-500/20 text-amber-700 dark:text-amber-300 border-amber-500/40',
+    border: 'border-amber-500/40',
+    color: '#f59e0b',
+    emoji: '⏳',
+  },
+  PRONTO_PARA_ENVIO: {
+    label: 'Peças Chegaram (Pronto p/ Envio)',
+    badge: 'bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 border-emerald-500/40',
+    border: 'border-emerald-500/40',
+    color: '#10b981',
+    emoji: '📦',
   },
   PROCESSAMENTO: {
     label: 'Em Processamento',
@@ -131,7 +149,7 @@ export function buildOrderWhatsAppReport(order: any): string {
       const custom = item.customName
         ? ` (Personalizada / Custom: ${item.customName} #${item.customNumber || 'S/N'})`
         : '';
-      const preSale = getProductPreSaleInfo(item.product);
+      const preSale = isOrderItemPreSale(item);
       const preSaleLabel = preSale.isPreSale
         ? ` [⏳ PRÉ-VENDA${preSale.preSaleEta ? `: ${preSale.preSaleEta}` : ''}]`
         : '';
@@ -247,7 +265,7 @@ export function mapOrderToImageData(order: any): OrderImageData {
     shippingService: order.shippingService,
     finalTotal: order.finalTotal,
     items: (order.items || []).map((it: any) => {
-      const preSale = getProductPreSaleInfo(it.product);
+      const preSale = isOrderItemPreSale(it);
       const gallery = getProductGalleryImages(it.product);
       const rawImage =
         it.imageUrl ||
@@ -370,7 +388,9 @@ export default function AdminDashboardClient({
   initialOrders,
 }: Props) {
   const [adminEmail, setAdminEmail] = useState<string>('admin@rubybr.com.br');
-  const [activeTab, setActiveTab] = useState<'products' | 'grades' | 'batch' | 'orders' | 'analytics'>('products');
+  const [activeTab, setActiveTab] = useState<
+    'products' | 'grades' | 'presale_orders' | 'batch' | 'orders' | 'analytics'
+  >('products');
   const [mounted, setMounted] = useState(false);
   const [isDark, setIsDark] = useState(false);
 
@@ -753,9 +773,24 @@ export default function AdminDashboardClient({
     const confirmed = orders.filter((o) => (o.status || '').toUpperCase() === 'PAGAMENTO_CONFIRMADO').length;
     const shipped = orders.filter((o) => (o.status || '').toUpperCase() === 'ENVIADO').length;
     const delivered = orders.filter((o) => (o.status || '').toUpperCase() === 'ENTREGUE').length;
+    const preSaleWaiting = orders.filter((o) => {
+      if (!isPreSaleOrder(o, products)) return false;
+      const st = (o.status || 'PENDING').toUpperCase();
+      return !['ENVIADO', 'ENTREGUE', 'CANCELADO'].includes(st);
+    }).length;
 
-    return { total, totalRevenue, totalPieces, pending, processing, confirmed, shipped, delivered };
-  }, [orders]);
+    return {
+      total,
+      totalRevenue,
+      totalPieces,
+      pending,
+      processing,
+      confirmed,
+      shipped,
+      delivered,
+      preSaleWaiting,
+    };
+  }, [orders, products]);
 
   const handleOpenCreateModal = (defaultPreSale = false) => {
     setIsEditing(false);
@@ -1509,6 +1544,27 @@ export default function AdminDashboardClient({
           </button>
 
           <button
+            onClick={() => setActiveTab('presale_orders')}
+            className={`px-3.5 sm:px-4 py-2 rounded-full text-xs font-bold whitespace-nowrap tactile inline-flex items-center gap-2 border shrink-0 ${
+              activeTab === 'presale_orders'
+                ? 'bg-amber-500 text-zinc-950 border-amber-500 shadow-sm'
+                : 'bg-amber-500/10 text-amber-700 dark:text-amber-300 border-amber-500/30 hover:bg-amber-500/20'
+            }`}
+          >
+            <CalendarClock className="w-3.5 h-3.5" />
+            <span>Pedidos de Pré-Venda</span>
+            <span
+              className={`px-1.5 py-0.2 rounded-full font-mono text-[10px] ${
+                activeTab === 'presale_orders'
+                  ? 'bg-zinc-950/25 text-zinc-950 font-black'
+                  : 'bg-amber-500/20 text-amber-800 dark:text-amber-200 font-bold'
+              }`}
+            >
+              {orderStats.preSaleWaiting}
+            </span>
+          </button>
+
+          <button
             onClick={() => setActiveTab('analytics')}
             className={`px-3.5 sm:px-4 py-2 rounded-full text-xs font-bold whitespace-nowrap tactile inline-flex items-center gap-2 border shrink-0 ${
               activeTab === 'analytics'
@@ -1529,6 +1585,30 @@ export default function AdminDashboardClient({
             <span>Métricas & Acessos</span>
           </button>
         </div>
+
+        {/* ABA DE PEDIDOS DE PRÉ-VENDA (FILA SALVA ATÉ CHEGADA DAS PEÇAS) */}
+        {activeTab === 'presale_orders' && (
+          <AdminPreSaleOrdersTab
+            orders={orders}
+            products={products}
+            updatingOrderId={updatingOrderId}
+            copiedKey={copiedKey}
+            copyingOrderImageId={copyingOrderImageId}
+            copiedOrderImageId={copiedOrderImageId}
+            isRefreshingOrders={isRefreshingOrders}
+            onRefreshOrders={handleRefreshOrders}
+            onUpdateOrderStatus={handleUpdateOrderStatus}
+            onSelectOrder={(order) => setSelectedOrder(order)}
+            onCopyWhatsAppReport={(order) => {
+              const report = buildOrderWhatsAppReport(order);
+              copyToClipboard(report, `order-${order.id}`);
+            }}
+            onCopyOrderCardImage={handleCopyOrderCardImage}
+            onOrdersMutated={(nextOrders) => setOrders(nextOrders)}
+            showToast={showToast}
+            getStatusInfo={getStatusInfo}
+          />
+        )}
 
         {/* ABA DE MÉTRICAS E ACESSOS */}
         {activeTab === 'analytics' && (
@@ -2959,6 +3039,12 @@ export default function AdminDashboardClient({
                                   } ${isUpdating ? 'opacity-50 cursor-wait' : ''}`}
                                   style={{ backgroundColor: 'var(--bg-surface)' }}
                                 >
+                                  <option value="AGUARDANDO_CHEGADA">
+                                    ⏳ Aguardando Peças (Pré-Venda)
+                                  </option>
+                                  <option value="PRONTO_PARA_ENVIO">
+                                    📦 Peças Chegaram (Pronto p/ Envio)
+                                  </option>
                                   <option value="PROCESSAMENTO">
                                     ⚙️ Em Processamento
                                   </option>
@@ -4102,8 +4188,10 @@ export default function AdminDashboardClient({
               >
                 Alterar Status do Pedido:
               </span>
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                 {[
+                  { key: 'AGUARDANDO_CHEGADA', label: 'Aguardando Peças', emoji: '⏳' },
+                  { key: 'PRONTO_PARA_ENVIO', label: 'Peças Chegaram', emoji: '📦' },
                   { key: 'PROCESSAMENTO', label: 'Processamento', emoji: '⚙️' },
                   { key: 'PAGAMENTO_CONFIRMADO', label: 'Pago', emoji: '✅' },
                   { key: 'ENVIADO', label: 'Enviado', emoji: '🚚' },
