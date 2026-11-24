@@ -2,11 +2,13 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import { ShoppingBag, Settings, Sun, Moon } from 'lucide-react';
 import { useCartStore } from '@/store';
 import { formatCurrency } from '@/lib/utils';
 
 export default function Navbar() {
+  const pathname = usePathname();
   const { getTotalPieces, getSubtotal, isWholesale, openCart, setPromotionalBatch } = useCartStore();
   const [mounted, setMounted] = useState(false);
   const [isDark, setIsDark] = useState(false);
@@ -56,6 +58,10 @@ export default function Navbar() {
   const totalPieces = mounted ? getTotalPieces() : 0;
   const subtotal = mounted ? getSubtotal() : 0;
   const wholesaleActive = mounted ? isWholesale() : false;
+
+  if (pathname?.startsWith('/admin')) {
+    return null;
+  }
 
   return (
     <header className="sticky top-0 z-40">

@@ -757,12 +757,23 @@ export default function AdminDashboardClient({
         order.document?.toLowerCase().includes(query);
 
       const normalizedStatus = (order.status || 'PENDING').toUpperCase();
-      const matchesStatus =
-        orderStatusFilter === 'ALL' || normalizedStatus === orderStatusFilter;
+      const orderIsPreSale = isPreSaleOrder(order, products);
+
+      let matchesStatus = false;
+      if (orderStatusFilter === 'ALL') {
+        matchesStatus = true;
+      } else if (orderStatusFilter === 'PRE_VENDA') {
+        matchesStatus =
+          orderIsPreSale && !['ENVIADO', 'ENTREGUE', 'CANCELADO'].includes(normalizedStatus);
+      } else if (orderStatusFilter === 'PRONTO_PARA_ENVIO') {
+        matchesStatus = normalizedStatus === 'PRONTO_PARA_ENVIO';
+      } else {
+        matchesStatus = normalizedStatus === orderStatusFilter;
+      }
 
       return matchesSearch && matchesStatus;
     });
-  }, [orders, orderSearch, orderStatusFilter]);
+  }, [orders, products, orderSearch, orderStatusFilter]);
 
   const orderStats = useMemo(() => {
     const total = orders.length;
@@ -773,6 +784,7 @@ export default function AdminDashboardClient({
     const confirmed = orders.filter((o) => (o.status || '').toUpperCase() === 'PAGAMENTO_CONFIRMADO').length;
     const shipped = orders.filter((o) => (o.status || '').toUpperCase() === 'ENVIADO').length;
     const delivered = orders.filter((o) => (o.status || '').toUpperCase() === 'ENTREGUE').length;
+    const readyToShip = orders.filter((o) => (o.status || '').toUpperCase() === 'PRONTO_PARA_ENVIO').length;
     const preSaleWaiting = orders.filter((o) => {
       if (!isPreSaleOrder(o, products)) return false;
       const st = (o.status || 'PENDING').toUpperCase();
@@ -788,6 +800,7 @@ export default function AdminDashboardClient({
       confirmed,
       shipped,
       delivered,
+      readyToShip,
       preSaleWaiting,
     };
   }, [orders, products]);
@@ -2729,16 +2742,25 @@ export default function AdminDashboardClient({
                 </div>
               </div>
 
-              {/* FILTROS POR STATUS NO MODELO DE PÍLULAS */}
+              {/* FILTROS POR STATUS NO MODELO DE PÍLULAS (INCLUINDO ABA DE PRÉ-VENDA JUNTO COM AS OUTRAS) */}
               <div className="flex items-center gap-1.5 overflow-x-auto pb-3 mb-4 scrollbar-none">
                 {[
                   { key: 'ALL', label: `Todos (${orders.length})` },
+                  {
+                    key: 'PRE_VENDA',
+                    label: `🗓️ Pré-Venda (${orderStats.preSaleWaiting})`,
+                    isPreSaleTab: true,
+                  },
+                  {
+                    key: 'PRONTO_PARA_ENVIO',
+                    label: `📦 Peças Chegaram (${orderStats.readyToShip})`,
+                  },
                   { key: 'PENDING', label: `⏳ Pendentes (${orderStats.pending})` },
                   { key: 'PROCESSAMENTO', label: `⚙️ Processamento (${orderStats.processing})` },
                   { key: 'PAGAMENTO_CONFIRMADO', label: `✅ Pagos (${orderStats.confirmed})` },
                   { key: 'ENVIADO', label: `🚚 Enviados (${orderStats.shipped})` },
                   { key: 'ENTREGUE', label: `📦 Entregues (${orderStats.delivered})` },
-                ].map((s) => {
+                ].map((s: any) => {
                   const isSelected = orderStatusFilter === s.key;
                   return (
                     <button
@@ -2747,11 +2769,15 @@ export default function AdminDashboardClient({
                       onClick={() => setOrderStatusFilter(s.key)}
                       className={`px-3 py-1.5 rounded-full text-xs font-bold whitespace-nowrap tactile border shrink-0 ${
                         isSelected
-                          ? 'bg-zinc-950 text-white border-zinc-950 dark:bg-white dark:text-zinc-950 dark:border-white shadow-sm'
+                          ? s.isPreSaleTab
+                            ? 'bg-amber-500 text-zinc-950 border-amber-500 shadow-sm'
+                            : 'bg-zinc-950 text-white border-zinc-950 dark:bg-white dark:text-zinc-950 dark:border-white shadow-sm'
+                          : s.isPreSaleTab
+                          ? 'bg-amber-500/15 text-amber-700 dark:text-amber-300 border-amber-500/35 hover:bg-amber-500/25'
                           : 'hover:opacity-80'
                       }`}
                       style={
-                        !isSelected
+                        !isSelected && !s.isPreSaleTab
                           ? {
                               backgroundColor: 'var(--bg-studio)',
                               borderColor: 'var(--border-crisp)',
@@ -2765,6 +2791,35 @@ export default function AdminDashboardClient({
                   );
                 })}
               </div>
+
+              {/* BANNER ORGANIZADOR QUANDO A ABA "🗓️ PRÉ-VENDA" ESTÁ SELECIONADA DENTRO DE PEDIDOS */}
+              {orderStatusFilter === 'PRE_VENDA' && (
+                <div
+                  className="mb-5 p-4 rounded-2xl border border-amber-500/35 bg-amber-500/10 flex flex-col sm:flex-row sm:items-center justify-between gap-3"
+                >
+                  <div>
+                    <h4
+                      className="text-xs sm:text-sm font-black flex items-center gap-1.5 text-amber-700 dark:text-amber-300"
+                    >
+                      <CalendarClock className="w-4 h-4" />
+                      Fila de Pedidos de Pré-Venda (Aguardando Chegada das Camisas)
+                    </h4>
+                    <p
+                      className="text-[11px] mt-0.5"
+                      style={{ color: 'var(--text-secondary)' }}
+                    >
+                      Estes pedidos possuem camisas compradas na Pré-Venda e ficam salvos aqui até que as peças cheguem e você marque como <strong>Enviado</strong>.
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setActiveTab('presale_orders')}
+                    className="px-3.5 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-zinc-950 font-black text-xs shrink-0 tactile shadow-sm"
+                  >
+                    Abrir Mapa de Separação por Camisa ➔
+                  </button>
+                </div>
+              )}
 
               {/* BUSCA DE PEDIDOS */}
               <div
@@ -2912,12 +2967,19 @@ export default function AdminDashboardClient({
                             className="hover:bg-[var(--bg-studio)] transition-colors"
                           >
                             <td className="py-3 px-4">
-                              <span
-                                className="font-mono font-bold block"
-                                style={{ color: 'var(--text-primary)' }}
-                              >
-                                #{order.orderNumber}
-                              </span>
+                              <div className="flex items-center gap-1.5 flex-wrap">
+                                <span
+                                  className="font-mono font-bold block"
+                                  style={{ color: 'var(--text-primary)' }}
+                                >
+                                  #{order.orderNumber}
+                                </span>
+                                {isPreSaleOrder(order, products) && (
+                                  <span className="px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-700 dark:text-amber-300 border border-amber-500/35 text-[9px] font-black uppercase">
+                                    🗓️ Pré-Venda
+                                  </span>
+                                )}
+                              </div>
                               <span
                                 className="text-[10px] flex items-center gap-1 mt-0.5 font-mono"
                                 style={{ color: 'var(--text-muted)' }}
